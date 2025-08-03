@@ -378,12 +378,19 @@
 
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayEl = document.createElement('div');
-                    dayEl.textContent = day;
-                    dayEl.className = 'calendar-day p-2 cursor-pointer hover:bg-blue-100 rounded-full transition';
+                    dayEl.className = 'calendar-day p-1 flex items-center justify-center';
 
                     const hasEvent = filteredEvents.some(event => event.day === day && event.month === month + 1 && event.year === year);
+
                     if (hasEvent) {
-                        dayEl.classList.add('has-event');
+                        dayEl.innerHTML = `
+                            <div class="relative w-8 h-8 flex items-center justify-center text-sm font-bold text-red-600">
+                                <div class="absolute inset-0 border-2 border-red-500 rounded-full"></div>
+                                <span>${day}</span>
+                            </div>
+                        `;
+                    } else {
+                        dayEl.innerHTML = `<div class="w-8 h-8 flex items-center justify-center text-sm">${day}</div>`;
                     }
                     calendarEl.appendChild(dayEl);
                 }
@@ -653,7 +660,7 @@
                         const pdf = new jsPDF({
                             orientation: 'landscape',
                             unit: 'mm',
-                            format: 'a4'
+                            format: 'letter'
                         });
                         const pdfWidth = pdf.internal.pageSize.getWidth();
                         const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -661,11 +668,12 @@
                         const canvasHeight = canvas.height;
                         const canvasRatio = canvasWidth / canvasHeight;
 
-                        let finalWidth = pdfWidth - 10; // less margin
+                        const margin = 5;
+                        let finalWidth = pdfWidth - (margin * 2);
                         let finalHeight = finalWidth / canvasRatio;
 
-                        if(finalHeight > pdfHeight - 10) {
-                            finalHeight = pdfHeight - 10;
+                        if(finalHeight > pdfHeight - (margin * 2)) {
+                            finalHeight = pdfHeight - (margin * 2);
                             finalWidth = finalHeight * canvasRatio;
                         }
 
