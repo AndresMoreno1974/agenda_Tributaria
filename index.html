@@ -180,7 +180,7 @@
     </div>
 
     <!-- Hidden content for PDF generation -->
-    <div id="pdf-content" class="bg-white p-8 font-sans" style="position: absolute; left: -9999px;"></div>
+    <div id="pdf-content" class="bg-white p-8 font-serif" style="position: absolute; left: -9999px;"></div>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50">
@@ -569,16 +569,15 @@
                 const taxpayerTypeLabel = taxpayerTypeEl.options[taxpayerTypeEl.selectedIndex].text;
 
                 const titleContainer = document.createElement('div');
-                titleContainer.className = 'text-center mb-6 p-4';
+                titleContainer.className = 'text-center mb-4';
                 titleContainer.innerHTML = `
-                    <h1 class="text-3xl font-bold text-gray-800">Agenda Tributaria 2025</h1>
-                    <h2 class="text-lg text-gray-600">${taxpayerTypeLabel}</h2>
-                    ${nitValue ? `<p class="text-md text-gray-500">NIT: ${nitValue}</p>` : ''}
+                    <h1 class="text-2xl font-bold">Agenda Tributaria 2025</h1>
+                    <h2 class="text-base">${taxpayerTypeLabel}${nitValue ? ` - NIT: ${nitValue}` : ''}</h2>
                 `;
                 pdfContentEl.appendChild(titleContainer);
 
                 const calendarGrid = document.createElement('div');
-                calendarGrid.className = 'grid grid-cols-4 gap-5 p-2';
+                calendarGrid.className = 'grid grid-cols-4 gap-x-4 gap-y-2';
 
                 const monthsToRender = Array.from({ length: 12 }, (_, i) => {
                     const date = new Date(2025, i, 1);
@@ -587,62 +586,55 @@
 
                 monthsToRender.forEach(({ month, year }) => {
                     const monthContainer = document.createElement('div');
-                    monthContainer.className = 'bg-white p-3 rounded-lg shadow';
                     const monthName = new Date(year, month).toLocaleString('es-ES', { month: 'long' }).toUpperCase();
 
-                    let monthHTML = `<h3 class="text-center font-bold text-blue-800 text-md mb-2">${monthName}</h3>`;
-                    monthHTML += `<div class="grid grid-cols-7 text-center text-xs gap-px">`;
-
+                    let monthHTML = `<h3 class="text-center font-bold text-sm mb-1">${monthName}</h3>`;
+                    monthHTML += `<table class="w-full text-center" style="font-size: 10px;">`;
+                    monthHTML += `<thead><tr class="font-bold">`;
                     const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-                    dayHeaders.forEach(d => monthHTML += `<div class="font-semibold text-gray-500">${d}</div>`);
+                    dayHeaders.forEach(d => monthHTML += `<td>${d}</td>`);
+                    monthHTML += `</tr></thead><tbody><tr>`;
 
                     const firstDayOfMonth = new Date(year, month, 1).getDay();
                     for (let i = 0; i < firstDayOfMonth; i++) {
-                        monthHTML += '<div></div>';
+                        monthHTML += '<td></td>';
                     }
 
                     const daysInMonth = new Date(year, month + 1, 0).getDate();
                     for (let day = 1; day <= daysInMonth; day++) {
-                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
+                        const currentDayOfWeek = new Date(year, month, day).getDay();
+                        if (currentDayOfWeek === 0 && day > 1) {
+                            monthHTML += `</tr><tr>`;
+                        }
 
-                        let dayContainerClasses = "h-8 w-8 flex items-center justify-center mx-auto text-xs relative";
-                        let dayContent;
+                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
 
                         if (dayEvents.length > 0) {
                             const eventType = getEventType(dayEvents[0].description);
-                            dayContent = `
-                                <div class="absolute -top-2 left-0 right-0 text-center text-[9px] font-bold ${eventType.textColor}">
+                             monthHTML += `<td class="relative">
+                                <div class="absolute text-center w-full" style="top: -6px; font-size: 6px; font-weight: bold; color: ${eventType.colorHex};">
                                     ${eventType.label}
                                 </div>
-                                <div class="absolute inset-0 border-2 border-red-500 rounded-full"></div>
-                                <span class="font-semibold">${day}</span>`;
+                                <div class="mx-auto border-2 border-red-600 rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                    ${day}
+                                </div>
+                            </td>`;
                         } else {
-                            dayContent = `<span>${day}</span>`;
+                            monthHTML += `<td>${day}</td>`;
                         }
-                        monthHTML += `<div class="${dayContainerClasses}">${dayContent}</div>`;
                     }
-                    monthHTML += `</div>`; // end grid-cols-7
+
+                    const lastDayOfMonth = new Date(year, month, daysInMonth).getDay();
+                    for (let i = lastDayOfMonth; i < 6; i++) {
+                        monthHTML += '<td></td>';
+                    }
+
+                    monthHTML += `</tr></tbody></table>`;
                     monthContainer.innerHTML = monthHTML;
                     calendarGrid.appendChild(monthContainer);
                 });
 
                 pdfContentEl.appendChild(calendarGrid);
-
-                // Add legend
-                const legendContainer = document.createElement('div');
-                legendContainer.className = 'mt-6 pt-4 border-t text-center';
-                legendContainer.innerHTML = `
-                    <h4 class="font-bold text-lg mb-2">Leyenda</h4>
-                    <div class="flex justify-center items-center gap-4 flex-wrap text-sm">
-                        <span class="font-bold text-blue-600">RENTA</span>
-                        <span class="font-bold text-green-600">IVA</span>
-                        <span class="font-bold text-red-600">RETEF.</span>
-                        <span class="font-bold text-amber-600">ACTIVOS</span>
-                        <span class="font-bold text-purple-600">PES</span>
-                        <span class="font-bold text-gray-500">OTRO</span>
-                    </div>
-                `;
-                pdfContentEl.appendChild(legendContainer);
 
                 // --- Generate PDF from rendered content ---
                 showToast("Generando PDF... por favor espera.", false);
@@ -693,12 +685,13 @@
             };
 
             const getEventType = (description) => {
-                if (description.toLowerCase().includes('renta')) return { label: 'RENTA', textColor: 'text-blue-600' };
-                if (description.toLowerCase().includes('iva')) return { label: 'IVA', textColor: 'text-green-600' };
-                if (description.toLowerCase().includes('retefuente')) return { label: 'RETEF.', textColor: 'text-red-600' };
-                if (description.toLowerCase().includes('activos')) return { label: 'ACTIVOS', textColor: 'text-amber-600' };
-                if (description.toLowerCase().includes('pes')) return { label: 'PES', textColor: 'text-purple-600' };
-                return { label: 'OTRO', textColor: 'text-gray-500' };
+                const desc = description.toLowerCase();
+                if (desc.includes('renta')) return { label: 'RENTA', colorHex: '#2563EB' }; // blue-600
+                if (desc.includes('iva')) return { label: 'IVA', colorHex: '#16A34A' }; // green-600
+                if (desc.includes('retefuente')) return { label: 'RETEF.', colorHex: '#DC2626' }; // red-600
+                if (desc.includes('activos')) return { label: 'ACTIVOS', colorHex: '#D97706' }; // amber-600
+                if (desc.includes('pes')) return { label: 'PES', colorHex: '#9333EA' }; // purple-600
+                return { label: 'OTRO', colorHex: '#6B7280' }; // gray-500
             };
 
             const handleCalendarNav = (direction) => {
