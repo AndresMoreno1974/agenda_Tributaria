@@ -576,66 +576,74 @@
                 `;
                 pdfContentEl.appendChild(titleContainer);
 
-                const calendarGrid = document.createElement('div');
-                calendarGrid.className = 'grid grid-cols-4 gap-x-4 gap-y-2';
-                calendarGrid.style.width = '100%';
+                const masterTable = document.createElement('table');
+                masterTable.style.width = '100%';
+                masterTable.style.borderCollapse = 'collapse';
 
-                const monthsToRender = Array.from({ length: 12 }, (_, i) => {
-                    const date = new Date(2025, i, 1);
-                    return { month: date.getMonth(), year: date.getFullYear() };
-                });
+                const months = Array.from({ length: 12 }, (_, i) => new Date(2025, i, 1));
 
-                monthsToRender.forEach(({ month, year }) => {
-                    const monthContainer = document.createElement('div');
-                    const monthName = new Date(year, month).toLocaleString('es-ES', { month: 'long' }).toUpperCase();
+                for (let i = 0; i < 3; i++) { // 3 rows
+                    const row = masterTable.insertRow();
+                    for (let j = 0; j < 4; j++) { // 4 columns
+                        const cell = row.insertCell();
+                        cell.style.verticalAlign = 'top';
+                        cell.style.padding = '5px';
 
-                    let monthHTML = `<h3 class="text-center font-bold text-sm mb-1">${monthName}</h3>`;
-                    monthHTML += `<table class="w-full text-center" style="font-size: 10px;">`;
-                    monthHTML += `<thead><tr class="font-bold">`;
-                    const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-                    dayHeaders.forEach(d => monthHTML += `<td>${d}</td>`);
-                    monthHTML += `</tr></thead><tbody><tr>`;
+                        const monthIndex = i * 4 + j;
+                        if (monthIndex < months.length) {
+                            const monthDate = months[monthIndex];
+                            const month = monthDate.getMonth();
+                            const year = monthDate.getFullYear();
 
-                    const firstDayOfMonth = new Date(year, month, 1).getDay();
-                    for (let i = 0; i < firstDayOfMonth; i++) {
-                        monthHTML += '<td></td>';
-                    }
+                            const monthName = monthDate.toLocaleString('es-ES', { month: 'long' }).toUpperCase();
 
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const currentDayOfWeek = new Date(year, month, day).getDay();
-                        if (currentDayOfWeek === 0 && day > 1) {
-                            monthHTML += `</tr><tr>`;
+                            let monthHTML = `<h3 class="text-center font-bold text-sm mb-1">${monthName}</h3>`;
+                            monthHTML += `<table class="w-full text-center" style="font-size: 10px;">`;
+                            monthHTML += `<thead><tr class="font-bold">`;
+                            const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+                            dayHeaders.forEach(d => monthHTML += `<td class="p-px">${d}</td>`);
+                            monthHTML += `</tr></thead><tbody><tr>`;
+
+                            const firstDayOfMonth = new Date(year, month, 1).getDay();
+                            for (let k = 0; k < firstDayOfMonth; k++) {
+                                monthHTML += '<td></td>';
+                            }
+
+                            const daysInMonth = new Date(year, month + 1, 0).getDate();
+                            for (let day = 1; day <= daysInMonth; day++) {
+                                const currentDayOfWeek = new Date(year, month, day).getDay();
+                                if (currentDayOfWeek === 0 && day > 1) {
+                                    monthHTML += `</tr><tr>`;
+                                }
+
+                                const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
+
+                                if (dayEvents.length > 0) {
+                                    const eventType = getEventType(dayEvents[0].description);
+                                    monthHTML += `<td class="relative p-px">
+                                        <div class="absolute text-center w-full" style="top: -6px; font-size: 6px; font-weight: bold; color: ${eventType.colorHex};">
+                                            ${eventType.label}
+                                        </div>
+                                        <div class="mx-auto border-2 border-red-600 rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                            ${day}
+                                        </div>
+                                    </td>`;
+                                } else {
+                                    monthHTML += `<td class="p-px">${day}</td>`;
+                                }
+                            }
+
+                            const lastDayOfMonth = new Date(year, month, daysInMonth).getDay();
+                            for (let k = lastDayOfMonth; k < 6; k++) {
+                                monthHTML += '<td></td>';
+                            }
+
+                            monthHTML += `</tr></tbody></table>`;
+                            cell.innerHTML = monthHTML;
                         }
-
-                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
-
-                        if (dayEvents.length > 0) {
-                            const eventType = getEventType(dayEvents[0].description);
-                             monthHTML += `<td class="relative">
-                                <div class="absolute text-center w-full" style="top: -6px; font-size: 6px; font-weight: bold; color: ${eventType.colorHex};">
-                                    ${eventType.label}
-                                </div>
-                                <div class="mx-auto border-2 border-red-600 rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                                    ${day}
-                                </div>
-                            </td>`;
-                        } else {
-                            monthHTML += `<td>${day}</td>`;
-                        }
                     }
-
-                    const lastDayOfMonth = new Date(year, month, daysInMonth).getDay();
-                    for (let i = lastDayOfMonth; i < 6; i++) {
-                        monthHTML += '<td></td>';
-                    }
-
-                    monthHTML += `</tr></tbody></table>`;
-                    monthContainer.innerHTML = monthHTML;
-                    calendarGrid.appendChild(monthContainer);
-                });
-
-                pdfContentEl.appendChild(calendarGrid);
+                }
+                pdfContentEl.appendChild(masterTable);
 
                 // --- Generate PDF from rendered content ---
                 showToast("Generando PDF... por favor espera.", false);
