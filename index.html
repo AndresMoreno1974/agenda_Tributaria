@@ -578,6 +578,7 @@
 
                 const calendarGrid = document.createElement('div');
                 calendarGrid.className = 'grid grid-cols-4 gap-x-4 gap-y-2';
+                calendarGrid.style.width = '100%';
 
                 const monthsToRender = Array.from({ length: 12 }, (_, i) => {
                     const date = new Date(2025, i, 1);
@@ -641,7 +642,8 @@
 
                 // Temporarily style for capture
                 const originalStyle = pdfContentEl.style.cssText;
-                pdfContentEl.style.cssText = 'position: absolute; top: 0; left: 0; width: 1123px; z-index: -1;'; // A4 landscape in px
+                pdfContentEl.classList.remove('p-8');
+                pdfContentEl.style.cssText = 'position: absolute; top: 0; left: 0; width: 1056px; z-index: -1; padding: 16px;'; // US Letter landscape width in px
 
                 html2canvas(pdfContentEl, {
                     scale: 2,
@@ -681,6 +683,7 @@
                     }).finally(() => {
                         // Restore original style
                         pdfContentEl.style.cssText = originalStyle;
+                        pdfContentEl.classList.add('p-8');
                     });
             };
 
