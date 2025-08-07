@@ -22,16 +22,6 @@
         }
 
         /* Reglas de estilo forzadas para anular los estilos de Elementor/WordPress */
-        .force-h1-style {
-            font-size: 22px !important; /* Adjusted for mobile */
-            font-weight: 700 !important;
-            line-height: 1.2 !important;
-        }
-        @media (min-width: 768px) { /* md breakpoint */
-            .force-h1-style {
-                font-size: 28px !important; /* Original size for desktop */
-            }
-        }
         .force-h2-style {
             font-size: 16px !important;
             font-weight: 700 !important;
@@ -61,7 +51,7 @@
 
         <!-- Encabezado de la aplicación -->
         <header class="text-center mb-10">
-            <h1 class="text-gray-800 force-h1-style">Explorador Pedagógico Interactivo</h1>
+            <h1 class="text-gray-800 text-2xl md:text-3xl font-bold">Explorador Pedagógico Interactivo</h1>
             <p class="text-lg text-gray-600 mt-2">Nulidad de Conceptos DIAN y sus Efectos Jurídicos</p>
         </header>
 
@@ -123,7 +113,7 @@
             </div>
 
             <!-- Columna Derecha: Vista Previa y Descarga del eBook -->
-            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col min-h-[80vh]">
+            <div class="bg-white py-4 px-0 sm:p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col min-h-[80vh]">
                 <h2 class="text-gray-800 mb-2 force-h2-style">eBook de Resumen</h2>
                 <p class="text-gray-600 text-sm mb-4 leading-relaxed flex-shrink-0">
                     Navegue el eBook a continuación o ábralo en una nueva pestaña para descargarlo.
