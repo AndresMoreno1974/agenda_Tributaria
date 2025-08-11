@@ -17,6 +17,10 @@ def verify_qr_code(page: Page):
     modal = page.locator("#qrModal")
     expect(modal).to_be_visible()
 
+    # Also wait for the image inside the modal to be loaded
+    qr_image = modal.locator("#qrImage")
+    expect(qr_image).to_be_visible()
+
     # Take a screenshot of the modal
     modal.screenshot(path="jules-scratch/verification/verification.png")
 
