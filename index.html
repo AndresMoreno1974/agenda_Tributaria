@@ -1,48 +1,616 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Comparative Calculator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background-color: #f9fafb; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-    h1 { font-size: 24px; margin-bottom: 20px; }
-    input { border: 1px solid #ccc; padding: 8px; margin-bottom: 10px; width: 250px; }
-    button { background-color: #2563eb; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background-color: #1d4ed8; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Integral Régimen Simple de Tributación (RST)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Librerías JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/cleave.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .simulator-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
+        }
+        .step, .form-container { display: none; }
+        .step.active, .form-container.active { display: block; }
+        .input-group { margin-bottom: 1.25rem; }
+        .input-label { display: block; font-weight: 500; color: #374151; margin-bottom: 0.5rem; }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            transition: ring 0.2s, border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            display: inline-block; /* Para que la etiqueta <a> se comporte como botón */
+        }
+        .btn-primary { background-color: #2563EB; color: white; }
+        .btn-primary:hover { background-color: #1D4ED8; }
+        .btn-secondary { background-color: #E5E7EB; color: #374151; }
+        .btn-secondary:hover { background-color: #D1D5DB; }
+        .btn-green { background-color: #16A34A; color: white; }
+        .btn-green:hover { background-color: #15803D; }
+        .info-box { background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 1rem; margin-top: 1rem; border-radius: 4px; }
+        details > summary { list-style: none; cursor: pointer; font-weight: 600; font-size: 1.125rem; padding: 0.5rem 0; }
+        details > summary::-webkit-details-marker { display: none; }
+        .results-table { width: 100%; text-left; }
+        .results-table td { padding: 0.5rem 0; }
+        .results-table tr { border-bottom: 1px solid #e5e7eb; }
+        .results-table tr:last-child { border-bottom: none; }
+        /* Estilos para el Modal del QR */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 350px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+        }
+        .modal-close {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
 </head>
-<body>
-  <h1>Comparative Calculator</h1>
-  <input type="text" id="option1" placeholder="Option 1" />
-  <input type="text" id="option2" placeholder="Option 2" />
-  <button onclick="generatePDF()">Generate PDF</button>
+<body class="bg-gray-50">
 
-  <script>
-    async function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const option1 = document.getElementById('option1').value;
-      const option2 = document.getElementById('option2').value;
+    <div class="simulator-container">
 
-      const imgUrl = "https://contador.net.co/wp-content/uploads/2025/08/logo-sin-bordes.png";
-      const img = await fetch(imgUrl).then(res => res.blob()).then(blob => new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      }));
+        <!-- PASO 0: SELECCIÓN INICIAL -->
+        <div id="step-0" class="step active text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Simulador RST</h1>
+            <p class="text-gray-600 mt-2 mb-8">Una herramienta para facilitar tus obligaciones con el Régimen Simple.</p>
+            <div class="space-y-4 max-w-md mx-auto">
+                <button onclick="showForm('form-2593')" class="w-full btn btn-primary text-lg">Calcular Anticipo Bimensual (Form. 2593)</button>
+                <button onclick="showForm('form-260')" class="w-full btn btn-primary text-lg">Preparar Declaración Anual (Form. 260)</button>
+                <button onclick="showForm('info-inscripcion')" class="w-full btn btn-secondary">¿Aún no estás en el RST? Aprende a inscribirte</button>
+            </div>
+        </div>
 
-      doc.addImage(img, "PNG", 10, 10, 40, 20);
-      doc.setFontSize(16);
-      doc.text("Comparative Calculator Results", 10, 40);
-      doc.setFontSize(12);
-      doc.text(`Option 1: ${option1}`, 10, 50);
-      doc.text(`Option 2: ${option2}`, 10, 60);
-      doc.text(`Comparison: ${option1} vs ${option2}`, 10, 70);
+        <!-- INFO INSCRIPCIÓN -->
+        <div id="info-inscripcion" class="form-container">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Inscripción al Régimen Simple (RST)</h2>
+            <p class="text-gray-700 mb-4">
+                Si aún no eres parte del Régimen Simple, el proceso es sencillo. La DIAN ha preparado una guía completa para que puedas actualizar tu RUT e inscribirte.
+            </p>
+            <div class="info-box mb-6">
+                <p class="font-semibold text-blue-800">Guía Oficial de la DIAN</p>
+                <p class="text-blue-700">Consulta el documento oficial para realizar el proceso correctamente.</p>
+                <a href="https://www.dian.gov.co/impuestos/Regimen-Simple-de-Tributacion-RST/Documents/Paso-a-Paso-Inscripcion-RUT-RST.pdf" target="_blank" class="inline-block mt-2 font-bold text-blue-600 hover:underline">Ver Paso a Paso (PDF) &rarr;</a>
+            </div>
+            <div class="info-box">
+                <p class="font-semibold text-blue-800">Video Instructivo y Fechas</p>
+                <p class="text-blue-700">Este video puede ayudarte a entender mejor el proceso y las fechas límite para realizar el cambio.</p>
+                <a href="https://drive.google.com/file/d/1upyjO0kvp-yE0Wowqauvoss9baipOqNp/view?usp=sharing" target="_blank" class="inline-block mt-2 font-bold text-blue-600 hover:underline">Ver Video &rarr;</a>
+            </div>
+            <div class="mt-8 text-center">
+                <button onclick="showForm('step-0')" class="btn btn-secondary">Volver al Inicio</button>
+            </div>
+        </div>
 
-      doc.save("comparison.pdf");
+        <!-- CONTENEDOR FORMULARIO 2593 -->
+        <div id="form-2593" class="form-container">
+            <div id="step-2593-1" class="step active">
+                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Anticipo Bimensual (Form. 2593)</h2>
+                 <p class="text-gray-600 mb-6">Completa los campos para simular tu anticipo. Los campos que no apliquen déjalos en cero.</p>
+
+                <details open class="mb-4 border-b">
+                    <summary>Componente SIMPLE</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div class="input-group"><label for="ciiu-group-2593" class="input-label">Grupo de Actividad Económica</label><select id="ciiu-group-2593" class="input-field"></select></div>
+                        <div class="input-group"><label for="ingresos-2593" class="input-label">Ingresos Brutos del Bimestre (sin incluir IVA)</label><input type="text" id="ingresos-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-no-renta-2593" class="input-label">Ingresos No Constitutivos de Renta (Casilla 40)</label><input type="text" id="ingresos-no-renta-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="aportes-pension-2593" class="input-label">Aportes a Pensión a cargo del empleador (Casilla 45)</label><input type="text" id="aportes-pension-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="retenciones-previas-2593" class="input-label">Retenciones a tít. de Renta antes de pertenecer al RST (Casilla 50)</label><input type="text" id="retenciones-previas-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="excedente-simple-anterior-2593" class="input-label">Excedente anticipo SIMPLE bimestre anterior (Casilla 51)</label><input type="text" id="excedente-simple-anterior-2593" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                <details class="mb-4 border-b">
+                    <summary>Componente ICA</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div id="ica-municipios-container"></div>
+                        <button onclick="addMunicipioICA()" class="btn btn-secondary w-full">+ Agregar Municipio</button>
+                    </div>
+                </details>
+
+                <details class="mb-4 border-b">
+                    <summary>Componente IVA</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div class="input-group"><label for="iva-generado-2593" class="input-label">IVA Generado en el bimestre (Casilla 66)</label><input type="text" id="iva-generado-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="iva-descontable-2593" class="input-label">Impuestos Descontables del bimestre (Casilla 67)</label><input type="text" id="iva-descontable-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="excedente-iva-anterior-2593" class="input-label">Excedente IVA bimestre anterior (Casilla 69)</label><input type="text" id="excedente-iva-anterior-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="retenciones-iva-2593" class="input-label">Retenciones de IVA que le practicaron (Casilla 70)</label><input type="text" id="retenciones-iva-2593" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                <details class="mb-4 border-b">
+                    <summary>Componente Impuesto Nacional al Consumo (INC)</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                         <div class="input-group"><label for="ingresos-inc-2593" class="input-label">Ingresos gravados con INC de comidas y bebidas (Casilla 58)</label><input type="text" id="ingresos-inc-2593" class="input-field text-right" placeholder="0"></div>
+                         <div class="input-group"><label for="excedente-inc-anterior-2593" class="input-label">Excedente INC bimestre anterior (Casilla 60)</label><input type="text" id="excedente-inc-anterior-2593" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                 <div class="mt-8 flex justify-between">
+                    <button onclick="showForm('step-0')" class="btn btn-secondary">Volver al Inicio</button>
+                    <button onclick="calculateAnticipo2593()" class="btn btn-green">Calcular Anticipo</button>
+                 </div>
+            </div>
+            <div id="step-2593-2" class="step">
+                <div id="results-2593">
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Resumen - Anticipo Bimensual 2593</h2>
+                    <div class="bg-gray-100 p-6 rounded-lg border border-gray-200">
+                        <!-- Resultados se inyectarán aquí -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4 text-center">Cálculo simulado. No reemplaza la declaración oficial.</p>
+                </div>
+                <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button onclick="showStepInForm('form-2593', 1)" class="btn btn-secondary">Calcular de Nuevo</button>
+                    <button onclick="downloadPDF('results-2593', 'Simulacion_Anticipo_2593.pdf')" class="btn btn-primary">Descargar PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENEDOR FORMULARIO 260 -->
+        <div id="form-260" class="form-container">
+            <div id="step-260-1" class="step active">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Declaración Anual (Form. 260)</h2>
+                <p class="text-gray-600 mb-6">Completa los campos para una simulación de tu declaración anual.</p>
+
+                <details open class="mb-4 border-b">
+                    <summary>Patrimonio</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div class="input-group"><label for="patrimonio-bruto-260" class="input-label">Total Patrimonio Bruto (Casilla 28)</label><input type="text" id="patrimonio-bruto-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="pasivos-260" class="input-label">Pasivos (Casilla 29)</label><input type="text" id="pasivos-260" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                <details class="mb-4 border-b">
+                    <summary>Ingresos Anuales Consolidados</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <p class="text-sm text-gray-500 mb-4">Ingresa el total de ingresos brutos del año por cada grupo.</p>
+                        <div class="input-group"><label for="ingresos-g1-260" class="input-label">Grupo 1 (Casilla 31+32)</label><input type="text" id="ingresos-g1-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-g2-260" class="input-label">Grupo 2 (Casilla 33+34)</label><input type="text" id="ingresos-g2-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-g3-260" class="input-label">Grupo 3 (Casilla 35+36)</label><input type="text" id="ingresos-g3-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-g4-260" class="input-label">Grupo 4 (Serv. Profesionales) (Casilla 39+40)</label><input type="text" id="ingresos-g4-260" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                <div class="mt-8 flex justify-between">
+                    <button onclick="showForm('step-0')" class="btn btn-secondary">Volver al Inicio</button>
+                    <div>
+                        <button onclick="calculateDeclaracionAnual260()" class="btn btn-green">Calcular Declaración Anual</button>
+                        <button onclick="generateComparisonPDF()" class="btn btn-primary">Planeación Fiscal</button>
+                    </div>
+                </div>
+            </div>
+            <div id="step-260-2" class="step">
+                <div id="results-260">
+                     <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Resumen - Declaración Anual 260</h2>
+                    <div class="bg-gray-100 p-6 rounded-lg border border-gray-200">
+                        <!-- Resultados del 260 se inyectarán aquí -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4 text-center">Cálculo simulado. No reemplaza la declaración oficial.</p>
+                </div>
+                 <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                    <button onclick="showStepInForm('form-260', 1)" class="btn btn-secondary">Calcular de Nuevo</button>
+                    <button onclick="downloadPDF('results-260', 'Simulacion_Declaracion_Anual_260.pdf')" class="btn btn-primary">Descargar PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN DE DONACIÓN (FIJA) -->
+        <div class="mt-12 pt-8 border-t border-gray-200 text-center">
+             <h3 class="text-lg font-semibold text-gray-700">¿Te fue útil esta herramienta?</h3>
+            <p class="text-gray-600 mt-2">Apoya su mantenimiento y futuras mejoras con una donación voluntaria.</p>
+            <div class="flex justify-center items-center gap-4 mt-4 flex-wrap">
+                <a href="https://checkout.bold.co/payment/LNK_LDA07DPSM4" target="_blank" class="btn bg-yellow-400 text-gray-800 hover:bg-yellow-500">Nequi</a>
+                <button onclick="showQrModal()" class="btn bg-blue-800 text-white hover:bg-blue-900">Bancolombia</button>
+                <a href="https://paypal.me/AndresMorenoMendez?locale.x=es_XC&country.x=CO" target="_blank" class="btn bg-sky-500 text-white hover:bg-sky-600">PayPal</a>
+                <a href="https://checkout.bold.co/payment/LNK_LDA07DPSM4" target="_blank" class="btn bg-black text-white hover:bg-gray-800">Bold</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para el código QR -->
+    <div id="qrModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close" onclick="hideQrModal()">&times;</span>
+            <h3 class="text-xl font-semibold mb-4">Donación por Bancolombia</h3>
+            <img id="qrImage" src="" alt="Código QR Bancolombia" class="mx-auto">
+            <p class="mt-4 text-sm text-gray-600">Escanea este código desde la App Bancolombia para realizar tu donación.</p>
+        </div>
+    </div>
+
+<script>
+    // --- CONFIGURACIÓN Y DATOS ---
+    const UVT_2024 = 47065;
+    const tarifasRST = {
+        grupo1: {
+            nombre: "Grupo 1: Tiendas, minimercados, peluquerías",
+            rangos: [
+                { desde: 0, hasta: 6000, tarifa: 0.012 }, { desde: 6000, hasta: 15000, tarifa: 0.028 },
+                { desde: 15000, hasta: 30000, tarifa: 0.044 }, { desde: 30000, hasta: 100000, tarifa: 0.056 }
+            ]
+        },
+        grupo2: {
+            nombre: "Grupo 2: Actividades comerciales, industriales, servicios técnicos",
+            rangos: [
+                { desde: 0, hasta: 6000, tarifa: 0.016 }, { desde: 6000, hasta: 15000, tarifa: 0.02 },
+                { desde: 15000, hasta: 30000, tarifa: 0.035 }, { desde: 30000, hasta: 100000, tarifa: 0.045 }
+            ]
+        },
+        grupo3: {
+            nombre: "Grupo 3: Expendio de comidas y bebidas, transporte",
+            rangos: [
+                { desde: 0, hasta: 6000, tarifa: 0.031 }, { desde: 6000, hasta: 15000, tarifa: 0.034 },
+                { desde: 15000, hasta: 30000, tarifa: 0.040 }, { desde: 30000, hasta: 100000, tarifa: 0.045 }
+            ]
+        },
+        grupo4: {
+            nombre: "Grupo 4: Servicios profesionales, consultoría, científicos",
+            rangos: [
+                { desde: 0, hasta: 6000, tarifa: 0.059 }, { desde: 6000, hasta: 15000, tarifa: 0.073 },
+                { desde: 15000, hasta: 30000, tarifa: 0.120 }, { desde: 30000, hasta: 100000, tarifa: 0.145 }
+            ]
+        }
+    };
+    let cleaveInstances = {};
+    let municipioCounter = 0;
+
+    // --- FUNCIONES GLOBALES ACCESIBLES POR ONCLICK ---
+
+    function showForm(formId) {
+        document.querySelectorAll('.form-container, .step').forEach(el => el.classList.remove('active'));
+        const form = document.getElementById(formId);
+        if (form) {
+            form.classList.add('active');
+            if (formId === 'form-2593' || formId === 'form-260') {
+                showStepInForm(formId, 1);
+            }
+        }
     }
-  </script>
+
+    function showStepInForm(formId, stepNumber) {
+        const form = document.getElementById(formId);
+        if(form) {
+            form.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            const nextStep = form.querySelector(`#step-${formId.split('-')[1]}-${stepNumber}`);
+            if (nextStep) {
+                nextStep.classList.add('active');
+            }
+        }
+    }
+
+    function addMunicipioICA() {
+        municipioCounter++;
+        const container = document.getElementById('ica-municipios-container');
+        const municipioHTML = `
+            <div id="municipio-${municipioCounter}" class="border p-4 rounded-lg mb-4 bg-white relative">
+                <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700 font-bold">X</button>
+                <h4 class="font-semibold mb-2">Municipio #${municipioCounter}</h4>
+                <div class="input-group"><label class="input-label">Nombre del Municipio</label><input type="text" id="ica-nombre-${municipioCounter}" class="input-field"></div>
+                <div class="input-group"><label class="input-label">Ingresos Brutos en este municipio (Casilla 84)</label><input type="text" id="ica-ingresos-${municipioCounter}" class="input-field text-right" placeholder="0"></div>
+                <div class="input-group"><label class="input-label">Total Deducciones/Exenciones/No Sujeciones (Suma casillas 85 a 89)</label><input type="text" id="ica-deducciones-${municipioCounter}" class="input-field text-right" placeholder="0"></div>
+                <h5 class="font-medium mt-4 mb-2">Actividades Gravadas en este Municipio</h5>
+                <div id="ica-actividades-${municipioCounter}"></div>
+                <button onclick="addActividadICA(${municipioCounter})" class="btn btn-secondary btn-sm w-full mt-2">+ Agregar Actividad</button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', municipioHTML);
+        initializeCleave(`ica-ingresos-${municipioCounter}`);
+        initializeCleave(`ica-deducciones-${municipioCounter}`);
+        addActividadICA(municipioCounter);
+    }
+
+    function addActividadICA(municipioId) {
+        const actividadCounter = document.querySelectorAll(`#municipio-${municipioId} .actividad-ica`).length + 1;
+        const container = document.getElementById(`ica-actividades-${municipioId}`);
+        const actividadHTML = `
+            <div class="grid grid-cols-3 gap-2 mb-2 actividad-ica">
+                <div><label class="text-sm">CIIU</label><input type="text" id="ica-ciiu-${municipioId}-${actividadCounter}" class="input-field"></div>
+                <div><label class="text-sm">Ingresos</label><input type="text" id="ica-act-ingresos-${municipioId}-${actividadCounter}" class="input-field text-right" placeholder="0"></div>
+                <div><label class="text-sm">Tarifa (‰)</label><input type="text" id="ica-tarifa-${municipioId}-${actividadCounter}" class="input-field text-right" placeholder="0,000000"></div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', actividadHTML);
+        initializeCleave(`ica-act-ingresos-${municipioId}-${actividadCounter}`);
+        initializeCleaveRate(`ica-tarifa-${municipioId}-${actividadCounter}`);
+    }
+
+    function calculateAnticipo2593() {
+        const groupKey = document.getElementById('ciiu-group-2593').value;
+        const ingresosBrutos = getCleaveValue('ingresos-2593');
+        const noRenta = getCleaveValue('ingresos-no-renta-2593');
+        const aportesPension = getCleaveValue('aportes-pension-2593');
+        const retencionesPrevias = getCleaveValue('retenciones-previas-2593');
+        const excedenteSimpleAnterior = getCleaveValue('excedente-simple-anterior-2593');
+        if (!groupKey || ingresosBrutos <= 0) { alert('Por favor, selecciona un grupo e ingresa los ingresos brutos.'); return; }
+        const ingresosNetos = ingresosBrutos - noRenta;
+        const tarifaAplicada = getTarifaSimple(groupKey, ingresosBrutos, false);
+        const anticipoSimpleConsolidado = ingresosNetos * tarifaAplicada;
+        let totalIcaAPagar = 0;
+        document.querySelectorAll('[id^="municipio-"]').forEach(municipioDiv => {
+            const municipioId = municipioDiv.id.split('-')[1];
+            let impuestoMunicipio = 0;
+            municipioDiv.querySelectorAll('.actividad-ica').forEach((actividadDiv, index) => {
+                const actividadId = index + 1;
+                const ingresosActividad = getCleaveValue(`ica-act-ingresos-${municipioId}-${actividadId}`);
+                const tarifaPorMil = getCleaveValue(`ica-tarifa-${municipioId}-${actividadId}`);
+                impuestoMunicipio += ingresosActividad * (tarifaPorMil / 1000);
+            });
+            totalIcaAPagar += impuestoMunicipio;
+        });
+        const valorComponenteSimpleNacional = anticipoSimpleConsolidado - totalIcaAPagar;
+        const descuentoPensionAplicable = Math.min(valorComponenteSimpleNacional, aportesPension);
+        const anticipoNetoSimple = valorComponenteSimpleNacional - descuentoPensionAplicable;
+        const saldoAnticipoSimple = anticipoNetoSimple - retencionesPrevias - excedenteSimpleAnterior;
+        const totalPagarSimple = Math.max(0, saldoAnticipoSimple);
+        const ivaGenerado = getCleaveValue('iva-generado-2593');
+        const ivaDescontable = getCleaveValue('iva-descontable-2593');
+        const excedenteIvaAnterior = getCleaveValue('excedente-iva-anterior-2593');
+        const retencionesIva = getCleaveValue('retenciones-iva-2593');
+        const saldoIva = ivaGenerado - ivaDescontable - excedenteIvaAnterior - retencionesIva;
+        const totalPagarIva = Math.max(0, saldoIva);
+        const ingresosInc = getCleaveValue('ingresos-inc-2593');
+        const excedenteIncAnterior = getCleaveValue('excedente-inc-anterior-2593');
+        const impuestoInc = ingresosInc * 0.08;
+        const saldoInc = impuestoInc - excedenteIncAnterior;
+        const totalPagarInc = Math.max(0, saldoInc);
+        displayResults2593({ totalPagarSimple, totalIcaAPagar, totalPagarIva, totalPagarInc });
+        showStepInForm('form-2593', 2);
+    }
+
+    function calculateDeclaracionAnual260() {
+        const patrimonioBruto = getCleaveValue('patrimonio-bruto-260');
+        const pasivos = getCleaveValue('pasivos-260');
+        const patrimonioLiquido = patrimonioBruto - pasivos;
+
+        const ingresosG1 = getCleaveValue('ingresos-g1-260');
+        const ingresosG2 = getCleaveValue('ingresos-g2-260');
+        const ingresosG3 = getCleaveValue('ingresos-g3-260');
+        const ingresosG4 = getCleaveValue('ingresos-g4-260');
+        const totalIngresos = ingresosG1 + ingresosG2 + ingresosG3 + ingresosG4;
+
+        let groupKey = '';
+        if (ingresosG4 > 0) groupKey = 'grupo4';
+        else if (ingresosG3 > 0) groupKey = 'grupo3';
+        else if (ingresosG2 > 0) groupKey = 'grupo2';
+        else if (ingresosG1 > 0) groupKey = 'grupo1';
+
+        if (!groupKey || totalIngresos <= 0) { alert('Por favor, ingrese los valores de ingresos anuales.'); return; }
+
+        const tarifaAnual = getTarifaSimple(groupKey, totalIngresos, true);
+        const impuestoSimple = totalIngresos * tarifaAnual; // Simplificación, no resta INCR
+
+        // Lógica de descuentos y otros componentes del 260 es más compleja y se añadirá progresivamente.
+        // Por ahora, mostramos el cálculo básico.
+        const impuestoNetoSimple = impuestoSimple; // Placeholder
+
+        displayResults260({ patrimonioLiquido, impuestoNetoSimple });
+        showStepInForm('form-260', 2);
+    }
+
+    function displayResults2593(data) {
+        const container = document.getElementById('results-2593').querySelector('.bg-gray-100');
+        container.innerHTML = `
+            <table class="results-table">
+                <tbody>
+                    <tr><td class="py-3 font-semibold text-gray-700">Total a Pagar - Componente SIMPLE</td><td class="text-right font-bold text-lg">${formatCurrency(data.totalPagarSimple)}</td></tr>
+                    <tr><td class="py-3 font-semibold text-gray-700">Total a Pagar - Componente ICA</td><td class="text-right font-bold text-lg">${formatCurrency(data.totalIcaAPagar)}</td></tr>
+                    <tr><td class="py-3 font-semibold text-gray-700">Total a Pagar - IVA</td><td class="text-right font-bold text-lg">${formatCurrency(data.totalPagarIva)}</td></tr>
+                    <tr><td class="py-3 font-semibold text-gray-700">Total a Pagar - INC</td><td class="text-right font-bold text-lg">${formatCurrency(data.totalPagarInc)}</td></tr>
+                </tbody>
+            </table>
+            <div class="text-center mt-6 pt-6 border-t border-gray-300">
+                <p class="text-xl text-gray-600">Total Consolidado a Pagar</p>
+                <p class="text-5xl font-bold text-green-600 mt-2">${formatCurrency(data.totalPagarSimple + data.totalIcaAPagar + data.totalPagarIva + data.totalPagarInc)}</p>
+            </div>
+        `;
+    }
+
+    function displayResults260(data) {
+        const container = document.getElementById('results-260').querySelector('.bg-gray-100');
+        container.innerHTML = `
+            <table class="results-table">
+                <tbody>
+                    <tr><td class="py-3 font-semibold text-gray-700">Patrimonio Líquido (Casilla 30)</td><td class="text-right font-bold text-lg">${formatCurrency(data.patrimonioLiquido)}</td></tr>
+                    <tr><td class="py-3 font-semibold text-gray-700">Impuesto Neto SIMPLE (Casilla 53)</td><td class="text-right font-bold text-lg">${formatCurrency(data.impuestoNetoSimple)}</td></tr>
+                </tbody>
+            </table>
+             <p class="text-xs text-gray-500 mt-4 text-center">Este es un cálculo preliminar. Faltan descuentos y otros componentes.</p>
+        `;
+    }
+
+    function downloadPDF(elementId, filename) {
+        const element = document.getElementById(elementId).cloneNode(true);
+        element.style.display = 'block'; element.style.position = 'absolute'; element.style.left = '-9999px';
+        document.body.appendChild(element);
+        const opt = { margin: 1, filename: filename, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+        html2pdf().set(opt).from(element).save().then(() => { document.body.removeChild(element); });
+    }
+
+    function showQrModal() {
+        const qrImageUrl = "https://contador.net.co/wp-content/uploads/2025/08/qr-bancolombia.jpeg";
+        const modal = document.getElementById('qrModal');
+        if (modal) {
+            document.getElementById('qrImage').src = qrImageUrl;
+            modal.style.display = 'flex';
+        }
+    }
+
+    function hideQrModal() {
+        const modal = document.getElementById('qrModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    // --- FUNCIONES AUXILIARES (NO ACCESIBLES DIRECTAMENTE) ---
+    const getCleaveValue = (id) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (cleaveInstances[id]) {
+                return parseFloat(cleaveInstances[id].getRawValue()) || 0;
+            }
+            // Fallback for when Cleave.js is not initialized or in a test environment
+            const rawValue = el.value.replace(/\./g, '').replace(/,/g, '.');
+            return parseFloat(rawValue) || 0;
+        }
+        return 0;
+    };
+    const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+    const initializeCleave = (elementId) => { if(document.getElementById(elementId)) { cleaveInstances[elementId] = new Cleave(`#${elementId}`, { numeral: true, numeralPositiveOnly: true, numeralThousandsGroupStyle: 'thousand', numeralDecimalMark: ',', delimiter: '.' }); } };
+    const initializeCleaveRate = (elementId) => { if(document.getElementById(elementId)) { cleaveInstances[elementId] = new Cleave(`#${elementId}`, { numeral: true, numeralPositiveOnly: true, numeralDecimalScale: 6, numeralDecimalMark: ',', delimiter: '' }); } };
+    const getTarifaSimple = (groupKey, ingresos, esAnual) => {
+        const grupo = tarifasRST[groupKey];
+        if (!grupo) return 0;
+        const ingresosUVT = esAnual ? ingresos / UVT_2024 : (ingresos * 6) / UVT_2024;
+        let tarifaAplicada = 0;
+        for (const rango of grupo.rangos) { if (ingresosUVT >= rango.desde && ingresosUVT < rango.hasta) { tarifaAplicada = rango.tarifa; break; } }
+        return tarifaAplicada || (grupo.rangos[grupo.rangos.length - 1]?.tarifa || 0);
+    };
+
+    function calculateRegimenOrdinario(ingresos) {
+        // This is a simplified version of the ordinary regime calculation,
+        // based on the logic from the user's React component.
+        // It assumes a simple progressive tax rate.
+        const brackets = [
+            { upTo: 50000000, rate: 0.0 },
+            { upTo: 150000000, rate: 0.19 },
+            { upTo: Infinity, rate: 0.33 },
+        ];
+
+        let impuesto = 0;
+        let remaining = ingresos;
+        let lower = 0;
+        for (const bracket of brackets) {
+            const upper = bracket.upTo === Infinity ? Infinity : bracket.upTo;
+            const taxable = Math.max(0, Math.min(remaining, upper - lower));
+            impuesto += taxable * bracket.rate;
+            remaining -= taxable;
+            lower = upper;
+            if (remaining <= 0) break;
+        }
+        return impuesto;
+    }
+
+    async function generateComparisonPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Get input values from Form 260
+        const ingresosG1 = getCleaveValue('ingresos-g1-260');
+        console.log('ingresosG1:', ingresosG1);
+        const ingresosG2 = getCleaveValue('ingresos-g2-260');
+        console.log('ingresosG2:', ingresosG2);
+        const ingresosG3 = getCleaveValue('ingresos-g3-260');
+        console.log('ingresosG3:', ingresosG3);
+        const ingresosG4 = getCleaveValue('ingresos-g4-260');
+        console.log('ingresosG4:', ingresosG4);
+        const totalIngresos = ingresosG1 + ingresosG2 + ingresosG3 + ingresosG4;
+        console.log('totalIngresos:', totalIngresos);
+
+        if (totalIngresos <= 0) {
+            alert("Por favor, completa los ingresos en el Formulario 260 para generar la comparación.");
+            return;
+        }
+
+        // Calculate taxes for both regimes
+        const impuestoSimple = totalIngresos * getTarifaSimple('grupo1', totalIngresos, true); // Assuming grupo1 for simplicity
+        const impuestoOrdinario = calculateRegimenOrdinario(totalIngresos);
+
+        // Generate the PDF
+        const imgUrl = "https://contador.net.co/wp-content/uploads/2025/08/logo-sin-bordes.png";
+        const img = await fetch(imgUrl).then(res => res.blob()).then(blob => new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        }));
+
+        doc.addImage(img, "PNG", 10, 10, 40, 20);
+        doc.setFontSize(16);
+        doc.text("Comparativa: Régimen Simple vs. Régimen Ordinario", 10, 40);
+        doc.setFontSize(12);
+        doc.text(`Ingresos Anuales: ${formatCurrency(totalIngresos)}`, 10, 50);
+        doc.text("---", 10, 55);
+        doc.text(`Impuesto Régimen Simple: ${formatCurrency(impuestoSimple)}`, 10, 65);
+        doc.text(`Impuesto Régimen Ordinario: ${formatCurrency(impuestoOrdinario)}`, 10, 75);
+        doc.text("---", 10, 80);
+        const ahorro = impuestoOrdinario - impuestoSimple;
+        doc.setFontSize(14);
+        doc.text(`Ahorro estimado con Régimen Simple: ${formatCurrency(ahorro)}`, 10, 90);
+
+        doc.save("comparativa_fiscal.pdf");
+    }
+
+    // --- INICIALIZACIÓN ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const select2593 = document.getElementById('ciiu-group-2593');
+        if (select2593) {
+            select2593.innerHTML = '<option value="" disabled selected>-- Selecciona un grupo --</option>';
+            for (const key in tarifasRST) { const option = document.createElement('option'); option.value = key; option.textContent = tarifasRST[key].nombre; select2593.appendChild(option); }
+        }
+        ['ingresos-2593', 'ingresos-no-renta-2593', 'aportes-pension-2593', 'retenciones-previas-2593', 'excedente-simple-anterior-2593', 'iva-generado-2593', 'iva-descontable-2593', 'excedente-iva-anterior-2593', 'retenciones-iva-2593', 'ingresos-inc-2593', 'excedente-inc-anterior-2593', 'patrimonio-bruto-260', 'pasivos-260', 'ingresos-g1-260', 'ingresos-g2-260', 'ingresos-g3-260', 'ingresos-g4-260'].forEach(id => initializeCleave(id));
+        showForm('step-0');
+    });
+
+</script>
 </body>
 </html>
