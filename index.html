@@ -3,735 +3,743 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Tributaria Interactiva 2025-2026</title>
+    <title>Simulador Integral Régimen Simple de Tributación (RST)</title>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Librerías JS (Vanilla) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.6.0/cleave.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Librerías React -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+
+    <!-- Dependencia prop-types para Recharts -->
+    <script src="https://unpkg.com/prop-types@15.7.2/prop-types.min.js"></script>
+
+    <!-- Babel para transpilar JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Recharts (Librería de gráficos para React) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+        body { font-family: 'Inter', sans-serif; }
+        .simulator-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2.5rem;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
         }
-        .calendar-day.has-event {
-            background-color: #fef08a;
-            color: #b45309;
-            font-weight: bold;
+        .step, .form-container { display: none; }
+        .step.active, .form-container.active { display: block; }
+        .input-group { margin-bottom: 1.25rem; }
+        .input-label { display: block; font-weight: 500; color: #374151; margin-bottom: 0.5rem; }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            transition: ring 0.2s, border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            display: inline-block;
+        }
+        .btn-primary { background-color: #2563EB; color: white; }
+        .btn-primary:hover { background-color: #1D4ED8; }
+        .btn-secondary { background-color: #E5E7EB; color: #374151; }
+        .btn-secondary:hover { background-color: #D1D5DB; }
+        .btn-green { background-color: #16A34A; color: white; }
+        .btn-green:hover { background-color: #15803D; }
+        .info-box { background-color: #EFF6FF; border-left: 4px solid #3B82F6; padding: 1rem; margin-top: 1rem; border-radius: 4px; }
+        .tooltip-icon {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            background-color: #9ca3af;
+            color: white;
             border-radius: 50%;
+            text-align: center;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            cursor: help;
+            margin-left: 0.5rem;
             position: relative;
         }
-        .calendar-day.has-event::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: #dc2626;
-            border-radius: 50%;
-        }
-        .toast {
+        .tooltip-text {
             visibility: hidden;
+            width: 220px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
             opacity: 0;
-            transition: opacity 0.5s, transform 0.5s;
-            transform: translateY(20px);
+            transition: opacity 0.3s;
         }
-        .toast.show {
+        .tooltip-icon:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
-            transform: translateY(0);
+        }
+        .recharts-responsive-container {
+             width: 100% !important;
+             height: 300px !important;
         }
     </style>
 </head>
-<body class="antialiased text-gray-800">
+<body class="bg-gray-50">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Agenda Tributaria Interactiva 2025-2026 🇨🇴</h1>
-            <p class="text-gray-600 mt-2">Consulta, exporta y descarga tus plazos de la DIAN.</p>
-        </header>
+    <div id="app-container" class="simulator-container">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column -->
-            <div class="lg:col-span-1 space-y-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🔍 Filtros de Búsqueda</h2>
-                    <form id="taxForm" class="space-y-4">
-                        <div>
-                            <label for="taxpayerType" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Contribuyente</label>
-                            <select id="taxpayerType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                <option value="gran_contribuyente">Gran Contribuyente</option>
-                                <option value="persona_juridica">Persona Jurídica</option>
-                                <option value="persona_natural">Persona Natural</option>
-                                <option value="persona_no_residente">Personas no residentes (PES)</option>
-                            </select>
-                        </div>
+        <!-- PASO 0: SELECCIÓN INICIAL -->
+        <div id="step-0" class="step active text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Simulador RST</h1>
+            <p class="text-gray-600 mt-2 mb-8">Una herramienta para facilitar tus obligaciones con el Régimen Simple.</p>
+            <div class="space-y-4 max-w-md mx-auto">
+                <button id="btn-goto-2593" class="w-full btn btn-primary text-lg">Calcular Anticipo Bimensual (Form. 2593)</button>
+                <button id="btn-goto-260" class="w-full btn btn-primary text-lg">Preparar Declaración Anual (Form. 260)</button>
+                <button id="btn-goto-planeacion" class="w-full btn btn-primary text-lg bg-purple-600 hover:bg-purple-700">Planeación Fiscal Comparativa</button>
+                <button id="btn-goto-info" class="w-full btn btn-secondary">¿Aún no estás en el RST? Aprende a inscribirte</button>
+            </div>
+        </div>
 
-                        <div id="nit-section">
-                            <div>
-                                <label for="nitInput" class="block text-sm font-medium text-gray-700 mb-1">Tu NIT completo o los últimos dígitos</label>
-                                <input type="text" id="nitInput" placeholder="Ej: 900123456" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"/>
-                            </div>
-                            <div class="flex items-center mt-4">
-                                <input id="foreignAssets" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"/>
-                                <label for="foreignAssets" class="ml-2 block text-sm text-gray-900">¿Declara activos en el exterior?</label>
-                            </div>
-                        </div>
+        <!-- INFO INSCRIPCIÓN -->
+        <div id="info-inscripcion" class="form-container">
+             <h2 class="text-2xl font-bold text-gray-800 mb-4">Inscripción al Régimen Simple (RST)</h2>
+             <p class="text-gray-700 mb-4">
+                <strong>¿Quiénes pueden optar por el Régimen Simple de Tributación – RST...?</strong><br/>
+                + Personas naturales que desarrollen empresa incluyendo profesionales liberales, o personas jurídicas de naturaleza societaria, cuyos socios o accionistas sean personas naturales residentes en Colombia.<br/>
+                + Que en el año gravable anterior hubieren obtenido ingresos brutos, ordinarios o extraordinarios, inferiores a 100.000 UVT. En el caso de las empresas o personas jurídicas nuevas, la inscripción en el impuesto unificado bajo el régimen simple de tributación – SIMPLE estará condicionada a que los ingresos del año no superen estos límites. Las particularidades del cálculo de este valor lo encuentran en el artículo 905 del Estatuto Tributario. Los contribuyentes con obligaciones pendientes de carácter nacional y local no están obligados.<br/>
+                + Que cumplan las obligaciones tributarias de carácter nacional y local.<br/>
+                Recuerde revisar si cumple con alguna de estas funciones.
+             </p>
+             <div class="info-box mb-6">
+                 <p class="font-semibold text-blue-800">Guía Oficial de la DIAN</p>
+                 <p class="text-blue-700">Consulta el documento oficial para realizar el proceso correctamente.</p>
+                 <a href="https://drive.google.com/file/d/1OP5KBqpzDDc59i5vGfIWER7n7rJdlQVc/view?usp=sharing" target="_blank" class="inline-block mt-2 font-bold text-blue-600 hover:underline">Ver Paso a Paso (PDF) &rarr;</a>
+             </div>
+             <div class="info-box">
+                 <p class="font-semibold text-blue-800">Video Instructivo y Fechas</p>
+                 <p class="text-blue-700">Este video puede ayudarte a entender mejor el proceso y las fechas límite para realizar el cambio.</p>
+                 <a href="https://drive.google.com/file/d/1upyjO0kvp-yE0Wowqauvoss9baipOqNp/view?usp=sharing" target="_blank" class="inline-block mt-2 font-bold text-blue-600 hover:underline">Ver Video &rarr;</a>
+             </div>
+             <div class="mt-8 text-center">
+                 <button data-target="step-0" class="btn btn-secondary btn-back">Volver al Inicio</button>
+             </div>
+        </div>
 
-                        <div id="pes-section" class="hidden text-sm text-gray-500 p-3 bg-blue-50 rounded-lg">
-                            Para contribuyentes con Presencia Económica Significativa (PES), las fechas son generales y no requieren NIT.
-                        </div>
+        <!-- CONTENEDOR FORMULARIO 2593 -->
+        <div id="form-2593" class="form-container">
+             <div id="step-2593-1" class="step active">
+                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Anticipo Bimensual (Form. 2593)</h2>
+                 <p class="text-gray-600 mb-6">Completa los campos para simular tu anticipo. Los campos que no apliquen déjalos en cero.</p>
 
-                        <div id="company-questions" class="space-y-4">
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Periodicidad del IVA</label>
-                                <div class="flex gap-4">
-                                    <div class="flex items-center">
-                                        <input id="iva-bimestral" name="iva-frequency" type="radio" value="bimestral" checked class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-bimestral" class="ml-2 block text-sm text-gray-900">Bimestral</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="iva-cuatrimestral" name="iva-frequency" type="radio" value="cuatrimestral" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-cuatrimestral" class="ml-2 block text-sm text-gray-900">Cuatrimestral</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center"><input id="consumo" type="checkbox" class="h-4 w-4"/><label for="consumo" class="ml-2 text-sm">¿Declara Impuesto al Consumo?</label></div>
-                            <div class="flex items-center"><input id="bolsas" type="checkbox" class="h-4 w-4"/><label for="bolsas" class="ml-2 text-sm">¿Declara Impuesto a Bolsas Plásticas?</label></div>
-                            <div class="flex items-center"><input id="gasolina" type="checkbox" class="h-4 w-4"/><label for="gasolina" class="ml-2 text-sm">¿Declara Gasolina y ACPM?</label></div>
-                            <div class="flex items-center"><input id="carbono" type="checkbox" class="h-4 w-4"/><label for="carbono" class="ml-2 text-sm">¿Declara Impuesto al Carbono?</label></div>
-                            <div class="flex items-center"><input id="transferencia" type="checkbox" class="h-4 w-4"/><label for="transferencia" class="ml-2 text-sm">¿Declara Precios de Transferencia?</label></div>
-                            <div class="flex items-center"><input id="iva_exterior" type="checkbox" class="h-4 w-4"/><label for="iva_exterior" class="ml-2 text-sm">¿Declara IVA desde el exterior?</label></div>
-                            <div class="flex items-center"><input id="patrimonio" type="checkbox" class="h-4 w-4"/><label for="patrimonio" class="ml-2 text-sm">¿Declara Impuesto al Patrimonio?</label></div>
-                            <div class="flex items-center"><input id="plasticos_uso_unico" type="checkbox" class="h-4 w-4"/><label for="plasticos_uso_unico" class="ml-2 text-sm">¿Declara Plásticos de un solo uso?</label></div>
-                            <div class="flex items-center"><input id="bebidas_ultraprocesadas" type="checkbox" class="h-4 w-4"/><label for="bebidas_ultraprocesadas" class="ml-2 text-sm">¿Declara Bebidas Ultraprocesadas?</label></div>
-                            <div class="flex items-center"><input id="rub" type="checkbox" class="h-4 w-4"/><label for="rub" class="ml-2 text-sm">¿Necesita actualizar el RUB?</label></div>
+                <details open class="mb-4 border-b pb-4">
+                    <summary class="font-bold text-lg">Componente SIMPLE</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div class="input-group"><label for="ciiu-group-2593" class="input-label">Grupo de Actividad Económica</label><select id="ciiu-group-2593" class="input-field"></select></div>
+                        <div class="input-group"><label for="ingresos-2593" class="input-label">Ingresos Brutos del Bimestre (sin incluir IVA)</label><input type="text" id="ingresos-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-no-renta-2593" class="input-label">Ingresos No Constitutivos de Renta (Casilla 40)</label><input type="text" id="ingresos-no-renta-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="aportes-pension-2593" class="input-label">Aportes a Pensión a cargo del empleador (Casilla 45)</label><input type="text" id="aportes-pension-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="retenciones-previas-2593" class="input-label">Retenciones a tít. de Renta antes de pertenecer al RST (Casilla 50)</label><input type="text" id="retenciones-previas-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="excedente-simple-anterior-2593" class="input-label">Excedente anticipo SIMPLE bimestre anterior (Casilla 51)</label><input type="text" id="excedente-simple-anterior-2593" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
 
-                            <div class="flex items-center">
-                                <input id="rst" type="checkbox" class="h-4 w-4"/>
-                                <label for="rst" class="ml-2 text-sm">¿Está en el Régimen Simple (RST)?</label>
-                            </div>
-                            <div id="rst-options" class="hidden pl-6 space-y-2">
-                                <div class="flex items-center">
-                                    <input id="rst-anual" name="rst-type" type="radio" value="anual" checked class="h-4 w-4"/>
-                                    <label for="rst-anual" class="ml-2 text-sm">Declaración Anual</label>
-                                </div>
-                                <div class="flex items-center">
-                                    <input id="rst-anticipo" name="rst-type" type="radio" value="anticipo" class="h-4 w-4"/>
-                                    <label for="rst-anticipo" class="ml-2 text-sm">Anticipo Bimestral</label>
-                                </div>
-                            </div>
-                        </div>
+                <details class="mb-4 border-b pb-4">
+                    <summary class="font-bold text-lg">Componente ICA</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div id="ica-municipios-container"></div>
+                        <button id="btn-add-municipio" class="btn btn-secondary w-full">+ Agregar Municipio</button>
+                    </div>
+                </details>
 
-                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">
-                            Generar Agenda
-                        </button>
-                    </form>
-                </div>
+                <details class="mb-4 border-b pb-4">
+                    <summary class="font-bold text-lg">Componente IVA</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div class="input-group"><label for="iva-generado-2593" class="input-label">IVA Generado en el bimestre (Casilla 66)</label><input type="text" id="iva-generado-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="iva-descontable-2593" class="input-label">Impuestos Descontables del bimestre (Casilla 67)</label><input type="text" id="iva-descontable-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="excedente-iva-anterior-2593" class="input-label">Excedente IVA bimestre anterior (Casilla 69)</label><input type="text" id="excedente-iva-anterior-2593" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="retenciones-iva-2593" class="input-label">Retenciones de IVA que le practicaron (Casilla 70)</label><input type="text" id="retenciones-iva-2593" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
 
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-300">
-                     <h2 class="text-xl font-bold mb-4 text-gray-700">📄 Funciones Gratuitas</h2>
-                     <p class="text-gray-600 mb-4">Genera un resumen de tu agenda en formato PDF para guardarlo o imprimirlo.</p>
-                     <button id="downloadPdf" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                        Descargar Resumen en PDF
-                     </button>
-                </div>
+                <details class="mb-4 border-b pb-4">
+                    <summary class="font-bold text-lg">Componente Impuesto Nacional al Consumo (INC)</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                         <div class="input-group"><label for="ingresos-inc-2593" class="input-label">Ingresos gravados con INC de comidas y bebidas (Casilla 58)</label><input type="text" id="ingresos-inc-2593" class="input-field text-right" placeholder="0"></div>
+                         <div class="input-group"><label for="excedente-inc-anterior-2593" class="input-label">Excedente INC bimestre anterior (Casilla 60)</label><input type="text" id="excedente-inc-anterior-2593" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
 
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-amber-400">
-                     <h2 class="text-xl font-bold mb-4 text-amber-600">⭐ Funciones Pro</h2>
-                     <div id="pro-section">
-                        <p class="text-gray-600 mb-4">Activa la versión Pro para exportar tu agenda a Google Calendar y recibir notificaciones.</p>
-                        <a href="https://checkout.bold.co/payment/LNK_LDA07DPSM4" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                            Activar Funciones Pro
-                        </a>
+                 <div class="mt-8 flex justify-between">
+                    <button data-target="step-0" class="btn btn-secondary btn-back">Volver al Inicio</button>
+                    <button id="btn-calculate-2593" class="btn btn-green">Calcular Anticipo</button>
+                 </div>
+             </div>
+             <div id="step-2593-2" class="step">
+                 <div id="results-2593">
+                     <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Resumen - Anticipo Bimensual 2593</h2>
+                     <div id="results-content-2593" class="bg-gray-100 p-6 rounded-lg border border-gray-200">
+                         <!-- Resultados se inyectarán aquí -->
                      </div>
-                     <div id="pro-activated-section" class="hidden text-center">
-                        <p class="text-green-600 font-semibold">¡Funciones Pro activadas!</p>
-                        <p class="text-gray-600 mt-2">Ya puedes añadir tus vencimientos a Google Calendar desde la lista de resultados.</p>
-                     </div>
+                     <p class="text-xs text-gray-500 mt-4 text-center">Cálculo simulado. No reemplaza la declaración oficial.</p>
+                 </div>
+                 <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                     <button data-form="form-2593" data-step="1" class="btn btn-secondary btn-recalculate">Calcular de Nuevo</button>
+                     <button onclick="exportResults('results-content-2593', 'pdf')" class="btn btn-primary">Descargar PDF</button>
+                     <button onclick="exportResults('results-content-2593', 'excel')" class="btn btn-green">Exportar a Excel</button>
+                 </div>
+             </div>
+        </div>
+
+        <!-- CONTENEDOR FORMULARIO 260 -->
+        <div id="form-260" class="form-container">
+            <div id="step-260-1" class="step active">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Declaración Anual (Form. 260)</h2>
+                <p class="text-gray-600 mb-6">Completa los campos para una simulación de tu declaración anual.</p>
+
+                <details open class="mb-4 border-b pb-4">
+                    <summary class="font-bold text-lg">Patrimonio</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <div class="input-group"><label for="patrimonio-bruto-260" class="input-label">Total Patrimonio Bruto (Casilla 28)</label><input type="text" id="patrimonio-bruto-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="pasivos-260" class="input-label">Pasivos (Casilla 29)</label><input type="text" id="pasivos-260" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                <details open class="mb-4 border-b pb-4">
+                    <summary class="font-bold text-lg">Ingresos Anuales Consolidados</summary>
+                    <div class="p-4 bg-gray-50 rounded-b-lg">
+                        <p class="text-sm text-gray-500 mb-4">Ingresa el total de ingresos brutos del año por cada grupo.</p>
+                        <div class="input-group"><label for="ingresos-g1-260" class="input-label">Grupo 1: Tiendas, minimercados, etc. (Casilla 31+32)</label><input type="text" id="ingresos-g1-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-g2-260" class="input-label">Grupo 2: Actividades comerciales, etc. (Casilla 33+34)</label><input type="text" id="ingresos-g2-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-g3-260" class="input-label">Grupo 3: Servicios profesionales, etc. (Casilla 39+40)</label><input type="text" id="ingresos-g3-260" class="input-field text-right" placeholder="0"></div>
+                        <div class="input-group"><label for="ingresos-g4-260" class="input-label">Grupo 4: Expendio de comidas, etc. (Casilla 35+36)</label><input type="text" id="ingresos-g4-260" class="input-field text-right" placeholder="0"></div>
+                    </div>
+                </details>
+
+                <div class="mt-8 flex justify-between">
+                    <button data-target="step-0" class="btn btn-secondary btn-back">Volver al Inicio</button>
+                    <button id="btn-calculate-260" class="btn btn-green">Calcular Declaración Anual</button>
                 </div>
             </div>
+             <div id="step-260-2" class="step">
+                 <div id="results-260">
+                     <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Resumen - Declaración Anual 260</h2>
+                     <div id="results-content-260" class="bg-gray-100 p-6 rounded-lg border border-gray-200">
+                         <!-- Resultados del 260 se inyectarán aquí -->
+                     </div>
+                     <p class="text-xs text-gray-500 mt-4 text-center">Cálculo simulado. No reemplaza la declaración oficial.</p>
+                 </div>
+                 <div class="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                     <button data-form="form-260" data-step="1" class="btn btn-secondary btn-recalculate">Calcular de Nuevo</button>
+                     <button onclick="exportResults('results-content-260', 'pdf')" class="btn btn-primary">Descargar PDF</button>
+                     <button onclick="exportResults('results-content-260', 'excel')" class="btn btn-green">Exportar a Excel</button>
+                 </div>
+             </div>
+        </div>
 
-            <!-- Right Column -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
-                <div id="calendar-container">
-                    <div class="flex items-center justify-between mb-4">
-                        <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <h2 id="monthYear" class="text-2xl font-bold"></h2>
-                        <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                    <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
-                </div>
-                <div id="results-container" class="mt-8">
-                    <h3 class="text-xl font-bold mb-4 border-t pt-6">🗓️ Vencimientos para tu selección:</h3>
-                    <div id="results" class="space-y-3">
-                        <p class="text-gray-500">Por favor, completa los filtros y haz clic en "Generar Agenda" para ver tus obligaciones.</p>
-                    </div>
-                </div>
-            </div>
+        <!-- CONTENEDOR PLANEACIÓN FISCAL (REACT) -->
+        <div id="form-planeacion" class="form-container">
+            <div id="react-root-planeacion"></div>
+        </div>
+
+        <!-- SECCIÓN DE DONACIÓN (FIJA) -->
+        <div class="mt-12 pt-8 border-t border-gray-200 text-center">
+             <h3 class="text-lg font-semibold text-gray-700">¿Te fue útil esta herramienta?</h3>
+             <p class="text-gray-600 mt-2">Apoya su mantenimiento y futuras mejoras con una donación voluntaria.</p>
+             <div class="flex justify-center items-center gap-4 mt-4 flex-wrap">
+                 <a href="https://checkout.bold.co/payment/LNK_GG52DU5V4O" target="_blank" class="btn bg-yellow-400 text-gray-800 hover:bg-yellow-500">Nequi</a>
+                 <button id="btn-bancolombia-qr" class="btn bg-blue-800 text-white hover:bg-blue-900">Bancolombia</button>
+                 <a href="https://paypal.me/AndresMorenoMendez?locale.x=es_XC&country.x=CO" target="_blank" class="btn bg-sky-500 text-white hover:bg-sky-600">PayPal</a>
+                 <a href="https://checkout.bold.co/payment/LNK_GG52DU5V4O" target="_blank" class="btn bg-black text-white hover:bg-gray-800">Bold</a>
+             </div>
         </div>
     </div>
 
-    <!-- Hidden content for PDF generation -->
-    <div id="pdf-content" style="position: absolute; left: -9999px; top: 0; width: 210mm;" class="bg-white p-8 font-sans"></div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50">
-        <p id="toast-message"></p>
-    </div>
-
+    <!-- SCRIPT PARA LÓGICA DE NAVEGACIÓN Y EXPORTACIÓN (VANILLA JS) -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DATA STORE ---
-            const taxData = {
-                '2025': {
-                    'gran_contribuyente': {
-                        'renta': [
-                            { nit: [1], month: 2, day: 11, description: 'Pago 1a. cuota Renta' }, { nit: [2], month: 2, day: 12, description: 'Pago 1a. cuota Renta' }, { nit: [3], month: 2, day: 13, description: 'Pago 1a. cuota Renta' }, { nit: [4], month: 2, day: 14, description: 'Pago 1a. cuota Renta' }, { nit: [5], month: 2, day: 17, description: 'Pago 1a. cuota Renta' }, { nit: [6], month: 2, day: 18, description: 'Pago 1a. cuota Renta' }, { nit: [7], month: 2, day: 19, description: 'Pago 1a. cuota Renta' }, { nit: [8], month: 2, day: 20, description: 'Pago 1a. cuota Renta' }, { nit: [9], month: 2, day: 21, description: 'Pago 1a. cuota Renta' }, { nit: [0], month: 2, day: 24, description: 'Pago 1a. cuota Renta' },
-                            { nit: [1], month: 4, day: 9, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [2], month: 4, day: 10, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [3], month: 4, day: 11, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [4], month: 4, day: 14, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [5], month: 4, day: 15, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [6], month: 4, day: 16, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [7], month: 4, day: 21, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [8], month: 4, day: 22, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [9], month: 4, day: 23, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [0], month: 4, day: 24, description: 'Declaración y pago 2a. cuota Renta' },
-                            { nit: [1], month: 6, day: 11, description: 'Pago 3a. cuota Renta' }, { nit: [2], month: 6, day: 12, description: 'Pago 3a. cuota Renta' }, { nit: [3], month: 6, day: 13, description: 'Pago 3a. cuota Renta' }, { nit: [4], month: 6, day: 16, description: 'Pago 3a. cuota Renta' }, { nit: [5], month: 6, day: 17, description: 'Pago 3a. cuota Renta' }, { nit: [6], month: 6, day: 18, description: 'Pago 3a. cuota Renta' }, { nit: [7], month: 6, day: 19, description: 'Pago 3a. cuota Renta' }, { nit: [8], month: 6, day: 20, description: 'Pago 3a. cuota Renta' }, { nit: [9], month: 6, day: 24, description: 'Pago 3a. cuota Renta' }, { nit: [0], month: 6, day: 25, description: 'Pago 3a. cuota Renta' },
-                        ],
-                        'activos_exterior': [
-                            { nit: [1], month: 4, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 4, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 4, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 4, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 4, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 4, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 4, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 4, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 4, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 4, day: 24, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                    },
-                    'persona_juridica': {
-                        'renta': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [2], month: 5, day: 13, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [3], month: 5, day: 14, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [4], month: 5, day: 15, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [5], month: 5, day: 16, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [6], month: 5, day: 19, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [7], month: 5, day: 20, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [8], month: 5, day: 21, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [9], month: 5, day: 22, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [0], month: 5, day: 23, description: 'Declaración y pago 1a. cuota Renta' },
-                            { nit: [1], month: 7, day: 9, description: 'Pago 2a. cuota Renta' }, { nit: [2], month: 7, day: 10, description: 'Pago 2a. cuota Renta' }, { nit: [3], month: 7, day: 11, description: 'Pago 2a. cuota Renta' }, { nit: [4], month: 7, day: 14, description: 'Pago 2a. cuota Renta' }, { nit: [5], month: 7, day: 15, description: 'Pago 2a. cuota Renta' }, { nit: [6], month: 7, day: 16, description: 'Pago 2a. cuota Renta' }, { nit: [7], month: 7, day: 17, description: 'Pago 2a. cuota Renta' }, { nit: [8], month: 7, day: 18, description: 'Pago 2a. cuota Renta' }, { nit: [9], month: 7, day: 21, description: 'Pago 2a. cuota Renta' }, { nit: [0], month: 7, day: 22, description: 'Pago 2a. cuota Renta' },
-                        ],
-                         'activos_exterior': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 5, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 5, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 5, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 5, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 5, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 5, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 5, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 5, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 5, day: 23, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                        'retencion_fuente': [
-                            { nit: [1], month: 2, day: 11, description: 'Retefuente Ene' }, { nit: [1], month: 3, day: 11, description: 'Retefuente Feb' }, { nit: [1], month: 4, day: 9, description: 'Retefuente Mar' }, { nit: [1], month: 5, day: 12, description: 'Retefuente Abr' }, { nit: [1], month: 6, day: 11, description: 'Retefuente May' }, { nit: [1], month: 7, day: 9, description: 'Retefuente Jun' }, { nit: [1], month: 8, day: 12, description: 'Retefuente Jul' }, { nit: [1], month: 9, day: 9, description: 'Retefuente Ago' }, { nit: [1], month: 10, day: 9, description: 'Retefuente Sep' }, { nit: [1], month: 11, day: 12, description: 'Retefuente Oct' }, { nit: [1], month: 12, day: 10, description: 'Retefuente Nov' },
-                            { nit: [2], month: 2, day: 12, description: 'Retefuente Ene' }, { nit: [2], month: 3, day: 12, description: 'Retefuente Feb' }, { nit: [2], month: 4, day: 10, description: 'Retefuente Mar' }, { nit: [2], month: 5, day: 13, description: 'Retefuente Abr' }, { nit: [2], month: 6, day: 12, description: 'Retefuente May' }, { nit: [2], month: 7, day: 10, description: 'Retefuente Jun' }, { nit: [2], month: 8, day: 13, description: 'Retefuente Jul' }, { nit: [2], month: 9, day: 10, description: 'Retefuente Ago' }, { nit: [2], month: 10, day: 10, description: 'Retefuente Sep' }, { nit: [2], month: 11, day: 13, description: 'Retefuente Oct' }, { nit: [2], month: 12, day: 11, description: 'Retefuente Nov' },
-                            { nit: [3], month: 2, day: 13, description: 'Retefuente Ene' }, { nit: [3], month: 3, day: 13, description: 'Retefuente Feb' }, { nit: [3], month: 4, day: 11, description: 'Retefuente Mar' }, { nit: [3], month: 5, day: 14, description: 'Retefuente Abr' }, { nit: [3], month: 6, day: 13, description: 'Retefuente May' }, { nit: [3], month: 7, day: 11, description: 'Retefuente Jun' }, { nit: [3], month: 8, day: 14, description: 'Retefuente Jul' }, { nit: [3], month: 9, day: 11, description: 'Retefuente Ago' }, { nit: [3], month: 10, day: 14, description: 'Retefuente Sep' }, { nit: [3], month: 11, day: 14, description: 'Retefuente Oct' }, { nit: [3], month: 12, day: 12, description: 'Retefuente Nov' },
-                            { nit: [4], month: 2, day: 14, description: 'Retefuente Ene' }, { nit: [4], month: 3, day: 14, description: 'Retefuente Feb' }, { nit: [4], month: 4, day: 14, description: 'Retefuente Mar' }, { nit: [4], month: 5, day: 15, description: 'Retefuente Abr' }, { nit: [4], month: 6, day: 16, description: 'Retefuente May' }, { nit: [4], month: 7, day: 14, description: 'Retefuente Jun' }, { nit: [4], month: 8, day: 15, description: 'Retefuente Jul' }, { nit: [4], month: 9, day: 12, description: 'Retefuente Ago' }, { nit: [4], month: 10, day: 15, description: 'Retefuente Sep' }, { nit: [4], month: 11, day: 18, description: 'Retefuente Oct' }, { nit: [4], month: 12, day: 15, description: 'Retefuente Nov' },
-                            { nit: [5], month: 2, day: 17, description: 'Retefuente Ene' }, { nit: [5], month: 3, day: 17, description: 'Retefuente Feb' }, { nit: [5], month: 4, day: 15, description: 'Retefuente Mar' }, { nit: [5], month: 5, day: 16, description: 'Retefuente Abr' }, { nit: [5], month: 6, day: 17, description: 'Retefuente May' }, { nit: [5], month: 7, day: 15, description: 'Retefuente Jun' }, { nit: [5], month: 8, day: 19, description: 'Retefuente Jul' }, { nit: [5], month: 9, day: 15, description: 'Retefuente Ago' }, { nit: [5], month: 10, day: 16, description: 'Retefuente Sep' }, { nit: [5], month: 11, day: 19, description: 'Retefuente Oct' }, { nit: [5], month: 12, day: 16, description: 'Retefuente Nov' },
-                            { nit: [6], month: 2, day: 18, description: 'Retefuente Ene' }, { nit: [6], month: 3, day: 18, description: 'Retefuente Feb' }, { nit: [6], month: 4, day: 16, description: 'Retefuente Mar' }, { nit: [6], month: 5, day: 19, description: 'Retefuente Abr' }, { nit: [6], month: 6, day: 18, description: 'Retefuente May' }, { nit: [6], month: 7, day: 16, description: 'Retefuente Jun' }, { nit: [6], month: 8, day: 20, description: 'Retefuente Jul' }, { nit: [6], month: 9, day: 16, description: 'Retefuente Ago' }, { nit: [6], month: 10, day: 17, description: 'Retefuente Sep' }, { nit: [6], month: 11, day: 20, description: 'Retefuente Oct' }, { nit: [6], month: 12, day: 17, description: 'Retefuente Nov' },
-                            { nit: [7], month: 2, day: 19, description: 'Retefuente Ene' }, { nit: [7], month: 3, day: 19, description: 'Retefuente Feb' }, { nit: [7], month: 4, day: 21, description: 'Retefuente Mar' }, { nit: [7], month: 5, day: 20, description: 'Retefuente Abr' }, { nit: [7], month: 6, day: 19, description: 'Retefuente May' }, { nit: [7], month: 7, day: 17, description: 'Retefuente Jun' }, { nit: [7], month: 8, day: 21, description: 'Retefuente Jul' }, { nit: [7], month: 9, day: 17, description: 'Retefuente Ago' }, { nit: [7], month: 10, day: 20, description: 'Retefuente Sep' }, { nit: [7], month: 11, day: 21, description: 'Retefuente Oct' }, { nit: [7], month: 12, day: 18, description: 'Retefuente Nov' },
-                            { nit: [8], month: 2, day: 20, description: 'Retefuente Ene' }, { nit: [8], month: 3, day: 20, description: 'Retefuente Feb' }, { nit: [8], month: 4, day: 22, description: 'Retefuente Mar' }, { nit: [8], month: 5, day: 21, description: 'Retefuente Abr' }, { nit: [8], month: 6, day: 20, description: 'Retefuente May' }, { nit: [8], month: 7, day: 18, description: 'Retefuente Jun' }, { nit: [8], month: 8, day: 22, description: 'Retefuente Jul' }, { nit: [8], month: 9, day: 18, description: 'Retefuente Ago' }, { nit: [8], month: 10, day: 21, description: 'Retefuente Sep' }, { nit: [8], month: 11, day: 24, description: 'Retefuente Oct' }, { nit: [8], month: 12, day: 19, description: 'Retefuente Nov' },
-                            { nit: [9], month: 2, day: 21, description: 'Retefuente Ene' }, { nit: [9], month: 3, day: 21, description: 'Retefuente Feb' }, { nit: [9], month: 4, day: 23, description: 'Retefuente Mar' }, { nit: [9], month: 5, day: 22, description: 'Retefuente Abr' }, { nit: [9], month: 6, day: 24, description: 'Retefuente May' }, { nit: [9], month: 7, day: 21, description: 'Retefuente Jun' }, { nit: [9], month: 8, day: 25, description: 'Retefuente Jul' }, { nit: [9], month: 9, day: 19, description: 'Retefuente Ago' }, { nit: [9], month: 10, day: 22, description: 'Retefuente Sep' }, { nit: [9], month: 11, day: 25, description: 'Retefuente Oct' }, { nit: [9], month: 12, day: 22, description: 'Retefuente Nov' },
-                            { nit: [0], month: 2, day: 24, description: 'Retefuente Ene' }, { nit: [0], month: 3, day: 25, description: 'Retefuente Feb' }, { nit: [0], month: 4, day: 24, description: 'Retefuente Mar' }, { nit: [0], month: 5, day: 23, description: 'Retefuente Abr' }, { nit: [0], month: 6, day: 25, description: 'Retefuente May' }, { nit: [0], month: 7, day: 22, description: 'Retefuente Jun' }, { nit: [0], month: 8, day: 26, description: 'Retefuente Jul' }, { nit: [0], month: 9, day: 22, description: 'Retefuente Ago' }, { nit: [0], month: 10, day: 23, description: 'Retefuente Sep' }, { nit: [0], month: 11, day: 26, description: 'Retefuente Oct' }, { nit: [0], month: 12, day: 23, description: 'Retefuente Nov' },
-            ]
-        },
-        'persona_natural': {
-            'renta': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración y pago Renta' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración y pago Renta' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración y pago Renta' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración y pago Renta' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración y pago Renta' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración y pago Renta' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración y pago Renta' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración y pago Renta' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración y pago Renta' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración y pago Renta' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración y pago Renta' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración y pago Renta' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración y pago Renta' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración y pago Renta' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración y pago Renta' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración y pago Renta' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración y pago Renta' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración y pago Renta' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración y pago Renta' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración y pago Renta' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración y pago Renta' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración y pago Renta' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración y pago Renta' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración y pago Renta' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración y pago Renta' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración y pago Renta' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración y pago Renta' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración y pago Renta' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración y pago Renta' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración y pago Renta' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración y pago Renta' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración y pago Renta' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración y pago Renta' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración y pago Renta' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración y pago Renta' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración y pago Renta' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración y pago Renta' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración y pago Renta' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración y pago Renta' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración y pago Renta' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración y pago Renta' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración y pago Renta' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración y pago Renta' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración y pago Renta' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración y pago Renta' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración y pago Renta' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración y pago Renta' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración y pago Renta' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración y pago Renta' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración y pago Renta' },
-            ],
-            'activos_exterior': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración Activos en el Exterior' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración Activos en el Exterior' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración Activos en el Exterior' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración Activos en el Exterior' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración Activos en el Exterior' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración Activos en el Exterior' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración Activos en el Exterior' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración Activos en el Exterior' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración Activos en el Exterior' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración Activos en el Exterior' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración Activos en el Exterior' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración Activos en el Exterior' },
-            ]
-        },
-        'persona_no_residente': {
-            'pagos_pes': [
-                { nit: ['all'], month: 3, day: 14, description: 'Pago anticipado PES (Ene-Feb)' },
-                { nit: ['all'], month: 5, day: 15, description: 'Pago anticipado PES (Mar-Abr)' },
-                { nit: ['all'], month: 7, day: 14, description: 'Pago anticipado PES (May-Jun)' },
-                { nit: ['all'], month: 9, day: 12, description: 'Pago anticipado PES (Jul-Ago)' },
-                { nit: ['all'], month: 11, day: 18, description: 'Pago anticipado PES (Sep-Oct)' },
-            ],
-            'declaracion_pes': [
-                { nit: ['all'], month: 4, day: 22, description: 'Declaración anual PES' }
-            ]
-        }
-    },
-    '2026': {
-        'persona_juridica': {
-            'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-            'retencion_fuente': [
-                { nit: [1], month: 1, day: 13, description: 'Retefuente Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'Retefuente Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'Retefuente Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'Retefuente Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'Retefuente Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'Retefuente Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'Retefuente Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'Retefuente Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'Retefuente Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'Retefuente Dic 2025' },
-            ]
-        },
-        'gran_contribuyente': {
-             'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-        },
-        'persona_no_residente': {
-             'pagos_pes': [
-                { nit: ['all'], month: 1, day: 16, description: 'Pago anticipado PES (Nov-Dic 2025)' }
-            ]
-        }
-    }
-};
+        // --- NAVEGACIÓN GLOBAL ---
+        const showForm = (formId) => {
+            document.querySelectorAll('.form-container, .step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step-0').classList.remove('active');
 
-            // --- STATE & DOM ELEMENTS ---
-            let currentDate = new Date(2025, 0, 1);
-            let filteredEvents = [];
-            let isProUser = false;
+            const targetEl = document.getElementById(formId);
+            if (targetEl) {
+                targetEl.classList.add('active');
+                 if (formId === 'form-2593') {
+                    showStepInForm('form-2593', 1);
+                } else if (formId === 'form-260') {
+                    showStepInForm('form-260', 1);
+                }
+            } else {
+                document.getElementById('step-0').classList.add('active');
+            }
+        };
 
-            const form = document.getElementById('taxForm');
-            const taxpayerTypeEl = document.getElementById('taxpayerType');
-            const nitInputEl = document.getElementById('nitInput');
-            const foreignAssetsEl = document.getElementById('foreignAssets');
-            const downloadPdfBtn = document.getElementById('downloadPdf');
+        const showStepInForm = (formId, stepNumber) => {
+            const form = document.getElementById(formId);
+            if(form) {
+                form.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+                const nextStep = form.querySelector(`#step-${formId.split('-')[1]}-${stepNumber}`);
+                if (nextStep) nextStep.classList.add('active');
+            }
+        };
 
-            const calendarEl = document.getElementById('calendar');
-            const monthYearEl = document.getElementById('monthYear');
-            const prevMonthBtn = document.getElementById('prevMonth');
-            const nextMonthBtn = document.getElementById('nextMonth');
-            const resultsEl = document.getElementById('results');
+        const UVT_2024 = 47065;
+        const TARIFAS_SIMPLE_GLOBAL = {
+            grupo1: { nombre: "Tiendas pequeñas, minimercados, micromercados y peluquería", rangos: [ { desde: 0, hasta: 6000, tarifa: 0.020 }, { desde: 6000, hasta: 15000, tarifa: 0.028 }, { desde: 15000, hasta: 30000, tarifa: 0.081 }, { desde: 30000, hasta: 100000, tarifa: 0.116 } ]},
+            grupo2: { nombre: "Actividades comerciales al por mayor y detal; servicios técnicos y mecánicos...", rangos: [ { desde: 0, hasta: 6000, tarifa: 0.018 }, { desde: 6000, hasta: 15000, tarifa: 0.022 }, { desde: 15000, hasta: 30000, tarifa: 0.039 }, { desde: 30000, hasta: 100000, tarifa: 0.054 } ]},
+            grupo3: { nombre: "Servicios profesionales, de consultoría y científicos...", rangos: [ { desde: 0, hasta: 6000, tarifa: 0.073 }, { desde: 6000, hasta: 15000, tarifa: 0.083 }, { desde: 15000, hasta: 30000, tarifa: 0.126 }, { desde: 30000, hasta: 100000, tarifa: 0.145 } ]},
+            grupo4: { nombre: "Actividades de expendio de comidas y bebidas, y actividades de transporte", rangos: [ { desde: 0, hasta: 6000, tarifa: 0.034 }, { desde: 6000, hasta: 15000, tarifa: 0.038 }, { desde: 15000, hasta: 30000, tarifa: 0.055 }, { desde: 30000, hasta: 100000, tarifa: 0.070 } ]}
+        };
 
-            const toastEl = document.getElementById('toast');
-            const toastMessageEl = document.getElementById('toast-message');
+        document.addEventListener('DOMContentLoaded', function() {
+            const cleaveInstances = {};
+            let municipioCounter = 0;
+            const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Math.round(value));
+            const getCleaveValue = (id) => cleaveInstances[id] ? parseFloat(cleaveInstances[id].getRawValue()) || 0 : 0;
 
-            // --- FUNCTIONS ---
-
-            const showToast = (message, isError = false) => {
-                toastMessageEl.textContent = message;
-                toastEl.className = `toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-600'} show`;
-                setTimeout(() => {
-                    toastEl.classList.remove('show');
-                }, 4000);
+            const initializeCleave = (elementId, isRate = false) => {
+                if(document.getElementById(elementId)) {
+                    const options = isRate
+                        ? { numeral: true, numeralPositiveOnly: true, numeralDecimalScale: 6, numeralDecimalMark: ',', delimiter: '' }
+                        : { numeral: true, numeralPositiveOnly: true, numeralThousandsGroupStyle: 'thousand', numeralDecimalMark: ',', delimiter: '.' };
+                    cleaveInstances[elementId] = new Cleave(`#${elementId}`, options);
+                }
             };
 
-            const renderCalendar = () => {
-                calendarEl.innerHTML = '';
-                const month = currentDate.getMonth();
-                const year = currentDate.getFullYear();
+            const allInputIds = [
+                'ingresos-2593', 'aportes-pension-2593', 'ingresos-no-renta-2593', 'retenciones-previas-2593', 'excedente-simple-anterior-2593',
+                'iva-generado-2593', 'iva-descontable-2593', 'excedente-iva-anterior-2593', 'retenciones-iva-2593',
+                'ingresos-inc-2593', 'excedente-inc-anterior-2593',
+                'ingresos-g1-260', 'ingresos-g2-260', 'ingresos-g3-260', 'ingresos-g4-260',
+                'patrimonio-bruto-260', 'pasivos-260'
+            ];
+            allInputIds.forEach(id => initializeCleave(id));
 
-                monthYearEl.textContent = new Date(year, month).toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            // --- LISTENERS DE NAVEGACIÓN ---
+            document.getElementById('btn-goto-2593').addEventListener('click', () => showForm('form-2593'));
+            document.getElementById('btn-goto-260').addEventListener('click', () => showForm('form-260'));
+            document.getElementById('btn-goto-planeacion').addEventListener('click', () => showForm('form-planeacion'));
+            document.getElementById('btn-goto-info').addEventListener('click', () => showForm('info-inscripcion'));
 
-                const firstDayOfMonth = new Date(year, month, 1).getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
+            document.querySelectorAll('.btn-back').forEach(btn => {
+                btn.addEventListener('click', (e) => showForm(e.target.dataset.target || 'step-0'));
+            });
 
-                const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                dayHeaders.forEach(day => {
-                    const dayEl = document.createElement('div');
-                    dayEl.className = 'font-bold text-gray-600 text-sm';
-                    dayEl.textContent = day;
-                    calendarEl.appendChild(dayEl);
+            document.querySelectorAll('.btn-recalculate').forEach(btn => {
+                btn.addEventListener('click', (e) => showStepInForm(e.target.dataset.form, e.target.dataset.step));
+            });
+
+            // --- LÓGICA FORMULARIO 2593 ---
+            const select2593 = document.getElementById('ciiu-group-2593');
+            if (select2593) {
+                select2593.innerHTML = '<option value="" disabled selected>-- Selecciona un grupo --</option>';
+                for (const key in TARIFAS_SIMPLE_GLOBAL) {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = TARIFAS_SIMPLE_GLOBAL[key].nombre;
+                    select2593.appendChild(option);
+                }
+            }
+
+            document.getElementById('btn-calculate-2593').addEventListener('click', () => {
+                const ingresos = getCleaveValue('ingresos-2593');
+                if (ingresos === 0) {
+                    alert('Por favor, ingresa un valor de ingresos.');
+                    return;
+                }
+
+                // Componente SIMPLE
+                const ingresosNoRenta = getCleaveValue('ingresos-no-renta-2593');
+                const pensiones = getCleaveValue('aportes-pension-2593');
+                const grupoKey = select2593.value;
+                const ingresosNetos = ingresos - ingresosNoRenta;
+                const ingresosAnualesEstimados = ingresos * 6;
+                const ingresosUVT = ingresosAnualesEstimados / UVT_2024;
+                const grupoTarifas = TARIFAS_SIMPLE_GLOBAL[grupoKey];
+                let tarifaAplicada = 0;
+                if(grupoTarifas) {
+                    for (const rango of grupoTarifas.rangos) {
+                       if (ingresosUVT >= rango.desde && ingresosUVT < rango.hasta) {
+                           tarifaAplicada = rango.tarifa;
+                           break;
+                       }
+                    }
+                    if(tarifaAplicada === 0 && grupoTarifas.rangos.length > 0) tarifaAplicada = grupoTarifas.rangos[grupoTarifas.rangos.length - 1].tarifa;
+                }
+                const anticipoBruto = ingresosNetos * tarifaAplicada;
+                const descuentoPensiones = Math.min(pensiones, anticipoBruto);
+                const anticipoNeto = anticipoBruto - descuentoPensiones;
+
+                // Componente ICA
+                let totalIcaPagar = 0;
+                let icaResultsHTML = '';
+                document.querySelectorAll('.municipio-group').forEach((group, index) => {
+                    const ingresosMunicipio = getCleaveValue(`ingresos-ica-${index}`);
+                    const tarifaIca = getCleaveValue(`tarifa-ica-${index}`) / 1000;
+                    const icaMunicipio = ingresosMunicipio * tarifaIca;
+                    totalIcaPagar += icaMunicipio;
+                    icaResultsHTML += `<tr><td>ICA Municipio ${index + 1}:</td><td class="text-right">${formatCurrency(icaMunicipio)}</td></tr>`;
                 });
 
-                for (let i = 0; i < firstDayOfMonth; i++) {
-                    calendarEl.appendChild(document.createElement('div'));
-                }
+                // Componente IVA
+                const ivaGenerado = getCleaveValue('iva-generado-2593');
+                const ivaDescontable = getCleaveValue('iva-descontable-2593');
+                const saldoFavorAnteriorIva = getCleaveValue('excedente-iva-anterior-2593');
+                const retencionesIva = getCleaveValue('retenciones-iva-2593');
+                const saldoPagarIva = ivaGenerado - ivaDescontable - saldoFavorAnteriorIva - retencionesIva;
 
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dayEl = document.createElement('div');
-                    dayEl.textContent = day;
-                    dayEl.className = 'calendar-day p-2 cursor-pointer hover:bg-blue-100 rounded-full transition';
+                // Componente INC
+                const ingresosInc = getCleaveValue('ingresos-inc-2593');
+                const impuestoConsumo = ingresosInc * 0.08;
 
-                    const hasEvent = filteredEvents.some(event => event.day === day && event.month === month + 1 && event.year === year);
-                    if (hasEvent) {
-                        dayEl.classList.add('has-event');
-                    }
-                    calendarEl.appendChild(dayEl);
-                }
-            };
+                const totalPagar = anticipoNeto + totalIcaPagar + Math.max(0, saldoPagarIva) + impuestoConsumo;
 
-            const displayResults = () => {
-                resultsEl.innerHTML = '';
-                if (filteredEvents.length === 0) {
-                    resultsEl.innerHTML = '<p class="text-gray-500">No se encontraron obligaciones para los filtros seleccionados.</p>';
-                    return;
-                }
-
-                const groupedByMonthAndYear = filteredEvents.reduce((acc, event) => {
-                    const key = `${event.year}-${String(event.month).padStart(2, '0')}`;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            monthName: new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'long' }),
-                            year: event.year,
-                            events: []
-                        };
-                    }
-                    acc[key].events.push(event);
-                    return acc;
-                }, {});
-
-                Object.values(groupedByMonthAndYear).sort((a,b) => a.year - b.year || a.events[0].month - b.events[0].month).forEach(group => {
-                    const monthContainer = document.createElement('div');
-                    const monthTitle = document.createElement('h4');
-                    monthTitle.className = 'font-bold text-lg mt-4 capitalize';
-                    monthTitle.textContent = `${group.monthName} ${group.year}`;
-                    monthContainer.appendChild(monthTitle);
-
-                    const eventsContainer = document.createElement('div');
-                    eventsContainer.className = 'space-y-3 mt-2';
-
-                    group.events.sort((a, b) => a.day - b.day).forEach(event => {
-                        const eventEl = document.createElement('div');
-                        eventEl.className = 'flex items-center gap-4 p-3 bg-gray-50 rounded-lg';
-
-                        let googleButton = '';
-                        if (isProUser) {
-                           googleButton = `<button data-event='${JSON.stringify(event)}' title="Añadir a Google Calendar" class="google-btn flex-shrink-0 bg-white border border-gray-300 text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 16h-4v-4h4v4z"/></svg>
-                            </button>`;
-                        }
-
-                        eventEl.innerHTML = `
-                            <div class="flex-shrink-0 bg-blue-100 text-blue-700 rounded-lg w-12 h-12 flex flex-col items-center justify-center">
-                                <span class="font-bold text-xl">${event.day}</span>
-                                <span class="text-xs uppercase">${new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'short' })}</span>
-                            </div>
-                            <div class="flex-grow">
-                                <p class="font-semibold">${event.description}</p>
-                                <p class="text-sm text-gray-500">Fecha Límite: ${event.day} de ${group.monthName} de ${event.year}</p>
-                            </div>
-                            ${googleButton}
-                        `;
-                        eventsContainer.appendChild(eventEl);
-                    });
-                    monthContainer.appendChild(eventsContainer);
-                    resultsEl.appendChild(monthContainer);
-                });
-            };
-
-            const handleGenerateSchedule = (e) => {
-                e.preventDefault();
-                const taxpayerType = taxpayerTypeEl.value;
-                const nit = nitInputEl.value;
-
-                if (taxpayerType !== 'persona_no_residente' && (nit === '' || !/^\d+$/.test(nit))) {
-                    showToast('Por favor, ingresa un NIT válido (solo números).', true);
-                    return;
-                }
-
-                const lastDigit = parseInt(nit.slice(-1), 10);
-                const lastTwoDigits = parseInt(nit.slice(-2), 10);
-                let events = [];
-                const categoriesToProcess = new Set();
-
-                // Determine categories based on taxpayer type and form inputs
-                if (taxpayerType === 'persona_no_residente') {
-                    categoriesToProcess.add('pagos_pes').add('declaracion_pes');
-                } else {
-                    categoriesToProcess.add('renta');
-                    if (document.getElementById('foreignAssets').checked) {
-                        categoriesToProcess.add('activos_exterior');
-                    }
-                }
-
-                if (taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente') {
-                    const ivaFrequency = document.querySelector('input[name="iva-frequency"]:checked').value;
-                    categoriesToProcess.add(ivaFrequency === 'bimestral' ? 'iva_bimestral' : 'iva_cuatrimestral');
-
-                    if (taxpayerType === 'persona_juridica') {
-                        categoriesToProcess.add('retencion_fuente');
-                    }
-
-                    if (document.getElementById('consumo').checked) categoriesToProcess.add('consumo');
-                    if (document.getElementById('bolsas').checked) categoriesToProcess.add('bolsas');
-                    if (document.getElementById('gasolina').checked) categoriesToProcess.add('gasolina');
-                    if (document.getElementById('carbono').checked) categoriesToProcess.add('carbono');
-                    if (document.getElementById('transferencia').checked) categoriesToProcess.add('precios_transferencia');
-                    if (document.getElementById('iva_exterior').checked) categoriesToProcess.add('iva_exterior');
-                    if (document.getElementById('patrimonio').checked) categoriesToProcess.add('patrimonio');
-                    if (document.getElementById('plasticos_uso_unico').checked) categoriesToProcess.add('plasticos_uso_unico');
-                    if (document.getElementById('bebidas_ultraprocesadas').checked) categoriesToProcess.add('bebidas_ultraprocesadas');
-                    if (document.getElementById('rub').checked) categoriesToProcess.add('rub');
-
-                    if (document.getElementById('rst').checked) {
-                        const rstType = document.querySelector('input[name="rst-type"]:checked').value;
-                        categoriesToProcess.add(rstType === 'anual' ? 'rst_anual' : 'rst_anticipo');
-                    }
-                }
-
-                for (const year in taxData) {
-                    if (!taxData.hasOwnProperty(year)) continue;
-                    const yearData = taxData[year];
-
-                    if (yearData[taxpayerType]) {
-                        const obligations = yearData[taxpayerType];
-                        categoriesToProcess.forEach(category => {
-                            if (obligations[category]) {
-                                obligations[category].forEach(event => {
-                                    const eventWithYear = { ...event, year: parseInt(year) };
-                                    let match = false;
-                                    if (taxpayerType === 'persona_no_residente') {
-                                        match = true;
-                                    } else if (taxpayerType === 'persona_natural') {
-                                        if (event.nit.includes(lastTwoDigits)) match = true;
-                                    } else {
-                                        if (event.nit.includes(lastDigit)) match = true;
-                                    }
-                                    if(match) events.push(eventWithYear);
-                                });
-                            }
-                        });
-                    }
-                }
-
-                // Deduplicate events as some obligations share dates (e.g. Renta and Activos)
-                const uniqueEvents = new Map();
-                events.forEach(event => {
-                    const key = `${event.year}-${event.month}-${event.day}-${event.description}`;
-                    uniqueEvents.set(key, event);
-                });
-                filteredEvents = Array.from(uniqueEvents.values());
-
-                if (filteredEvents.length > 0) {
-                    showToast(`Agenda generada con ${filteredEvents.length} obligaciones.`);
-                } else {
-                    showToast('No se encontraron obligaciones para tu selección.', true);
-                }
-                renderCalendar();
-                displayResults();
-            };
-
-            const handleDownloadPdf = () => {
-                if (filteredEvents.length === 0) {
-                    showToast('Primero genera una agenda para poder descargar el PDF.', true);
-                    return;
-                }
-
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    console.error("PDF generation libraries not found on window object.");
-                    showToast("Error al generar PDF: librerías no encontradas.", true);
-                    return;
-                }
-
-                const { jsPDF } = window.jspdf;
-                const html2canvas = window.html2canvas;
-                const pdfContentEl = document.getElementById('pdf-content');
-
-                pdfContentEl.innerHTML = '';
-                const titleContainer = document.createElement('div');
-                titleContainer.className = 'text-center mb-6';
-                titleContainer.innerHTML = `
-                    <h1 class="text-3xl font-bold text-gray-800">AGENDA TRIBUTARIA</h1>
-                    <h2 class="text-xl text-gray-600">COLOMBIA 2025 - 2026</h2>
-                    <p class="text-sm text-gray-500 mt-1">NIT Termina en: ${nitInputEl.value.slice(-2)} (${taxpayerTypeEl.options[taxpayerTypeEl.selectedIndex].text})</p>
+                document.getElementById('results-content-2593').innerHTML = `
+                    <div class="border-b pb-4">
+                        <h4 class="font-bold text-lg mb-2">Componente SIMPLE</h4>
+                        <table class="w-full text-left" id="tabla-resultados-2593-simple">
+                            <tr><td class="py-1">Ingresos Brutos del Bimestre:</td><td class="text-right font-semibold">${formatCurrency(ingresos)}</td></tr>
+                            <tr><td class="py-1">(-) Ingresos No Constitutivos de Renta:</td><td class="text-right font-semibold">-${formatCurrency(ingresosNoRenta)}</td></tr>
+                            <tr class="border-t"><td class="py-1 font-bold">Total Ingresos Netos:</td><td class="text-right font-bold">${formatCurrency(ingresosNetos)}</td></tr>
+                            <tr><td class="py-1">Tarifa SIMPLE aplicada:</td><td class="text-right font-semibold">${(tarifaAplicada * 100).toFixed(2)}%</td></tr>
+                            <tr><td class="py-1">Anticipo SIMPLE:</td><td class="text-right font-semibold">${formatCurrency(anticipoBruto)}</td></tr>
+                            <tr><td class="py-1">(-) Descuento Aportes Pensión:</td><td class="text-right font-semibold text-green-600">-${formatCurrency(descuentoPensiones)}</td></tr>
+                            <tr class="border-t"><td class="py-2 font-bold">Anticipo Neto SIMPLE:</td><td class="text-right font-bold text-lg">${formatCurrency(anticipoNeto)}</td></tr>
+                        </table>
+                    </div>
+                     <div class="border-b py-4">
+                        <h4 class="font-bold text-lg mb-2">Componente ICA</h4>
+                        <table class="w-full text-left" id="tabla-resultados-2593-ica">
+                            ${icaResultsHTML}
+                            <tr class="border-t"><td class="py-2 font-bold">Total Anticipo ICA:</td><td class="text-right font-bold text-lg">${formatCurrency(totalIcaPagar)}</td></tr>
+                        </table>
+                    </div>
+                     <div class="border-b py-4">
+                        <h4 class="font-bold text-lg mb-2">Componente IVA</h4>
+                        <table class="w-full text-left" id="tabla-resultados-2593-iva">
+                            <tr><td class="py-1">IVA Generado:</td><td class="text-right">${formatCurrency(ivaGenerado)}</td></tr>
+                            <tr><td class="py-1">(-) IVA Descontable:</td><td class="text-right">-${formatCurrency(ivaDescontable)}</td></tr>
+                            <tr><td class="py-1">(-) Saldo a favor anterior:</td><td class="text-right">-${formatCurrency(saldoFavorAnteriorIva)}</td></tr>
+                            <tr><td class="py-1">(-) Retenciones de IVA:</td><td class="text-right">-${formatCurrency(retencionesIva)}</td></tr>
+                            <tr class="border-t"><td class="py-2 font-bold">Total Saldo a Pagar IVA:</td><td class="text-right font-bold text-lg">${formatCurrency(saldoPagarIva)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="border-b py-4">
+                        <h4 class="font-bold text-lg mb-2">Componente INC</h4>
+                         <table class="w-full text-left" id="tabla-resultados-2593-inc">
+                            <tr><td class="py-1">Impuesto al Consumo (8%):</td><td class="text-right font-bold text-lg">${formatCurrency(impuestoConsumo)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="pt-4 bg-blue-50 -m-6 p-6 rounded-b-lg">
+                        <h4 class="font-bold text-xl mb-2 text-center text-blue-800">TOTAL CONSOLIDADO A PAGAR</h4>
+                        <p class="text-center text-3xl font-bold text-blue-700">${formatCurrency(totalPagar)}</p>
+                    </div>
                 `;
-                pdfContentEl.appendChild(titleContainer);
+                showStepInForm('form-2593', 2);
+            });
 
-                const calendarGrid = document.createElement('div');
-                calendarGrid.className = 'grid grid-cols-4 gap-2';
-
-                const monthsToRender = Array.from({ length: 13 }, (_, i) => {
-                    const date = new Date(2025, i, 1);
-                    return { month: date.getMonth(), year: date.getFullYear() };
-                });
-
-                monthsToRender.forEach(({ month, year }) => {
-                    const monthContainer = document.createElement('div');
-                    monthContainer.className = 'border border-gray-200 p-1';
-                    const monthName = new Date(year, month).toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-
-                    let monthHTML = `<h3 class="text-center font-bold bg-gray-700 text-white py-1 text-[10px]">${monthName} ${year}</h3>`;
-                    monthHTML += `<div class="grid grid-cols-7 text-center text-[8px] gap-px">`;
-
-                    const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-                    dayHeaders.forEach(d => monthHTML += `<div class="font-bold">${d}</div>`);
-
-                    const firstDayOfMonth = new Date(year, month, 1).getDay();
-                    for (let i = 0; i < firstDayOfMonth; i++) {
-                        monthHTML += '<div></div>';
-                    }
-
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
-                        if (dayEvents.length > 0) {
-                            const eventType = getEventType(dayEvents[0].description);
-                            monthHTML += `
-                                <div class="relative w-6 h-6 mx-auto flex items-center justify-center text-[9px]">
-                                    <div class="absolute border-2 border-red-500 rounded-full w-full h-full"></div>
-                                    <div class="absolute -top-1.5 text-white text-[7px] px-1 rounded-full ${eventType.color}">
-                                        ${eventType.label}
-                                    </div>
-                                    ${day}
-                                </div>`;
-                        } else {
-                            monthHTML += `<div class="w-6 h-6 mx-auto flex items-center justify-center text-[9px]">${day}</div>`;
-                        }
-                    }
-                    monthHTML += `</div>`;
-                    monthContainer.innerHTML = monthHTML;
-                    calendarGrid.appendChild(monthContainer);
-                });
-
-                pdfContentEl.appendChild(calendarGrid);
-
-                showToast("Generando PDF... por favor espera.", false);
-                html2canvas(pdfContentEl, { scale: 3 })
-                    .then((canvas) => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF('p', 'mm', 'a4');
-                        const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const canvasWidth = canvas.width;
-                        const canvasHeight = canvas.height;
-                        const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
-                        pdf.addImage(imgData, 'PNG', 5, 5, pdfWidth - 10, pdfHeight - 5);
-                        pdf.save(`agenda-tributaria-${nitInputEl.value || 'pes'}.pdf`);
-                    });
+            const addMunicipioICA = () => {
+                const container = document.getElementById('ica-municipios-container');
+                const newMunicipio = document.createElement('div');
+                newMunicipio.className = 'municipio-group grid grid-cols-2 gap-4 border-t pt-4 mt-4';
+                newMunicipio.innerHTML = `
+                    <div class="input-group"><label for="ingresos-ica-${municipioCounter}" class="input-label">Ingresos Municipio ${municipioCounter + 1}</label><input type="text" id="ingresos-ica-${municipioCounter}" class="input-field text-right" placeholder="0"></div>
+                    <div class="input-group"><label for="tarifa-ica-${municipioCounter}" class="input-label">Tarifa ICA (x 1000)</label><input type="text" id="tarifa-ica-${municipioCounter}" class="input-field text-right" placeholder="0.0"></div>
+                `;
+                container.appendChild(newMunicipio);
+                initializeCleave(`ingresos-ica-${municipioCounter}`);
+                initializeCleave(`tarifa-ica-${municipioCounter}`, true);
+                municipioCounter++;
             };
+            document.getElementById('btn-add-municipio').addEventListener('click', addMunicipioICA);
 
-            const getEventType = (description) => {
-                const desc = description.toLowerCase();
-                if (desc.includes('renta')) return { label: 'RENTA', color: 'bg-blue-500' };
-                if (desc.includes('iva')) return { label: 'IVA', color: 'bg-green-500' };
-                if (desc.includes('retefuente')) return { label: 'RETEF.', color: 'bg-red-500' };
-                if (desc.includes('activos')) return { label: 'ACTIVOS', color: 'bg-yellow-400' };
-                if (desc.includes('pes')) return { label: 'PES', color: 'bg-purple-500' };
-                if (desc.includes('consumo')) return { label: 'CONSUMO', color: 'bg-pink-500' };
-                if (desc.includes('carbono')) return { label: 'CARBONO', color: 'bg-gray-600' };
-                if (desc.includes('gasolina')) return { label: 'GAS', color: 'bg-orange-500' };
-                if (desc.includes('bolsas')) return { label: 'BOLSAS', color: 'bg-teal-500' };
-                if (desc.includes('transferencia')) return { label: 'TRANSF', color: 'bg-indigo-500' };
-                if (desc.includes('patrimonio')) return { label: 'PATRIM', color: 'bg-cyan-500' };
-                if (desc.includes('plasticos')) return { label: 'PLAST', color: 'bg-lime-500' };
-                if (desc.includes('bebidas')) return { label: 'BEBIDAS', color: 'bg-rose-500' };
-                if (desc.includes('rub')) return { label: 'RUB', color: 'bg-fuchsia-500' };
-                if (desc.includes('rst')) return { label: 'RST', color: 'bg-sky-500' };
-                return { label: 'OTRO', color: 'bg-gray-400' };
-            };
 
-            const handleCalendarNav = (direction) => {
-                currentDate.setMonth(currentDate.getMonth() + direction);
-                if (currentDate > new Date(2026, 0, 31) || currentDate < new Date(2025, 0, 1)) {
-                    currentDate.setMonth(currentDate.getMonth() - direction);
+            // --- LÓGICA FORMULARIO 260 ---
+            document.getElementById('btn-calculate-260').addEventListener('click', () => {
+                 const ingresos = Object.keys(TARIFAS_SIMPLE_GLOBAL).reduce((acc, key, index) => {
+                    const value = getCleaveValue(`ingresos-g${index + 1}-260`);
+                    if(value > 0) acc[key] = value;
+                    return acc;
+                 }, {});
+
+                 const patrimonioBruto = getCleaveValue('patrimonio-bruto-260');
+                 const pasivos = getCleaveValue('pasivos-260');
+                 const patrimonioLiquido = patrimonioBruto - pasivos;
+
+                 if(Object.keys(ingresos).length === 0) {
+                    alert('Por favor, ingresa un valor en al menos un grupo de ingresos.');
                     return;
+                 }
+
+                 const totalIngresos = Object.values(ingresos).reduce((sum, val) => sum + val, 0);
+                 const ingresosUVT = totalIngresos / UVT_2024;
+
+                 let tarifaAplicada = 0;
+                 let grupoPrincipalKey = Object.keys(ingresos).sort((a,b) => ingresos[b] - ingresos[a])[0];
+                 const grupoTarifas = TARIFAS_SIMPLE_GLOBAL[grupoPrincipalKey];
+
+                 for (const rango of grupoTarifas.rangos) {
+                   if (ingresosUVT >= rango.desde && ingresosUVT < rango.hasta) {
+                       tarifaAplicada = rango.tarifa;
+                       break;
+                   }
                 }
-                renderCalendar();
-            };
+                if(tarifaAplicada === 0 && grupoTarifas.rangos.length > 0) tarifaAplicada = grupoTarifas.rangos[grupoTarifas.rangos.length - 1].tarifa;
 
-            const checkProStatus = () => {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('payment') === 'success') {
-                    localStorage.setItem('isProUser', 'true');
-                    isProUser = true;
-                    showToast('¡Pago exitoso! Funciones Pro activadas.');
-                    window.history.replaceState(null, '', window.location.pathname);
-                } else {
-                    isProUser = localStorage.getItem('isProUser') === 'true';
-                }
+                 const impuestoAnual = totalIngresos * tarifaAplicada;
 
-                if(isProUser) {
-                    document.getElementById('pro-section').classList.add('hidden');
-                    document.getElementById('pro-activated-section').classList.remove('hidden');
-                }
-            };
-
-            const updateFormUI = () => {
-                const taxpayerType = taxpayerTypeEl.value;
-                const companyQuestionsEl = document.getElementById('company-questions');
-                const foreignAssetsContainerEl = document.getElementById('foreignAssets').parentElement;
-
-                document.getElementById('nit-section').style.display = taxpayerType === 'persona_no_residente' ? 'none' : 'block';
-                document.getElementById('pes-section').style.display = taxpayerType === 'persona_no_residente' ? 'block' : 'none';
-
-                const showCompanyQuestions = taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente';
-                companyQuestionsEl.style.display = showCompanyQuestions ? 'block' : 'none';
-
-                foreignAssetsContainerEl.style.display = 'flex';
-            };
-
-            // --- EVENT LISTENERS ---
-            form.addEventListener('submit', handleGenerateSchedule);
-            downloadPdfBtn.addEventListener('click', handleDownloadPdf);
-            prevMonthBtn.addEventListener('click', () => handleCalendarNav(-1));
-            nextMonthBtn.addEventListener('click', () => handleCalendarNav(1));
-            taxpayerTypeEl.addEventListener('change', updateFormUI);
-
-            document.getElementById('rst').addEventListener('change', (e) => {
-                document.getElementById('rst-options').style.display = e.target.checked ? 'block' : 'none';
+                 document.getElementById('results-content-260').innerHTML = `
+                    <div class="border-b pb-4">
+                        <h4 class="font-bold text-lg mb-2">Patrimonio</h4>
+                        <table class="w-full text-left" id="tabla-resultados-260-patrimonio">
+                            <tr><td class="py-1">Patrimonio Bruto:</td><td class="text-right font-semibold">${formatCurrency(patrimonioBruto)}</td></tr>
+                            <tr><td class="py-1">(-) Pasivos:</td><td class="text-right font-semibold">-${formatCurrency(pasivos)}</td></tr>
+                            <tr class="border-t"><td class="py-2 font-bold">Patrimonio Líquido:</td><td class="text-right font-bold text-lg">${formatCurrency(patrimonioLiquido)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="pt-4">
+                        <h4 class="font-bold text-lg mb-2">Liquidación Impuesto</h4>
+                        <table class="w-full text-left" id="tabla-resultados-260-impuesto">
+                            <tr><td class="py-1">Total Ingresos Brutos Anuales:</td><td class="text-right font-semibold">${formatCurrency(totalIngresos)}</td></tr>
+                            <tr><td class="py-1">Grupo Principal:</td><td class="text-right font-semibold">${grupoTarifas.nombre}</td></tr>
+                            <tr><td class="py-1">Tarifa SIMPLE Consolidada:</td><td class="text-right font-semibold">${(tarifaAplicada * 100).toFixed(2)}%</td></tr>
+                            <tr class="border-t"><td class="py-2 font-bold">Impuesto Anual SIMPLE:</td><td class="text-right font-bold text-lg">${formatCurrency(impuestoAnual)}</td></tr>
+                        </table>
+                    </div>
+                 `;
+                 showStepInForm('form-260', 2);
             });
 
-            resultsEl.addEventListener('click', function(e) {
-                const button = e.target.closest('.google-btn');
-                if (button) {
-                    const eventData = JSON.parse(button.dataset.event);
-                    const taxpayerType = taxpayerTypeEl.value;
-                    const nit = nitInputEl.value;
-
-                    const year = eventData.year;
-                    const month = String(eventData.month).padStart(2, '0');
-                    const day = String(eventData.day).padStart(2, '0');
-                    const startDate = `${year}${month}${day}`;
-                    const endDate = `${year}${month}${day}`;
-
-                    const title = encodeURIComponent(`Vencimiento: ${eventData.description}`);
-                    const detailsText = taxpayerType === 'persona_no_residente'
-                        ? `Recordatorio de obligación tributaria para PES (No Residente).`
-                        : `Recordatorio de obligación tributaria para el NIT terminado en ${nit.slice(-2)}.`;
-
-                    const details = encodeURIComponent(`${detailsText}\n\nObligación: ${eventData.description}.\n\nGenerado por Agenda Tributaria Interactiva.`);
-                    const reminderMinutes = 48 * 60; // 2-day reminder
-
-                    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&crm=REMIND&reminders.minutes=${reminderMinutes}`;
-
-                    window.open(url, '_blank');
-                }
+            // --- BANCOLOMBIA QR ---
+            document.getElementById('btn-bancolombia-qr').addEventListener('click', () => {
+                const qrUrl = 'https://contador.net.co/wp-content/uploads/2025/08/qr-bancolombia.jpeg';
+                const newTab = window.open();
+                newTab.document.body.innerHTML = `<style>body{margin:0; background:#2d2d2d; display:flex; justify-content:center; align-items:center; height:100vh;}</style><img src="${qrUrl}" style="max-width:90%; max-height:90%; border-radius:10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">`;
             });
 
-            // --- INITIALIZATION ---
-            checkProStatus();
-            updateFormUI();
-            renderCalendar();
-            document.getElementById('rst-options').style.display = document.getElementById('rst').checked ? 'block' : 'none';
+            // Iniciar en la página principal
+            showForm('step-0');
+            addMunicipioICA(); // Add the first municipality by default
         });
+
+        // --- FUNCIONES GLOBALES DE EXPORTACIÓN ---
+        function exportResults(elementId, format) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            if (format === 'pdf') {
+                // The cloneNode strategy is best for complex, dynamic content.
+                const clone = element.cloneNode(true);
+                // It needs to be in the DOM to be rendered. We position it off-screen.
+                clone.style.position = 'absolute';
+                clone.style.left = '-9999px';
+                clone.style.width = '800px'; // Set a fixed width for consistent PDF output
+                document.body.appendChild(clone);
+
+                // Allow images and other content to load in the clone
+                setTimeout(() => {
+                    html2pdf(clone, {
+                        margin: 0.5,
+                        filename: `simulacion_rst_${elementId}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                    });
+                    // Clean up the cloned element from the DOM
+                    document.body.removeChild(clone);
+                }, 500);
+
+            } else if (format === 'excel') {
+                const wb = XLSX.utils.book_new();
+                const tables = element.querySelectorAll('table');
+                if (tables.length > 0) {
+                    tables.forEach((table, index) => {
+                        const ws = XLSX.utils.table_to_sheet(table);
+                        // Try to get a meaningful name for the sheet
+                        const title = table.closest('div[class*="p-"]')?.querySelector('h4, h3')?.textContent || `Tabla ${index + 1}`;
+                        XLSX.utils.book_append_sheet(wb, ws, title.substring(0, 31));
+                    });
+                    XLSX.writeFile(wb, `simulacion_rst_${elementId}.xlsx`);
+                } else {
+                    alert('No hay tablas para exportar en esta sección.');
+                }
+            }
+        }
+    </script>
+
+    <!-- SCRIPT PARA EL COMPONENTE DE REACT -->
+    <script type="text/babel">
+        const initializeReactApp = () => {
+            const { useState, useMemo, useRef, useEffect } = React;
+            const { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = window.Recharts;
+
+            const NumberInput = ({ label, value, onChange, tooltip }) => {
+                const cleaveRef = useRef(null);
+                useEffect(() => {
+                    if (cleaveRef.current && !cleaveRef.current.cleave) {
+                        cleaveRef.current.cleave = new Cleave(cleaveRef.current, { numeral: true, numeralPositiveOnly: true, numeralThousandsGroupStyle: 'thousand' });
+                    }
+                }, []);
+                return (
+                    <div className="input-group">
+                        <label className="input-label flex items-center">{label}
+                            {tooltip && <span className="tooltip-icon">?<span className="tooltip-text">{tooltip}</span></span>}
+                        </label>
+                        <input ref={cleaveRef} type="text" className="input-field text-right" defaultValue={new Intl.NumberFormat('es-CO').format(value)}
+                            onChange={e => {
+                                const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '.');
+                                onChange(parseFloat(rawValue) || 0);
+                            }}
+                        />
+                    </div>
+                );
+            };
+
+            const PlaneacionFiscal = () => {
+                const [ingresos, setIngresos] = useState(120000000);
+                const [costos, setCostos] = useState(60000000);
+                const [nomina, setNomina] = useState(24000000);
+                const [grupo, setGrupo] = useState('grupo2');
+                const [pensiones, setPensiones] = useState(0);
+
+                const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Math.round(value));
+
+                const { results, barData, pieData } = useMemo(() => {
+                    const utilidad = ingresos - costos - nomina;
+                    const impuestoRenta = Math.max(0, utilidad * 0.35);
+                    const ica = ingresos * 0.01;
+                    const totalOrdinario = impuestoRenta + ica;
+
+                    const ingresosUVT = ingresos / UVT_2024;
+                    const grupoTarifas = TARIFAS_SIMPLE_GLOBAL[grupo];
+                    let tarifaAplicada = 0;
+                    if(grupoTarifas) {
+                       for (const rango of grupoTarifas.rangos) {
+                           if (ingresosUVT >= rango.desde && ingresosUVT < rango.hasta) {
+                               tarifaAplicada = rango.tarifa;
+                               break;
+                           }
+                       }
+                       if(tarifaAplicada === 0 && grupoTarifas.rangos.length > 0) tarifaAplicada = grupoTarifas.rangos[grupoTarifas.rangos.length - 1].tarifa;
+                    }
+
+                    const impuestoSimpleBruto = ingresos * tarifaAplicada;
+                    const descuentoPensiones = Math.min(pensiones, impuestoSimpleBruto);
+                    const totalSimple = impuestoSimpleBruto - descuentoPensiones;
+
+                    const ahorro = totalOrdinario - totalSimple;
+                    const ahorroPct = totalOrdinario > 0 ? (ahorro / totalOrdinario) * 100 : 0;
+
+                    const res = {
+                        impuestoRenta, ica, totalOrdinario,
+                        impuestoSimpleBruto, descuentoPensiones, totalSimple,
+                        ahorro, ahorroPct: ahorroPct.toFixed(1) + '%'
+                    };
+
+                    const bar = [ { name: 'Ordinario', Impuesto: totalOrdinario }, { name: 'SIMPLE', Impuesto: totalSimple } ];
+                    const pie = [ { name: 'Imp. Renta', value: impuestoRenta }, { name: 'ICA', value: ica } ];
+
+                    return { results: res, barData: bar, pieData: pie };
+                }, [ingresos, costos, nomina, grupo, pensiones]);
+
+                const PIE_COLORS = ['#FFBB28', '#00C49F'];
+
+                return (
+                    <div id="planeacion-content">
+                        <header className="mb-6 text-center">
+                            <h1 className="text-2xl font-bold">Calculadora comparativa: Régimen Ordinario vs SIMPLE</h1>
+                        </header>
+
+                        <div className="p-4 border rounded-lg mb-6">
+                            <h2 className="font-semibold mb-3 text-xl">Datos de Entrada</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                                <NumberInput label="Ingresos Brutos Anuales" value={ingresos} onChange={setIngresos} tooltip="Total de ingresos facturados en el año, sin IVA." />
+                                <NumberInput label="Costos y Gastos Deducibles" value={costos} onChange={setCostos} tooltip="Costos y gastos necesarios para generar el ingreso (solo para Régimen Ordinario)." />
+                                <NumberInput label="Nómina Anual" value={nomina} onChange={setNomina} tooltip="Total pagado en salarios durante el año." />
+                                <NumberInput label="Aportes a Pensión a Cargo del Empleador" value={pensiones} onChange={setPensiones} tooltip="Aportes a pensión pagados por la empresa (descuento en SIMPLE)." />
+                                <div className="input-group">
+                                    <label className="input-label">Grupo de Actividad Económica (SIMPLE)</label>
+                                    <select className="input-field" value={grupo} onChange={e => setGrupo(e.target.value)}>
+                                        {Object.entries(TARIFAS_SIMPLE_GLOBAL).map(([key, value]) => <option key={key} value={key}>{value.nombre}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div className="p-4 border rounded-lg">
+                                <h3 className="font-semibold mb-3 text-center">Liquidación Régimen Ordinario</h3>
+                                <table className="w-full" id="tabla-ordinario"><tbody>
+                                    <tr><td className="py-1">Impuesto de Renta (35% utilidad)</td><td className="text-right font-semibold">{formatCurrency(results.impuestoRenta)}</td></tr>
+                                    <tr><td className="py-1">Impuesto de Industria y Comercio (ICA) (1% est.)</td><td className="text-right font-semibold">{formatCurrency(results.ica)}</td></tr>
+                                    <tr className="border-t"><td className="py-2 font-bold">Total Impuestos Ordinario</td><td className="text-right font-bold text-red-600">{formatCurrency(results.totalOrdinario)}</td></tr>
+                                </tbody></table>
+                            </div>
+                             <div className="p-4 border rounded-lg">
+                                <h3 className="font-semibold mb-3 text-center">Liquidación Régimen SIMPLE</h3>
+                                <table className="w-full" id="tabla-simple"><tbody>
+                                    <tr><td className="py-1">Impuesto SIMPLE (Tarifa sobre Ingresos)</td><td className="text-right font-semibold">{formatCurrency(results.impuestoSimpleBruto)}</td></tr>
+                                    <tr><td className="py-1">(-) Descuento Aportes a Pensión</td><td className="text-right font-semibold text-green-600">-{formatCurrency(results.descuentoPensiones)}</td></tr>
+                                    <tr className="border-t"><td className="py-2 font-bold">Total Impuesto SIMPLE</td><td className="text-right font-bold text-blue-600">{formatCurrency(results.totalSimple)}</td></tr>
+                                </tbody></table>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border rounded-lg bg-blue-50 text-center mb-6">
+                            <h3 className="font-semibold text-xl">Ahorro Estimado con Régimen SIMPLE</h3>
+                            <p className="text-4xl font-bold text-green-600 my-2">{formatCurrency(results.ahorro)} ({results.ahorroPct})</p>
+                        </div>
+
+                        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                             <div className="p-4 border rounded-lg"><h3 className="font-semibold mb-3 text-center">Comparativa de Impuesto Total</h3><ResponsiveContainer><BarChart data={barData}><CartesianGrid /><XAxis dataKey="name" /><YAxis tickFormatter={v => new Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)} /><Tooltip formatter={v => formatCurrency(v)} /><Legend /><Bar dataKey="Impuesto" fill="#8884d8" /></BarChart></ResponsiveContainer></div>
+                             <div className="p-4 border rounded-lg"><h3 className="font-semibold mb-3 text-center">Desglose Régimen Ordinario</h3><ResponsiveContainer><PieChart><Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>{pieData.map((e, i) => <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}</Pie><Tooltip formatter={v => formatCurrency(v)} /><Legend /></PieChart></ResponsiveContainer></div>
+                        </section>
+
+                        <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
+                            <button onClick={() => exportResults('planeacion-content', 'pdf')} className="btn btn-primary">Descargar Resumen en PDF</button>
+                            <button onClick={() => exportResults('planeacion-content', 'excel')} className="btn btn-green">Exportar Tablas a Excel</button>
+                            <a href="https://docs.google.com/spreadsheets/d/1mbRz3uDrJ1kt-ECjQFqmmHyHVTaLOPsZ/edit?usp=sharing&ouid=115496646325211058083&rtpof=true&sd=true" target="_blank" className="btn btn-secondary">Descargar Simulador Completo (Excel)</a>
+                        </div>
+                         <div className="mt-8 text-center">
+                            <button onClick={() => showForm('step-0')} className="btn btn-secondary btn-back">Volver al Inicio</button>
+                        </div>
+                    </div>
+                );
+            };
+            ReactDOM.render(<PlaneacionFiscal />, document.getElementById('react-root-planeacion'));
+        };
+        window.addEventListener('load', initializeReactApp);
     </script>
 </body>
 </html>
