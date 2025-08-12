@@ -22,14 +22,11 @@
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
 
-    <!-- Dependencia prop-types para Recharts -->
-    <script src="https://unpkg.com/prop-types@15.7.2/prop-types.min.js"></script>
-
     <!-- Babel para transpilar JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- Recharts (Librería de gráficos para React) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -126,7 +123,7 @@
             <div class="space-y-4 max-w-md mx-auto">
                 <button id="btn-goto-2593" class="w-full btn btn-primary text-lg">Calcular Anticipo Bimensual (Form. 2593)</button>
                 <button id="btn-goto-260" class="w-full btn btn-primary text-lg">Preparar Declaración Anual (Form. 260)</button>
-                <button id="btn-goto-planeacion" class="w-full btn btn-primary text-lg bg-purple-600 hover:bg-purple-700">Planeación Fiscal Comparativa</button>
+                <a href="https://contador.net.co/planeacion/" target="_blank" class="w-full btn btn-primary text-lg bg-purple-600 hover:bg-purple-700">Planeación Fiscal Comparativa</a>
                 <button id="btn-goto-info" class="w-full btn btn-secondary">¿Aún no estás en el RST? Aprende a inscribirte</button>
             </div>
         </div>
@@ -267,10 +264,7 @@
              </div>
         </div>
 
-        <!-- CONTENEDOR PLANEACIÓN FISCAL (REACT) -->
-        <div id="form-planeacion" class="form-container">
-            <div id="react-root-planeacion"></div>
-        </div>
+        <!-- CONTENEDOR PLANEACIÓN FISCAL (REACT) - MOVED TO planeacion.html -->
 
         <!-- SECCIÓN DE DONACIÓN (FIJA) -->
         <div class="mt-12 pt-8 border-t border-gray-200 text-center">
@@ -349,11 +343,6 @@
             // --- LISTENERS DE NAVEGACIÓN ---
             document.getElementById('btn-goto-2593').addEventListener('click', () => showForm('form-2593'));
             document.getElementById('btn-goto-260').addEventListener('click', () => showForm('form-260'));
-            document.getElementById('btn-goto-planeacion').addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                showForm('form-planeacion');
-            });
             document.getElementById('btn-goto-info').addEventListener('click', () => showForm('info-inscripcion'));
 
             document.querySelectorAll('.btn-back').forEach(btn => {
@@ -602,148 +591,6 @@
         }
     </script>
 
-    <!-- SCRIPT PARA EL COMPONENTE DE REACT -->
-    <script type="text/babel">
-        const initializeReactApp = () => {
-            const { useState, useMemo, useRef, useEffect } = React;
-            const { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = window.Recharts;
-
-            const NumberInput = ({ label, value, onChange, tooltip }) => {
-                const cleaveRef = useRef(null);
-                useEffect(() => {
-                    if (cleaveRef.current && !cleaveRef.current.cleave) {
-                        cleaveRef.current.cleave = new Cleave(cleaveRef.current, { numeral: true, numeralPositiveOnly: true, numeralThousandsGroupStyle: 'thousand' });
-                    }
-                }, []);
-                return (
-                    <div className="input-group">
-                        <label className="input-label flex items-center">{label}
-                            {tooltip && <span className="tooltip-icon">?<span className="tooltip-text">{tooltip}</span></span>}
-                        </label>
-                        <input ref={cleaveRef} type="text" className="input-field text-right" defaultValue={new Intl.NumberFormat('es-CO').format(value)}
-                            onChange={e => {
-                                const rawValue = e.target.value.replace(/\./g, '').replace(/,/g, '.');
-                                onChange(parseFloat(rawValue) || 0);
-                            }}
-                        />
-                    </div>
-                );
-            };
-
-            const PlaneacionFiscal = () => {
-                const [ingresos, setIngresos] = useState(120000000);
-                const [costos, setCostos] = useState(60000000);
-                const [nomina, setNomina] = useState(24000000);
-                const [grupo, setGrupo] = useState('grupo2');
-                const [pensiones, setPensiones] = useState(0);
-
-                const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(Math.round(value));
-
-                const { results, barData, pieData } = useMemo(() => {
-                    const utilidad = ingresos - costos - nomina;
-                    const impuestoRenta = Math.max(0, utilidad * 0.35);
-                    const ica = ingresos * 0.01;
-                    const totalOrdinario = impuestoRenta + ica;
-
-                    const ingresosUVT = ingresos / UVT_2024;
-                    const grupoTarifas = TARIFAS_SIMPLE_GLOBAL[grupo];
-                    let tarifaAplicada = 0;
-                    if(grupoTarifas) {
-                       for (const rango of grupoTarifas.rangos) {
-                           if (ingresosUVT >= rango.desde && ingresosUVT < rango.hasta) {
-                               tarifaAplicada = rango.tarifa;
-                               break;
-                           }
-                       }
-                       if(tarifaAplicada === 0 && grupoTarifas.rangos.length > 0) tarifaAplicada = grupoTarifas.rangos[grupoTarifas.rangos.length - 1].tarifa;
-                    }
-
-                    const impuestoSimpleBruto = ingresos * tarifaAplicada;
-                    const descuentoPensiones = Math.min(pensiones, impuestoSimpleBruto);
-                    const totalSimple = impuestoSimpleBruto - descuentoPensiones;
-
-                    const ahorro = totalOrdinario - totalSimple;
-                    const ahorroPct = totalOrdinario > 0 ? (ahorro / totalOrdinario) * 100 : 0;
-
-                    const res = {
-                        impuestoRenta, ica, totalOrdinario,
-                        impuestoSimpleBruto, descuentoPensiones, totalSimple,
-                        ahorro, ahorroPct: ahorroPct.toFixed(1) + '%'
-                    };
-
-                    const bar = [ { name: 'Ordinario', Impuesto: totalOrdinario }, { name: 'SIMPLE', Impuesto: totalSimple } ];
-                    const pie = [ { name: 'Imp. Renta', value: impuestoRenta }, { name: 'ICA', value: ica } ];
-
-                    return { results: res, barData: bar, pieData: pie };
-                }, [ingresos, costos, nomina, grupo, pensiones]);
-
-                const PIE_COLORS = ['#FFBB28', '#00C49F'];
-
-                return (
-                    <div id="planeacion-content">
-                        <header className="mb-6 text-center">
-                            <h1 className="text-2xl font-bold">Calculadora comparativa: Régimen Ordinario vs SIMPLE</h1>
-                        </header>
-
-                        <div className="p-4 border rounded-lg mb-6">
-                            <h2 className="font-semibold mb-3 text-xl">Datos de Entrada</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-                                <NumberInput label="Ingresos Brutos Anuales" value={ingresos} onChange={setIngresos} tooltip="Total de ingresos facturados en el año, sin IVA." />
-                                <NumberInput label="Costos y Gastos Deducibles" value={costos} onChange={setCostos} tooltip="Costos y gastos necesarios para generar el ingreso (solo para Régimen Ordinario)." />
-                                <NumberInput label="Nómina Anual" value={nomina} onChange={setNomina} tooltip="Total pagado en salarios durante el año." />
-                                <NumberInput label="Aportes a Pensión a Cargo del Empleador" value={pensiones} onChange={setPensiones} tooltip="Aportes a pensión pagados por la empresa (descuento en SIMPLE)." />
-                                <div className="input-group">
-                                    <label className="input-label">Grupo de Actividad Económica (SIMPLE)</label>
-                                    <select className="input-field" value={grupo} onChange={e => setGrupo(e.target.value)}>
-                                        {Object.entries(TARIFAS_SIMPLE_GLOBAL).map(([key, value]) => <option key={key} value={key}>{value.nombre}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                            <div className="p-4 border rounded-lg">
-                                <h3 className="font-semibold mb-3 text-center">Liquidación Régimen Ordinario</h3>
-                                <table className="w-full" id="tabla-ordinario"><tbody>
-                                    <tr><td className="py-1">Impuesto de Renta (35% utilidad)</td><td className="text-right font-semibold">{formatCurrency(results.impuestoRenta)}</td></tr>
-                                    <tr><td className="py-1">Impuesto de Industria y Comercio (ICA) (1% est.)</td><td className="text-right font-semibold">{formatCurrency(results.ica)}</td></tr>
-                                    <tr className="border-t"><td className="py-2 font-bold">Total Impuestos Ordinario</td><td className="text-right font-bold text-red-600">{formatCurrency(results.totalOrdinario)}</td></tr>
-                                </tbody></table>
-                            </div>
-                             <div className="p-4 border rounded-lg">
-                                <h3 className="font-semibold mb-3 text-center">Liquidación Régimen SIMPLE</h3>
-                                <table className="w-full" id="tabla-simple"><tbody>
-                                    <tr><td className="py-1">Impuesto SIMPLE (Tarifa sobre Ingresos)</td><td className="text-right font-semibold">{formatCurrency(results.impuestoSimpleBruto)}</td></tr>
-                                    <tr><td className="py-1">(-) Descuento Aportes a Pensión</td><td className="text-right font-semibold text-green-600">-{formatCurrency(results.descuentoPensiones)}</td></tr>
-                                    <tr className="border-t"><td className="py-2 font-bold">Total Impuesto SIMPLE</td><td className="text-right font-bold text-blue-600">{formatCurrency(results.totalSimple)}</td></tr>
-                                </tbody></table>
-                            </div>
-                        </div>
-
-                        <div className="p-6 border rounded-lg bg-blue-50 text-center mb-6">
-                            <h3 className="font-semibold text-xl">Ahorro Estimado con Régimen SIMPLE</h3>
-                            <p className="text-4xl font-bold text-green-600 my-2">{formatCurrency(results.ahorro)} ({results.ahorroPct})</p>
-                        </div>
-
-                        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                             <div className="p-4 border rounded-lg"><h3 className="font-semibold mb-3 text-center">Comparativa de Impuesto Total</h3><ResponsiveContainer><BarChart data={barData}><CartesianGrid /><XAxis dataKey="name" /><YAxis tickFormatter={v => new Intl.NumberFormat('es-CO',{notation:'compact'}).format(v)} /><Tooltip formatter={v => formatCurrency(v)} /><Legend /><Bar dataKey="Impuesto" fill="#8884d8" /></BarChart></ResponsiveContainer></div>
-                             <div className="p-4 border rounded-lg"><h3 className="font-semibold mb-3 text-center">Desglose Régimen Ordinario</h3><ResponsiveContainer><PieChart><Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>{pieData.map((e, i) => <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}</Pie><Tooltip formatter={v => formatCurrency(v)} /><Legend /></PieChart></ResponsiveContainer></div>
-                        </section>
-
-                        <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-4">
-                            <button onClick={() => exportResults('planeacion-content', 'pdf')} className="btn btn-primary">Descargar Resumen en PDF</button>
-                            <button onClick={() => exportResults('planeacion-content', 'excel')} className="btn btn-green">Exportar Tablas a Excel</button>
-                            <a href="https://docs.google.com/spreadsheets/d/1mbRz3uDrJ1kt-ECjQFqmmHyHVTaLOPsZ/edit?usp=sharing&ouid=115496646325211058083&rtpof=true&sd=true" target="_blank" className="btn btn-secondary">Descargar Simulador Completo (Excel)</a>
-                        </div>
-                         <div className="mt-8 text-center">
-                            <button onClick={() => showForm('step-0')} className="btn btn-secondary btn-back">Volver al Inicio</button>
-                        </div>
-                    </div>
-                );
-            };
-            ReactDOM.render(<PlaneacionFiscal />, document.getElementById('react-root-planeacion'));
-        };
-        window.addEventListener('load', initializeReactApp);
-    </script>
+    <!-- SCRIPT PARA EL COMPONENTE DE REACT - MOVED to planeacion.html -->
 </body>
 </html>
