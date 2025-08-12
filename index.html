@@ -349,7 +349,11 @@
             // --- LISTENERS DE NAVEGACIÓN ---
             document.getElementById('btn-goto-2593').addEventListener('click', () => showForm('form-2593'));
             document.getElementById('btn-goto-260').addEventListener('click', () => showForm('form-260'));
-            document.getElementById('btn-goto-planeacion').addEventListener('click', () => showForm('form-planeacion'));
+            document.getElementById('btn-goto-planeacion').addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showForm('form-planeacion');
+            });
             document.getElementById('btn-goto-info').addEventListener('click', () => showForm('info-inscripcion'));
 
             document.querySelectorAll('.btn-back').forEach(btn => {
