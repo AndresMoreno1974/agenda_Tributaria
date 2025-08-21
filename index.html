@@ -3,735 +3,594 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Tributaria Interactiva 2025-2026</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Generador de Diagrama de Gantt para Tareas Contables</title>
+
+    <!-- Librerías externas (CDN) - Versión estable y confiable -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+    <script src="https://unpkg.com/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+
+    <!-- INICIO: ESTILOS CSS -->
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #007bff;
+            --info-color: #17a2b8;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text-color: #343a40;
+            --white: #ffffff;
+            --danger-color: #dc3545;
+            --danger-light: #f8d7da;
+            --success-color: #28a745;
         }
-        .calendar-day.has-event {
-            background-color: #fef08a;
-            color: #b45309;
-            font-weight: bold;
-            border-radius: 50%;
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .gantt-app-container {
+            max-width: 1200px;
+            margin: auto;
+            background-color: var(--white);
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--medium-gray);
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--medium-gray);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        h1 { font-size: 2em; text-align: center; }
+        h2 { font-size: 1.5em; }
+        h1 i { margin-right: 10px; }
+
+        .form-section {
+            background-color: #fdfdff;
+            border: 1px solid #eef2f7;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            transition: box-shadow 0.3s ease;
+        }
+        .form-section:focus-within {
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.95em;
+        }
+        input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="text"]:focus, input[type="date"]:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+            outline: none;
+        }
+        input.invalid-input {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
+        }
+
+        #task-list .task-item {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            align-items: flex-end;
+            padding: 20px;
+            padding-top: 30px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background-color: var(--light-gray);
+            border: 1px solid var(--medium-gray);
             position: relative;
         }
-        .calendar-day.has-event::after {
-            content: '';
+        .task-id {
             position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: #dc2626;
-            border-radius: 50%;
+            top: 8px;
+            left: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: var(--primary-color);
+            background-color: var(--medium-gray);
+            padding: 2px 8px;
+            border-radius: 4px;
         }
-        .toast {
-            visibility: hidden;
+
+        .remove-btn-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 5px;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:active {
+            transform: translateY(2px);
+        }
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+        }
+        .btn-primary:hover { background-color: var(--primary-color); }
+        .btn-secondary {
+            background-color: var(--success-color);
+            color: white;
+        }
+        .btn-secondary:hover { background-color: #218838; }
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 10px 15px;
+        }
+        .btn-danger:hover { background-color: #c82333; }
+        .btn-warning {
+            background-color: var(--dark-gray);
+            color: white;
+        }
+        .btn-warning:hover { background-color: #5a6268; }
+        .btn-info {
+            background-color: var(--info-color);
+            color: white;
+        }
+        .btn-info:hover { background-color: #138496; }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        #gantt-container {
+            margin-top: 40px;
+            border-top: 2px solid var(--medium-gray);
+            padding-top: 30px;
+            position: relative; /* Necesario para el indicador móvil */
+        }
+        .gantt-wrapper {
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #notification-area {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: none; /* Oculto por defecto */
+            transition: all 0.3s ease-in-out;
+        }
+        #notification-area.error {
+            background-color: var(--danger-light);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            display: block;
+        }
+
+        #mobile-scroll-indicator {
+            display: none; /* Oculto por defecto */
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 10;
+            pointer-events: none; /* Para que no interfiera con el scroll */
             opacity: 0;
-            transition: opacity 0.5s, transform 0.5s;
-            transform: translateY(20px);
+            transition: opacity 0.5s;
         }
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
+        #mobile-scroll-indicator i {
+            margin-right: 5px;
         }
+
+        /* Estilos de la librería Frappe-Gantt */
+        .gantt .grid-header { fill: #f5f5f5; }
+        .gantt .grid-row:nth-child(even) { fill: #fdfdfd; }
+        .gantt .grid-row:nth-child(odd) { fill: var(--white); }
+        .gantt .row-line { stroke: #ebeff2; }
+        .gantt .tick { stroke: #e0e0e0; }
+        .gantt .today-highlight { fill: #fff8e1; opacity: 0.8; }
+        .gantt .arrow { stroke: #667380; stroke-width: 1.5; }
+        .gantt .bar { fill: var(--secondary-color); stroke: var(--primary-color); }
+        .gantt .bar-progress { fill: var(--primary-color); }
+        .gantt .bar-label { fill: var(--white); font-weight: 500; }
+        .gantt .bar-label.big { fill: var(--text-color); }
+        .gantt-container .popup-wrapper {
+            background: var(--white);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            border-radius: 6px;
+            padding: 15px;
+            color: var(--text-color);
+            pointer-events: none;
+        }
+        .gantt-container .popup-wrapper .title { font-weight: bold; font-size: 14px; }
+        .gantt-container .popup-wrapper .subtitle { color: #555; font-size: 12px; }
+
+        /* --- INICIO: AJUSTES PARA MÓVILES --- */
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+                padding: 10px;
+            }
+            .gantt-app-container {
+                padding: 20px 15px;
+            }
+            h1, h2 {
+                font-size: 18px;
+            }
+            p, label, .btn, input[type="text"], input[type="date"] {
+                font-size: 14px;
+            }
+            .btn {
+                padding: 10px 18px;
+            }
+            #mobile-scroll-indicator.visible {
+                display: flex;
+                opacity: 1;
+            }
+        }
+        /* --- FIN: AJUSTES PARA MÓVILES --- */
+
+        /* --- INICIO: ESTILOS DE IMPRESIÓN MEJORADOS --- */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: var(--white); /* Ensure background is white */
+            }
+
+            /* Oculta el formulario completo, los botones de eliminar y el indicador móvil */
+            #gantt-form, .remove-btn-container, #mobile-scroll-indicator {
+                display: none !important;
+            }
+
+            /* Resetea el contenedor principal para un diseño de impresión limpio */
+            .gantt-app-container {
+                max-width: none;
+                box-shadow: none;
+                border: none;
+                padding: 1rem;
+                margin: 0;
+            }
+
+            /* Asegura que el contenedor del Gantt sea visible y esté bien espaciado */
+            #gantt-container {
+                display: block !important;
+                margin-top: 0;
+                padding-top: 0;
+            }
+
+            /* Elimina el borde del contenedor del gráfico Gantt */
+            .gantt-wrapper {
+                border: none;
+            }
+
+            /* Asegura que los títulos no se corten y tengan un estilo mínimo */
+            h1, h2 {
+                margin-top: 0;
+                padding-bottom: 5px;
+                border-bottom: 1px solid var(--dark-gray);
+            }
+
+            p {
+                margin-bottom: 1rem;
+            }
+        }
+        /* --- FIN: ESTILOS DE IMPRESIÓN MEJORADOS --- */
+
     </style>
 </head>
-<body class="antialiased text-gray-800">
+<body>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Agenda Tributaria Interactiva 2025-2026 🇨🇴</h1>
-            <p class="text-gray-600 mt-2">Consulta, exporta y descarga tus plazos de la DIAN.</p>
-        </header>
+    <div class="gantt-app-container">
+        <h1><i class="fas fa-chart-bar"></i>Generador de Diagrama de Gantt Contable</h1>
+        <p style="text-align: center;">Planifica, visualiza y gestiona tus tareas contables de forma segura. <strong>Ningún dato es guardado en servidores.</strong></p>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column -->
-            <div class="lg:col-span-1 space-y-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🔍 Filtros de Búsqueda</h2>
-                    <form id="taxForm" class="space-y-4">
-                        <div>
-                            <label for="taxpayerType" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Contribuyente</label>
-                            <select id="taxpayerType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                <option value="gran_contribuyente">Gran Contribuyente</option>
-                                <option value="persona_juridica">Persona Jurídica</option>
-                                <option value="persona_natural">Persona Natural</option>
-                                <option value="persona_no_residente">Personas no residentes (PES)</option>
-                            </select>
-                        </div>
-
-                        <div id="nit-section">
-                            <div>
-                                <label for="nitInput" class="block text-sm font-medium text-gray-700 mb-1">Tu NIT completo o los últimos dígitos</label>
-                                <input type="text" id="nitInput" placeholder="Ej: 900123456" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"/>
-                            </div>
-                            <div class="flex items-center mt-4">
-                                <input id="foreignAssets" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"/>
-                                <label for="foreignAssets" class="ml-2 block text-sm text-gray-900">¿Declara activos en el exterior?</label>
-                            </div>
-                        </div>
-
-                        <div id="pes-section" class="hidden text-sm text-gray-500 p-3 bg-blue-50 rounded-lg">
-                            Para contribuyentes con Presencia Económica Significativa (PES), las fechas son generales y no requieren NIT.
-                        </div>
-
-                        <div id="company-questions" class="space-y-4">
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Periodicidad del IVA</label>
-                                <div class="flex gap-4">
-                                    <div class="flex items-center">
-                                        <input id="iva-bimestral" name="iva-frequency" type="radio" value="bimestral" checked class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-bimestral" class="ml-2 block text-sm text-gray-900">Bimestral</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="iva-cuatrimestral" name="iva-frequency" type="radio" value="cuatrimestral" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-cuatrimestral" class="ml-2 block text-sm text-gray-900">Cuatrimestral</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center"><input id="consumo" type="checkbox" class="h-4 w-4"/><label for="consumo" class="ml-2 text-sm">¿Declara Impuesto al Consumo?</label></div>
-                            <div class="flex items-center"><input id="bolsas" type="checkbox" class="h-4 w-4"/><label for="bolsas" class="ml-2 text-sm">¿Declara Impuesto a Bolsas Plásticas?</label></div>
-                            <div class="flex items-center"><input id="gasolina" type="checkbox" class="h-4 w-4"/><label for="gasolina" class="ml-2 text-sm">¿Declara Gasolina y ACPM?</label></div>
-                            <div class="flex items-center"><input id="carbono" type="checkbox" class="h-4 w-4"/><label for="carbono" class="ml-2 text-sm">¿Declara Impuesto al Carbono?</label></div>
-                            <div class="flex items-center"><input id="transferencia" type="checkbox" class="h-4 w-4"/><label for="transferencia" class="ml-2 text-sm">¿Declara Precios de Transferencia?</label></div>
-                            <div class="flex items-center"><input id="iva_exterior" type="checkbox" class="h-4 w-4"/><label for="iva_exterior" class="ml-2 text-sm">¿Declara IVA desde el exterior?</label></div>
-                            <div class="flex items-center"><input id="patrimonio" type="checkbox" class="h-4 w-4"/><label for="patrimonio" class="ml-2 text-sm">¿Declara Impuesto al Patrimonio?</label></div>
-                            <div class="flex items-center"><input id="plasticos_uso_unico" type="checkbox" class="h-4 w-4"/><label for="plasticos_uso_unico" class="ml-2 text-sm">¿Declara Plásticos de un solo uso?</label></div>
-                            <div class="flex items-center"><input id="bebidas_ultraprocesadas" type="checkbox" class="h-4 w-4"/><label for="bebidas_ultraprocesadas" class="ml-2 text-sm">¿Declara Bebidas Ultraprocesadas?</label></div>
-                            <div class="flex items-center"><input id="rub" type="checkbox" class="h-4 w-4"/><label for="rub" class="ml-2 text-sm">¿Necesita actualizar el RUB?</label></div>
-
-                            <div class="flex items-center">
-                                <input id="rst" type="checkbox" class="h-4 w-4"/>
-                                <label for="rst" class="ml-2 text-sm">¿Está en el Régimen Simple (RST)?</label>
-                            </div>
-                            <div id="rst-options" class="hidden pl-6 space-y-2">
-                                <div class="flex items-center">
-                                    <input id="rst-anual" name="rst-type" type="radio" value="anual" checked class="h-4 w-4"/>
-                                    <label for="rst-anual" class="ml-2 text-sm">Declaración Anual</label>
-                                </div>
-                                <div class="flex items-center">
-                                    <input id="rst-anticipo" name="rst-type" type="radio" value="anticipo" class="h-4 w-4"/>
-                                    <label for="rst-anticipo" class="ml-2 text-sm">Anticipo Bimestral</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">
-                            Generar Agenda
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-300">
-                     <h2 class="text-xl font-bold mb-4 text-gray-700">📄 Funciones Gratuitas</h2>
-                     <p class="text-gray-600 mb-4">Genera un resumen de tu agenda en formato PDF para guardarlo o imprimirlo.</p>
-                     <button id="downloadPdf" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                        Descargar Resumen en PDF
-                     </button>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-amber-400">
-                     <h2 class="text-xl font-bold mb-4 text-amber-600">⭐ Funciones Pro</h2>
-                     <div id="pro-section">
-                        <p class="text-gray-600 mb-4">Activa la versión Pro para exportar tu agenda a Google Calendar y recibir notificaciones.</p>
-                        <a href="https://checkout.bold.co/payment/LNK_LDA07DPSM4" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                            Activar Funciones Pro
-                        </a>
-                     </div>
-                     <div id="pro-activated-section" class="hidden text-center">
-                        <p class="text-green-600 font-semibold">¡Funciones Pro activadas!</p>
-                        <p class="text-gray-600 mt-2">Ya puedes añadir tus vencimientos a Google Calendar desde la lista de resultados.</p>
-                     </div>
+        <form id="gantt-form">
+            <div class="form-section">
+                <h2><i class="fas fa-bullseye"></i> 1. Información General del Proyecto</h2>
+                <div class="form-group">
+                    <label for="project-name">Objetivo del Diagrama (Ej: Cierre Contable Anual 2025)</label>
+                    <input type="text" id="project-name" placeholder="Planificación Mensual, Auditoría Q3..." required>
                 </div>
             </div>
 
-            <!-- Right Column -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
-                <div id="calendar-container">
-                    <div class="flex items-center justify-between mb-4">
-                        <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <h2 id="monthYear" class="text-2xl font-bold"></h2>
-                        <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                    <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
+            <div class="form-section">
+                <h2><i class="fas fa-tasks"></i> 2. Tareas, Plazos y Responsables</h2>
+                <p>Añade cada tarea. Para indicar dependencias, usa el ID (Ej: Tarea_1 o solo 1) en el campo "Dependencias", separado por comas si son varias.</p>
+                <div id="task-list">
+                    <!-- Las tareas se añadirán aquí dinámicamente -->
                 </div>
-                <div id="results-container" class="mt-8">
-                    <h3 class="text-xl font-bold mb-4 border-t pt-6">🗓️ Vencimientos para tu selección:</h3>
-                    <div id="results" class="space-y-3">
-                        <p class="text-gray-500">Por favor, completa los filtros y haz clic en "Generar Agenda" para ver tus obligaciones.</p>
-                    </div>
+                <div class="button-container">
+                    <button type="button" class="btn btn-secondary" id="add-task-btn"><i class="fas fa-plus"></i> Añadir Tarea</button>
                 </div>
             </div>
+
+            <div id="notification-area"></div>
+
+            <div class="button-container">
+                 <button type="submit" class="btn btn-primary"><i class="fas fa-cogs"></i> Generar Diagrama</button>
+                 <button type="button" class="btn btn-warning" id="clear-btn"><i class="fas fa-broom"></i> Limpiar Diagrama</button>
+                 <button type="button" class="btn btn-info" id="print-btn" style="display: none;"><i class="fas fa-print"></i> Imprimir / Guardar PDF</button>
+            </div>
+        </form>
+
+        <div id="gantt-container" style="display:none;">
+            <h2 id="gantt-title"></h2>
+            <div class="gantt-wrapper">
+                <svg id="gantt"></svg>
+            </div>
+            <div id="mobile-scroll-indicator"><i class="fas fa-arrows-alt-h"></i> Desliza para ver más fechas</div>
         </div>
     </div>
 
-    <!-- Hidden content for PDF generation -->
-    <div id="pdf-content" style="position: absolute; left: -9999px; top: 0; width: 210mm;" class="bg-white p-8 font-sans"></div>
+    <!-- Template para una nueva tarea (oculto) -->
+    <template id="task-template">
+        <div class="task-item">
+            <span class="task-id"></span>
+            <div class="form-group">
+                <label>Nombre de la Tarea</label>
+                <input type="text" class="task-name" placeholder="Ej: Conciliación Bancaria" required>
+            </div>
+            <div class="form-group">
+                <label>Fecha de Inicio</label>
+                <input type="date" class="task-start" required>
+            </div>
+            <div class="form-group">
+                <label>Fecha de Fin</label>
+                <input type="date" class="task-end" required>
+            </div>
+             <div class="form-group">
+                <label>Responsable</label>
+                <input type="text" class="task-responsible" placeholder="Ej: Contador General">
+            </div>
+            <div class="form-group">
+                <label>Dependencias (ID)</label>
+                <input type="text" class="task-dependencies" placeholder="Ej: 1, Tarea_2">
+            </div>
+            <div class="remove-btn-container">
+                <button type="button" class="btn btn-danger remove-task-btn" title="Eliminar Tarea"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+    </template>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50">
-        <p id="toast-message"></p>
-    </div>
-
+    <!-- SCRIPT DE LA APLICACIÓN -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DATA STORE ---
-            const taxData = {
-                '2025': {
-                    'gran_contribuyente': {
-                        'renta': [
-                            { nit: [1], month: 2, day: 11, description: 'Pago 1a. cuota Renta' }, { nit: [2], month: 2, day: 12, description: 'Pago 1a. cuota Renta' }, { nit: [3], month: 2, day: 13, description: 'Pago 1a. cuota Renta' }, { nit: [4], month: 2, day: 14, description: 'Pago 1a. cuota Renta' }, { nit: [5], month: 2, day: 17, description: 'Pago 1a. cuota Renta' }, { nit: [6], month: 2, day: 18, description: 'Pago 1a. cuota Renta' }, { nit: [7], month: 2, day: 19, description: 'Pago 1a. cuota Renta' }, { nit: [8], month: 2, day: 20, description: 'Pago 1a. cuota Renta' }, { nit: [9], month: 2, day: 21, description: 'Pago 1a. cuota Renta' }, { nit: [0], month: 2, day: 24, description: 'Pago 1a. cuota Renta' },
-                            { nit: [1], month: 4, day: 9, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [2], month: 4, day: 10, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [3], month: 4, day: 11, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [4], month: 4, day: 14, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [5], month: 4, day: 15, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [6], month: 4, day: 16, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [7], month: 4, day: 21, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [8], month: 4, day: 22, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [9], month: 4, day: 23, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [0], month: 4, day: 24, description: 'Declaración y pago 2a. cuota Renta' },
-                            { nit: [1], month: 6, day: 11, description: 'Pago 3a. cuota Renta' }, { nit: [2], month: 6, day: 12, description: 'Pago 3a. cuota Renta' }, { nit: [3], month: 6, day: 13, description: 'Pago 3a. cuota Renta' }, { nit: [4], month: 6, day: 16, description: 'Pago 3a. cuota Renta' }, { nit: [5], month: 6, day: 17, description: 'Pago 3a. cuota Renta' }, { nit: [6], month: 6, day: 18, description: 'Pago 3a. cuota Renta' }, { nit: [7], month: 6, day: 19, description: 'Pago 3a. cuota Renta' }, { nit: [8], month: 6, day: 20, description: 'Pago 3a. cuota Renta' }, { nit: [9], month: 6, day: 24, description: 'Pago 3a. cuota Renta' }, { nit: [0], month: 6, day: 25, description: 'Pago 3a. cuota Renta' },
-                        ],
-                        'activos_exterior': [
-                            { nit: [1], month: 4, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 4, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 4, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 4, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 4, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 4, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 4, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 4, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 4, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 4, day: 24, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                    },
-                    'persona_juridica': {
-                        'renta': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [2], month: 5, day: 13, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [3], month: 5, day: 14, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [4], month: 5, day: 15, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [5], month: 5, day: 16, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [6], month: 5, day: 19, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [7], month: 5, day: 20, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [8], month: 5, day: 21, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [9], month: 5, day: 22, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [0], month: 5, day: 23, description: 'Declaración y pago 1a. cuota Renta' },
-                            { nit: [1], month: 7, day: 9, description: 'Pago 2a. cuota Renta' }, { nit: [2], month: 7, day: 10, description: 'Pago 2a. cuota Renta' }, { nit: [3], month: 7, day: 11, description: 'Pago 2a. cuota Renta' }, { nit: [4], month: 7, day: 14, description: 'Pago 2a. cuota Renta' }, { nit: [5], month: 7, day: 15, description: 'Pago 2a. cuota Renta' }, { nit: [6], month: 7, day: 16, description: 'Pago 2a. cuota Renta' }, { nit: [7], month: 7, day: 17, description: 'Pago 2a. cuota Renta' }, { nit: [8], month: 7, day: 18, description: 'Pago 2a. cuota Renta' }, { nit: [9], month: 7, day: 21, description: 'Pago 2a. cuota Renta' }, { nit: [0], month: 7, day: 22, description: 'Pago 2a. cuota Renta' },
-                        ],
-                         'activos_exterior': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 5, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 5, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 5, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 5, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 5, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 5, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 5, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 5, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 5, day: 23, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                        'retencion_fuente': [
-                            { nit: [1], month: 2, day: 11, description: 'Retefuente Ene' }, { nit: [1], month: 3, day: 11, description: 'Retefuente Feb' }, { nit: [1], month: 4, day: 9, description: 'Retefuente Mar' }, { nit: [1], month: 5, day: 12, description: 'Retefuente Abr' }, { nit: [1], month: 6, day: 11, description: 'Retefuente May' }, { nit: [1], month: 7, day: 9, description: 'Retefuente Jun' }, { nit: [1], month: 8, day: 12, description: 'Retefuente Jul' }, { nit: [1], month: 9, day: 9, description: 'Retefuente Ago' }, { nit: [1], month: 10, day: 9, description: 'Retefuente Sep' }, { nit: [1], month: 11, day: 12, description: 'Retefuente Oct' }, { nit: [1], month: 12, day: 10, description: 'Retefuente Nov' },
-                            { nit: [2], month: 2, day: 12, description: 'Retefuente Ene' }, { nit: [2], month: 3, day: 12, description: 'Retefuente Feb' }, { nit: [2], month: 4, day: 10, description: 'Retefuente Mar' }, { nit: [2], month: 5, day: 13, description: 'Retefuente Abr' }, { nit: [2], month: 6, day: 12, description: 'Retefuente May' }, { nit: [2], month: 7, day: 10, description: 'Retefuente Jun' }, { nit: [2], month: 8, day: 13, description: 'Retefuente Jul' }, { nit: [2], month: 9, day: 10, description: 'Retefuente Ago' }, { nit: [2], month: 10, day: 10, description: 'Retefuente Sep' }, { nit: [2], month: 11, day: 13, description: 'Retefuente Oct' }, { nit: [2], month: 12, day: 11, description: 'Retefuente Nov' },
-                            { nit: [3], month: 2, day: 13, description: 'Retefuente Ene' }, { nit: [3], month: 3, day: 13, description: 'Retefuente Feb' }, { nit: [3], month: 4, day: 11, description: 'Retefuente Mar' }, { nit: [3], month: 5, day: 14, description: 'Retefuente Abr' }, { nit: [3], month: 6, day: 13, description: 'Retefuente May' }, { nit: [3], month: 7, day: 11, description: 'Retefuente Jun' }, { nit: [3], month: 8, day: 14, description: 'Retefuente Jul' }, { nit: [3], month: 9, day: 11, description: 'Retefuente Ago' }, { nit: [3], month: 10, day: 14, description: 'Retefuente Sep' }, { nit: [3], month: 11, day: 14, description: 'Retefuente Oct' }, { nit: [3], month: 12, day: 12, description: 'Retefuente Nov' },
-                            { nit: [4], month: 2, day: 14, description: 'Retefuente Ene' }, { nit: [4], month: 3, day: 14, description: 'Retefuente Feb' }, { nit: [4], month: 4, day: 14, description: 'Retefuente Mar' }, { nit: [4], month: 5, day: 15, description: 'Retefuente Abr' }, { nit: [4], month: 6, day: 16, description: 'Retefuente May' }, { nit: [4], month: 7, day: 14, description: 'Retefuente Jun' }, { nit: [4], month: 8, day: 15, description: 'Retefuente Jul' }, { nit: [4], month: 9, day: 12, description: 'Retefuente Ago' }, { nit: [4], month: 10, day: 15, description: 'Retefuente Sep' }, { nit: [4], month: 11, day: 18, description: 'Retefuente Oct' }, { nit: [4], month: 12, day: 15, description: 'Retefuente Nov' },
-                            { nit: [5], month: 2, day: 17, description: 'Retefuente Ene' }, { nit: [5], month: 3, day: 17, description: 'Retefuente Feb' }, { nit: [5], month: 4, day: 15, description: 'Retefuente Mar' }, { nit: [5], month: 5, day: 16, description: 'Retefuente Abr' }, { nit: [5], month: 6, day: 17, description: 'Retefuente May' }, { nit: [5], month: 7, day: 15, description: 'Retefuente Jun' }, { nit: [5], month: 8, day: 19, description: 'Retefuente Jul' }, { nit: [5], month: 9, day: 15, description: 'Retefuente Ago' }, { nit: [5], month: 10, day: 16, description: 'Retefuente Sep' }, { nit: [5], month: 11, day: 19, description: 'Retefuente Oct' }, { nit: [5], month: 12, day: 16, description: 'Retefuente Nov' },
-                            { nit: [6], month: 2, day: 18, description: 'Retefuente Ene' }, { nit: [6], month: 3, day: 18, description: 'Retefuente Feb' }, { nit: [6], month: 4, day: 16, description: 'Retefuente Mar' }, { nit: [6], month: 5, day: 19, description: 'Retefuente Abr' }, { nit: [6], month: 6, day: 18, description: 'Retefuente May' }, { nit: [6], month: 7, day: 16, description: 'Retefuente Jun' }, { nit: [6], month: 8, day: 20, description: 'Retefuente Jul' }, { nit: [6], month: 9, day: 16, description: 'Retefuente Ago' }, { nit: [6], month: 10, day: 17, description: 'Retefuente Sep' }, { nit: [6], month: 11, day: 20, description: 'Retefuente Oct' }, { nit: [6], month: 12, day: 17, description: 'Retefuente Nov' },
-                            { nit: [7], month: 2, day: 19, description: 'Retefuente Ene' }, { nit: [7], month: 3, day: 19, description: 'Retefuente Feb' }, { nit: [7], month: 4, day: 21, description: 'Retefuente Mar' }, { nit: [7], month: 5, day: 20, description: 'Retefuente Abr' }, { nit: [7], month: 6, day: 19, description: 'Retefuente May' }, { nit: [7], month: 7, day: 17, description: 'Retefuente Jun' }, { nit: [7], month: 8, day: 21, description: 'Retefuente Jul' }, { nit: [7], month: 9, day: 17, description: 'Retefuente Ago' }, { nit: [7], month: 10, day: 20, description: 'Retefuente Sep' }, { nit: [7], month: 11, day: 21, description: 'Retefuente Oct' }, { nit: [7], month: 12, day: 18, description: 'Retefuente Nov' },
-                            { nit: [8], month: 2, day: 20, description: 'Retefuente Ene' }, { nit: [8], month: 3, day: 20, description: 'Retefuente Feb' }, { nit: [8], month: 4, day: 22, description: 'Retefuente Mar' }, { nit: [8], month: 5, day: 21, description: 'Retefuente Abr' }, { nit: [8], month: 6, day: 20, description: 'Retefuente May' }, { nit: [8], month: 7, day: 18, description: 'Retefuente Jun' }, { nit: [8], month: 8, day: 22, description: 'Retefuente Jul' }, { nit: [8], month: 9, day: 18, description: 'Retefuente Ago' }, { nit: [8], month: 10, day: 21, description: 'Retefuente Sep' }, { nit: [8], month: 11, day: 24, description: 'Retefuente Oct' }, { nit: [8], month: 12, day: 19, description: 'Retefuente Nov' },
-                            { nit: [9], month: 2, day: 21, description: 'Retefuente Ene' }, { nit: [9], month: 3, day: 21, description: 'Retefuente Feb' }, { nit: [9], month: 4, day: 23, description: 'Retefuente Mar' }, { nit: [9], month: 5, day: 22, description: 'Retefuente Abr' }, { nit: [9], month: 6, day: 24, description: 'Retefuente May' }, { nit: [9], month: 7, day: 21, description: 'Retefuente Jun' }, { nit: [9], month: 8, day: 25, description: 'Retefuente Jul' }, { nit: [9], month: 9, day: 19, description: 'Retefuente Ago' }, { nit: [9], month: 10, day: 22, description: 'Retefuente Sep' }, { nit: [9], month: 11, day: 25, description: 'Retefuente Oct' }, { nit: [9], month: 12, day: 22, description: 'Retefuente Nov' },
-                            { nit: [0], month: 2, day: 24, description: 'Retefuente Ene' }, { nit: [0], month: 3, day: 25, description: 'Retefuente Feb' }, { nit: [0], month: 4, day: 24, description: 'Retefuente Mar' }, { nit: [0], month: 5, day: 23, description: 'Retefuente Abr' }, { nit: [0], month: 6, day: 25, description: 'Retefuente May' }, { nit: [0], month: 7, day: 22, description: 'Retefuente Jun' }, { nit: [0], month: 8, day: 26, description: 'Retefuente Jul' }, { nit: [0], month: 9, day: 22, description: 'Retefuente Ago' }, { nit: [0], month: 10, day: 23, description: 'Retefuente Sep' }, { nit: [0], month: 11, day: 26, description: 'Retefuente Oct' }, { nit: [0], month: 12, day: 23, description: 'Retefuente Nov' },
-            ]
-        },
-        'persona_natural': {
-            'renta': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración y pago Renta' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración y pago Renta' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración y pago Renta' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración y pago Renta' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración y pago Renta' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración y pago Renta' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración y pago Renta' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración y pago Renta' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración y pago Renta' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración y pago Renta' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración y pago Renta' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración y pago Renta' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración y pago Renta' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración y pago Renta' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración y pago Renta' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración y pago Renta' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración y pago Renta' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración y pago Renta' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración y pago Renta' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración y pago Renta' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración y pago Renta' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración y pago Renta' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración y pago Renta' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración y pago Renta' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración y pago Renta' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración y pago Renta' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración y pago Renta' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración y pago Renta' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración y pago Renta' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración y pago Renta' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración y pago Renta' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración y pago Renta' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración y pago Renta' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración y pago Renta' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración y pago Renta' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración y pago Renta' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración y pago Renta' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración y pago Renta' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración y pago Renta' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración y pago Renta' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración y pago Renta' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración y pago Renta' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración y pago Renta' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración y pago Renta' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración y pago Renta' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración y pago Renta' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración y pago Renta' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración y pago Renta' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración y pago Renta' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración y pago Renta' },
-            ],
-            'activos_exterior': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración Activos en el Exterior' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración Activos en el Exterior' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración Activos en el Exterior' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración Activos en el Exterior' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración Activos en el Exterior' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración Activos en el Exterior' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración Activos en el Exterior' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración Activos en el Exterior' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración Activos en el Exterior' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración Activos en el Exterior' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración Activos en el Exterior' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración Activos en el Exterior' },
-            ]
-        },
-        'persona_no_residente': {
-            'pagos_pes': [
-                { nit: ['all'], month: 3, day: 14, description: 'Pago anticipado PES (Ene-Feb)' },
-                { nit: ['all'], month: 5, day: 15, description: 'Pago anticipado PES (Mar-Abr)' },
-                { nit: ['all'], month: 7, day: 14, description: 'Pago anticipado PES (May-Jun)' },
-                { nit: ['all'], month: 9, day: 12, description: 'Pago anticipado PES (Jul-Ago)' },
-                { nit: ['all'], month: 11, day: 18, description: 'Pago anticipado PES (Sep-Oct)' },
-            ],
-            'declaracion_pes': [
-                { nit: ['all'], month: 4, day: 22, description: 'Declaración anual PES' }
-            ]
-        }
-    },
-    '2026': {
-        'persona_juridica': {
-            'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-            'retencion_fuente': [
-                { nit: [1], month: 1, day: 13, description: 'Retefuente Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'Retefuente Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'Retefuente Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'Retefuente Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'Retefuente Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'Retefuente Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'Retefuente Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'Retefuente Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'Retefuente Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'Retefuente Dic 2025' },
-            ]
-        },
-        'gran_contribuyente': {
-             'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-        },
-        'persona_no_residente': {
-             'pagos_pes': [
-                { nit: ['all'], month: 1, day: 16, description: 'Pago anticipado PES (Nov-Dic 2025)' }
-            ]
-        }
-    }
-};
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- DOM Element Selection ---
+            const taskList = document.getElementById('task-list');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskTemplate = document.getElementById('task-template');
+            const ganttForm = document.getElementById('gantt-form');
+            const ganttContainer = document.getElementById('gantt-container');
+            const ganttSvg = document.getElementById('gantt');
+            const ganttTitle = document.getElementById('gantt-title');
+            const clearBtn = document.getElementById('clear-btn');
+            const notificationArea = document.getElementById('notification-area');
+            const printBtn = document.getElementById('print-btn');
+            const mobileIndicator = document.getElementById('mobile-scroll-indicator');
 
-            // --- STATE & DOM ELEMENTS ---
-            let currentDate = new Date(2025, 0, 1);
-            let filteredEvents = [];
-            let isProUser = false;
+            let taskCounter = 0;
+            let ganttChart = null;
 
-            const form = document.getElementById('taxForm');
-            const taxpayerTypeEl = document.getElementById('taxpayerType');
-            const nitInputEl = document.getElementById('nitInput');
-            const foreignAssetsEl = document.getElementById('foreignAssets');
-            const downloadPdfBtn = document.getElementById('downloadPdf');
-
-            const calendarEl = document.getElementById('calendar');
-            const monthYearEl = document.getElementById('monthYear');
-            const prevMonthBtn = document.getElementById('prevMonth');
-            const nextMonthBtn = document.getElementById('nextMonth');
-            const resultsEl = document.getElementById('results');
-
-            const toastEl = document.getElementById('toast');
-            const toastMessageEl = document.getElementById('toast-message');
-
-            // --- FUNCTIONS ---
-
-            const showToast = (message, isError = false) => {
-                toastMessageEl.textContent = message;
-                toastEl.className = `toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-600'} show`;
-                setTimeout(() => {
-                    toastEl.classList.remove('show');
-                }, 4000);
+            // --- Notification Functions ---
+            const showNotification = (message, type = 'error') => {
+                notificationArea.textContent = message;
+                notificationArea.className = type;
             };
 
-            const renderCalendar = () => {
-                calendarEl.innerHTML = '';
-                const month = currentDate.getMonth();
-                const year = currentDate.getFullYear();
+            const clearNotification = () => {
+                notificationArea.textContent = '';
+                notificationArea.className = '';
+            };
 
-                monthYearEl.textContent = new Date(year, month).toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            // --- Core Task Functions ---
+            const addTask = () => {
+                taskCounter++;
+                const templateContent = taskTemplate.content.cloneNode(true);
+                const taskItem = templateContent.querySelector('.task-item');
 
-                const firstDayOfMonth = new Date(year, month, 1).getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const taskId = `Tarea_${taskCounter}`;
+                taskItem.querySelector('.task-id').textContent = taskId;
+                taskItem.dataset.id = taskId;
 
-                const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                dayHeaders.forEach(day => {
-                    const dayEl = document.createElement('div');
-                    dayEl.className = 'font-bold text-gray-600 text-sm';
-                    dayEl.textContent = day;
-                    calendarEl.appendChild(dayEl);
-                });
+                taskItem.querySelector('.remove-task-btn').addEventListener('click', () => taskItem.remove());
 
-                for (let i = 0; i < firstDayOfMonth; i++) {
-                    calendarEl.appendChild(document.createElement('div'));
-                }
+                const startDateInput = taskItem.querySelector('.task-start');
+                const endDateInput = taskItem.querySelector('.task-end');
 
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dayEl = document.createElement('div');
-                    dayEl.textContent = day;
-                    dayEl.className = 'calendar-day p-2 cursor-pointer hover:bg-blue-100 rounded-full transition';
-
-                    const hasEvent = filteredEvents.some(event => event.day === day && event.month === month + 1 && event.year === year);
-                    if (hasEvent) {
-                        dayEl.classList.add('has-event');
+                const validateDates = () => {
+                    endDateInput.classList.remove('invalid-input');
+                    if (startDateInput.value && endDateInput.value && new Date(endDateInput.value) < new Date(startDateInput.value)) {
+                        endDateInput.classList.add('invalid-input');
                     }
-                    calendarEl.appendChild(dayEl);
-                }
+                };
+
+                startDateInput.addEventListener('change', validateDates);
+                endDateInput.addEventListener('change', validateDates);
+
+                taskList.appendChild(templateContent);
             };
 
-            const displayResults = () => {
-                resultsEl.innerHTML = '';
-                if (filteredEvents.length === 0) {
-                    resultsEl.innerHTML = '<p class="text-gray-500">No se encontraron obligaciones para los filtros seleccionados.</p>';
+            // --- Event Listeners ---
+            addTaskBtn.addEventListener('click', addTask);
+
+            clearBtn.addEventListener('click', () => {
+                ganttSvg.innerHTML = '';
+                ganttContainer.style.display = 'none';
+                printBtn.style.display = 'none';
+                mobileIndicator.classList.remove('visible');
+                clearNotification();
+            });
+
+            // *** INICIO: LÓGICA DE IMPRESIÓN SIMPLIFICADA ***
+            printBtn.addEventListener('click', () => {
+                window.print();
+            });
+            // *** FIN: LÓGICA DE IMPRESIÓN SIMPLIFICADA ***
+
+            ganttForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                clearNotification();
+
+                if (typeof Gantt === 'undefined') {
+                    showNotification('Error: La librería del diagrama (Gantt) no se pudo cargar. Revisa tu conexión a internet.');
                     return;
                 }
 
-                const groupedByMonthAndYear = filteredEvents.reduce((acc, event) => {
-                    const key = `${event.year}-${String(event.month).padStart(2, '0')}`;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            monthName: new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'long' }),
-                            year: event.year,
-                            events: []
-                        };
-                    }
-                    acc[key].events.push(event);
-                    return acc;
-                }, {});
+                const taskItems = document.querySelectorAll('#task-list .task-item');
+                if (taskItems.length === 0) {
+                    showNotification('Por favor, añade al menos una tarea.');
+                    return;
+                }
 
-                Object.values(groupedByMonthAndYear).sort((a,b) => a.year - b.year || a.events[0].month - b.events[0].month).forEach(group => {
-                    const monthContainer = document.createElement('div');
-                    const monthTitle = document.createElement('h4');
-                    monthTitle.className = 'font-bold text-lg mt-4 capitalize';
-                    monthTitle.textContent = `${group.monthName} ${group.year}`;
-                    monthContainer.appendChild(monthTitle);
+                const allTasksData = Array.from(taskItems).map(item => {
+                    item.querySelectorAll('.invalid-input').forEach(el => el.classList.remove('invalid-input'));
+                    return {
+                        id: item.dataset.id,
+                        name: item.querySelector('.task-name').value,
+                        start: item.querySelector('.task-start').value,
+                        end: item.querySelector('.task-end').value,
+                        dependenciesRaw: item.querySelector('.task-dependencies').value,
+                        responsible: item.querySelector('.task-responsible').value,
+                        domElements: {
+                            nameInput: item.querySelector('.task-name'),
+                            startDateInput: item.querySelector('.task-start'),
+                            endDateInput: item.querySelector('.task-end'),
+                            depInput: item.querySelector('.task-dependencies')
+                        }
+                    };
+                });
 
-                    const eventsContainer = document.createElement('div');
-                    eventsContainer.className = 'space-y-3 mt-2';
+                const allTaskIds = new Set(allTasksData.map(t => t.id));
 
-                    group.events.sort((a, b) => a.day - b.day).forEach(event => {
-                        const eventEl = document.createElement('div');
-                        eventEl.className = 'flex items-center gap-4 p-3 bg-gray-50 rounded-lg';
-
-                        let googleButton = '';
-                        if (isProUser) {
-                           googleButton = `<button data-event='${JSON.stringify(event)}' title="Añadir a Google Calendar" class="google-btn flex-shrink-0 bg-white border border-gray-300 text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 16h-4v-4h4v4z"/></svg>
-                            </button>`;
+                function validateTasks() {
+                    for (const task of allTasksData) {
+                        if (!task.name || !task.start || !task.end) {
+                            showNotification('Todas las tareas deben tener nombre y fechas.');
+                            if (!task.name) task.domElements.nameInput.classList.add('invalid-input');
+                            if (!task.start) task.domElements.startDateInput.classList.add('invalid-input');
+                            if (!task.end) task.domElements.endDateInput.classList.add('invalid-input');
+                            return false;
                         }
 
-                        eventEl.innerHTML = `
-                            <div class="flex-shrink-0 bg-blue-100 text-blue-700 rounded-lg w-12 h-12 flex flex-col items-center justify-center">
-                                <span class="font-bold text-xl">${event.day}</span>
-                                <span class="text-xs uppercase">${new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'short' })}</span>
-                            </div>
-                            <div class="flex-grow">
-                                <p class="font-semibold">${event.description}</p>
-                                <p class="text-sm text-gray-500">Fecha Límite: ${event.day} de ${group.monthName} de ${event.year}</p>
-                            </div>
-                            ${googleButton}
-                        `;
-                        eventsContainer.appendChild(eventEl);
-                    });
-                    monthContainer.appendChild(eventsContainer);
-                    resultsEl.appendChild(monthContainer);
-                });
-            };
+                        if (new Date(task.end) < new Date(task.start)) {
+                            showNotification(`En la tarea "${task.name}", la fecha de fin no puede ser anterior a la de inicio.`);
+                            task.domElements.endDateInput.classList.add('invalid-input');
+                            return false;
+                        }
 
-            const handleGenerateSchedule = (e) => {
-                e.preventDefault();
-                const taxpayerType = taxpayerTypeEl.value;
-                const nit = nitInputEl.value;
+                        const dependencies = task.dependenciesRaw.split(',')
+                            .map(d => /^\d+$/.test(d.trim()) ? `Tarea_${d.trim()}` : d.trim())
+                            .filter(Boolean);
 
-                if (taxpayerType !== 'persona_no_residente' && (nit === '' || !/^\d+$/.test(nit))) {
-                    showToast('Por favor, ingresa un NIT válido (solo números).', true);
-                    return;
-                }
-
-                const lastDigit = parseInt(nit.slice(-1), 10);
-                const lastTwoDigits = parseInt(nit.slice(-2), 10);
-                let events = [];
-                const categoriesToProcess = new Set();
-
-                // Determine categories based on taxpayer type and form inputs
-                if (taxpayerType === 'persona_no_residente') {
-                    categoriesToProcess.add('pagos_pes').add('declaracion_pes');
-                } else {
-                    categoriesToProcess.add('renta');
-                    if (document.getElementById('foreignAssets').checked) {
-                        categoriesToProcess.add('activos_exterior');
-                    }
-                }
-
-                if (taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente') {
-                    const ivaFrequency = document.querySelector('input[name="iva-frequency"]:checked').value;
-                    categoriesToProcess.add(ivaFrequency === 'bimestral' ? 'iva_bimestral' : 'iva_cuatrimestral');
-
-                    if (taxpayerType === 'persona_juridica') {
-                        categoriesToProcess.add('retencion_fuente');
-                    }
-
-                    if (document.getElementById('consumo').checked) categoriesToProcess.add('consumo');
-                    if (document.getElementById('bolsas').checked) categoriesToProcess.add('bolsas');
-                    if (document.getElementById('gasolina').checked) categoriesToProcess.add('gasolina');
-                    if (document.getElementById('carbono').checked) categoriesToProcess.add('carbono');
-                    if (document.getElementById('transferencia').checked) categoriesToProcess.add('precios_transferencia');
-                    if (document.getElementById('iva_exterior').checked) categoriesToProcess.add('iva_exterior');
-                    if (document.getElementById('patrimonio').checked) categoriesToProcess.add('patrimonio');
-                    if (document.getElementById('plasticos_uso_unico').checked) categoriesToProcess.add('plasticos_uso_unico');
-                    if (document.getElementById('bebidas_ultraprocesadas').checked) categoriesToProcess.add('bebidas_ultraprocesadas');
-                    if (document.getElementById('rub').checked) categoriesToProcess.add('rub');
-
-                    if (document.getElementById('rst').checked) {
-                        const rstType = document.querySelector('input[name="rst-type"]:checked').value;
-                        categoriesToProcess.add(rstType === 'anual' ? 'rst_anual' : 'rst_anticipo');
-                    }
-                }
-
-                for (const year in taxData) {
-                    if (!taxData.hasOwnProperty(year)) continue;
-                    const yearData = taxData[year];
-
-                    if (yearData[taxpayerType]) {
-                        const obligations = yearData[taxpayerType];
-                        categoriesToProcess.forEach(category => {
-                            if (obligations[category]) {
-                                obligations[category].forEach(event => {
-                                    const eventWithYear = { ...event, year: parseInt(year) };
-                                    let match = false;
-                                    if (taxpayerType === 'persona_no_residente') {
-                                        match = true;
-                                    } else if (taxpayerType === 'persona_natural') {
-                                        if (event.nit.includes(lastTwoDigits)) match = true;
-                                    } else {
-                                        if (event.nit.includes(lastDigit)) match = true;
-                                    }
-                                    if(match) events.push(eventWithYear);
-                                });
+                        for (const depId of dependencies) {
+                            if (depId === task.id) {
+                                continue;
                             }
-                        });
-                    }
-                }
-
-                // Deduplicate events as some obligations share dates (e.g. Renta and Activos)
-                const uniqueEvents = new Map();
-                events.forEach(event => {
-                    const key = `${event.year}-${event.month}-${event.day}-${event.description}`;
-                    uniqueEvents.set(key, event);
-                });
-                filteredEvents = Array.from(uniqueEvents.values());
-
-                if (filteredEvents.length > 0) {
-                    showToast(`Agenda generada con ${filteredEvents.length} obligaciones.`);
-                } else {
-                    showToast('No se encontraron obligaciones para tu selección.', true);
-                }
-                renderCalendar();
-                displayResults();
-            };
-
-            const handleDownloadPdf = () => {
-                if (filteredEvents.length === 0) {
-                    showToast('Primero genera una agenda para poder descargar el PDF.', true);
-                    return;
-                }
-
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    console.error("PDF generation libraries not found on window object.");
-                    showToast("Error al generar PDF: librerías no encontradas.", true);
-                    return;
-                }
-
-                const { jsPDF } = window.jspdf;
-                const html2canvas = window.html2canvas;
-                const pdfContentEl = document.getElementById('pdf-content');
-
-                pdfContentEl.innerHTML = '';
-                const titleContainer = document.createElement('div');
-                titleContainer.className = 'text-center mb-6';
-                titleContainer.innerHTML = `
-                    <h1 class="text-3xl font-bold text-gray-800">AGENDA TRIBUTARIA</h1>
-                    <h2 class="text-xl text-gray-600">COLOMBIA 2025 - 2026</h2>
-                    <p class="text-sm text-gray-500 mt-1">NIT Termina en: ${nitInputEl.value.slice(-2)} (${taxpayerTypeEl.options[taxpayerTypeEl.selectedIndex].text})</p>
-                `;
-                pdfContentEl.appendChild(titleContainer);
-
-                const calendarGrid = document.createElement('div');
-                calendarGrid.className = 'grid grid-cols-4 gap-2';
-
-                const monthsToRender = Array.from({ length: 13 }, (_, i) => {
-                    const date = new Date(2025, i, 1);
-                    return { month: date.getMonth(), year: date.getFullYear() };
-                });
-
-                monthsToRender.forEach(({ month, year }) => {
-                    const monthContainer = document.createElement('div');
-                    monthContainer.className = 'border border-gray-200 p-1';
-                    const monthName = new Date(year, month).toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-
-                    let monthHTML = `<h3 class="text-center font-bold bg-gray-700 text-white py-1 text-[10px]">${monthName} ${year}</h3>`;
-                    monthHTML += `<div class="grid grid-cols-7 text-center text-[8px] gap-px">`;
-
-                    const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-                    dayHeaders.forEach(d => monthHTML += `<div class="font-bold">${d}</div>`);
-
-                    const firstDayOfMonth = new Date(year, month, 1).getDay();
-                    for (let i = 0; i < firstDayOfMonth; i++) {
-                        monthHTML += '<div></div>';
-                    }
-
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
-                        if (dayEvents.length > 0) {
-                            const eventType = getEventType(dayEvents[0].description);
-                            monthHTML += `
-                                <div class="relative w-6 h-6 mx-auto flex items-center justify-center text-[9px]">
-                                    <div class="absolute border-2 border-red-500 rounded-full w-full h-full"></div>
-                                    <div class="absolute -top-1.5 text-white text-[7px] px-1 rounded-full ${eventType.color}">
-                                        ${eventType.label}
-                                    </div>
-                                    ${day}
-                                </div>`;
-                        } else {
-                            monthHTML += `<div class="w-6 h-6 mx-auto flex items-center justify-center text-[9px]">${day}</div>`;
+                            if (!allTaskIds.has(depId)) {
+                                showNotification(`La tarea "${task.name}" tiene una dependencia inválida: "${depId}" no existe.`);
+                                task.domElements.depInput.classList.add('invalid-input');
+                                return false;
+                            }
                         }
                     }
-                    monthHTML += `</div>`;
-                    monthContainer.innerHTML = monthHTML;
-                    calendarGrid.appendChild(monthContainer);
-                });
+                    return true;
+                }
 
-                pdfContentEl.appendChild(calendarGrid);
-
-                showToast("Generando PDF... por favor espera.", false);
-                html2canvas(pdfContentEl, { scale: 3 })
-                    .then((canvas) => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF('p', 'mm', 'a4');
-                        const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const canvasWidth = canvas.width;
-                        const canvasHeight = canvas.height;
-                        const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
-                        pdf.addImage(imgData, 'PNG', 5, 5, pdfWidth - 10, pdfHeight - 5);
-                        pdf.save(`agenda-tributaria-${nitInputEl.value || 'pes'}.pdf`);
-                    });
-            };
-
-            const getEventType = (description) => {
-                const desc = description.toLowerCase();
-                if (desc.includes('renta')) return { label: 'RENTA', color: 'bg-blue-500' };
-                if (desc.includes('iva')) return { label: 'IVA', color: 'bg-green-500' };
-                if (desc.includes('retefuente')) return { label: 'RETEF.', color: 'bg-red-500' };
-                if (desc.includes('activos')) return { label: 'ACTIVOS', color: 'bg-yellow-400' };
-                if (desc.includes('pes')) return { label: 'PES', color: 'bg-purple-500' };
-                if (desc.includes('consumo')) return { label: 'CONSUMO', color: 'bg-pink-500' };
-                if (desc.includes('carbono')) return { label: 'CARBONO', color: 'bg-gray-600' };
-                if (desc.includes('gasolina')) return { label: 'GAS', color: 'bg-orange-500' };
-                if (desc.includes('bolsas')) return { label: 'BOLSAS', color: 'bg-teal-500' };
-                if (desc.includes('transferencia')) return { label: 'TRANSF', color: 'bg-indigo-500' };
-                if (desc.includes('patrimonio')) return { label: 'PATRIM', color: 'bg-cyan-500' };
-                if (desc.includes('plasticos')) return { label: 'PLAST', color: 'bg-lime-500' };
-                if (desc.includes('bebidas')) return { label: 'BEBIDAS', color: 'bg-rose-500' };
-                if (desc.includes('rub')) return { label: 'RUB', color: 'bg-fuchsia-500' };
-                if (desc.includes('rst')) return { label: 'RST', color: 'bg-sky-500' };
-                return { label: 'OTRO', color: 'bg-gray-400' };
-            };
-
-            const handleCalendarNav = (direction) => {
-                currentDate.setMonth(currentDate.getMonth() + direction);
-                if (currentDate > new Date(2026, 0, 31) || currentDate < new Date(2025, 0, 1)) {
-                    currentDate.setMonth(currentDate.getMonth() - direction);
+                if (!validateTasks()) {
                     return;
                 }
-                renderCalendar();
-            };
 
-            const checkProStatus = () => {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('payment') === 'success') {
-                    localStorage.setItem('isProUser', 'true');
-                    isProUser = true;
-                    showToast('¡Pago exitoso! Funciones Pro activadas.');
-                    window.history.replaceState(null, '', window.location.pathname);
-                } else {
-                    isProUser = localStorage.getItem('isProUser') === 'true';
-                }
+                const tasksForGantt = allTasksData.map(task => {
+                    const dependencies = task.dependenciesRaw.split(',')
+                        .map(d => /^\d+$/.test(d.trim()) ? `Tarea_${d.trim()}` : d.trim())
+                        .filter(Boolean)
+                        .filter(depId => depId !== task.id);
 
-                if(isProUser) {
-                    document.getElementById('pro-section').classList.add('hidden');
-                    document.getElementById('pro-activated-section').classList.remove('hidden');
-                }
-            };
+                    return {
+                        id: task.id,
+                        name: `${task.name} (${task.responsible || 'N/A'})`,
+                        start: task.start,
+                        end: task.end,
+                        progress: 0,
+                        dependencies: dependencies
+                    };
+                });
 
-            const updateFormUI = () => {
-                const taxpayerType = taxpayerTypeEl.value;
-                const companyQuestionsEl = document.getElementById('company-questions');
-                const foreignAssetsContainerEl = document.getElementById('foreignAssets').parentElement;
+                // --- Gantt Chart Rendering ---
+                ganttSvg.innerHTML = '';
+                ganttTitle.textContent = document.getElementById('project-name').value;
+                ganttContainer.style.display = 'block';
+                printBtn.style.display = 'inline-flex';
+                mobileIndicator.classList.add('visible');
 
-                document.getElementById('nit-section').style.display = taxpayerType === 'persona_no_residente' ? 'none' : 'block';
-                document.getElementById('pes-section').style.display = taxpayerType === 'persona_no_residente' ? 'block' : 'none';
-
-                const showCompanyQuestions = taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente';
-                companyQuestionsEl.style.display = showCompanyQuestions ? 'block' : 'none';
-
-                foreignAssetsContainerEl.style.display = 'flex';
-            };
-
-            // --- EVENT LISTENERS ---
-            form.addEventListener('submit', handleGenerateSchedule);
-            downloadPdfBtn.addEventListener('click', handleDownloadPdf);
-            prevMonthBtn.addEventListener('click', () => handleCalendarNav(-1));
-            nextMonthBtn.addEventListener('click', () => handleCalendarNav(1));
-            taxpayerTypeEl.addEventListener('change', updateFormUI);
-
-            document.getElementById('rst').addEventListener('change', (e) => {
-                document.getElementById('rst-options').style.display = e.target.checked ? 'block' : 'none';
-            });
-
-            resultsEl.addEventListener('click', function(e) {
-                const button = e.target.closest('.google-btn');
-                if (button) {
-                    const eventData = JSON.parse(button.dataset.event);
-                    const taxpayerType = taxpayerTypeEl.value;
-                    const nit = nitInputEl.value;
-
-                    const year = eventData.year;
-                    const month = String(eventData.month).padStart(2, '0');
-                    const day = String(eventData.day).padStart(2, '0');
-                    const startDate = `${year}${month}${day}`;
-                    const endDate = `${year}${month}${day}`;
-
-                    const title = encodeURIComponent(`Vencimiento: ${eventData.description}`);
-                    const detailsText = taxpayerType === 'persona_no_residente'
-                        ? `Recordatorio de obligación tributaria para PES (No Residente).`
-                        : `Recordatorio de obligación tributaria para el NIT terminado en ${nit.slice(-2)}.`;
-
-                    const details = encodeURIComponent(`${detailsText}\n\nObligación: ${eventData.description}.\n\nGenerado por Agenda Tributaria Interactiva.`);
-                    const reminderMinutes = 48 * 60; // 2-day reminder
-
-                    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&crm=REMIND&reminders.minutes=${reminderMinutes}`;
-
-                    window.open(url, '_blank');
+                try {
+                    ganttChart = new Gantt("#gantt", tasksForGantt, {
+                        header_height: 60,
+                        bar_height: 25,
+                        padding: 20,
+                        view_modes: ['Day', 'Week', 'Month'],
+                        view_mode: 'Week',
+                        language: 'es',
+                        custom_popup_html: function(task) {
+                            const startDate = new Date(task._start).toLocaleDateString('es-CO', {day:'numeric', month:'long'});
+                            const endDate = new Date(task._end).toLocaleDateString('es-CO', {day:'numeric', month:'long'});
+                            return `<div class="popup-content"><div class="title">${task.name}</div><div class="subtitle">${startDate} - ${endDate}</div></div>`;
+                        }
+                    });
+                    ganttContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } catch (e) {
+                    console.error("Error al crear el Gantt:", e);
+                    showNotification("Ocurrió un error inesperado al generar el diagrama. Intenta de nuevo.");
                 }
             });
 
-            // --- INITIALIZATION ---
-            checkProStatus();
-            updateFormUI();
-            renderCalendar();
-            document.getElementById('rst-options').style.display = document.getElementById('rst').checked ? 'block' : 'none';
+            // --- Initial State ---
+            addTask();
         });
     </script>
+
 </body>
 </html>
