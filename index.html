@@ -74,6 +74,25 @@
       background-color: #218838;
       transform: translateY(-2px);
     }
+
+    /* Estilos para texto informativo */
+    .info-text {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 25px;
+      font-style: italic;
+    }
+
+    .doc-text {
+      font-size: 14px;
+      text-align: justify;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-left: 4px solid #0d2c54;
+      line-height: 1.7;
+      border-radius: 0 8px 8px 0;
+    }
   </style>
 </head>
 <body>
@@ -87,44 +106,10 @@
       Tu navegador no soporta el elemento <code>audio</code>.
     </audio>
 
-    <button id="download-btn" class="download-button">
-      Descargar Podcast
-    </button>
+    <p class="info-text">Si desea descargar el Podcast dele a los 3 puntos del lado derecho de los controles del audio.</p>
+
+    <p class="doc-text">El informe examina las estructuras de honorarios y compensación para contadores públicos en Colombia durante 2025, destacando la disparidad entre las guías oficiales y la realidad del mercado. Explica que el Consejo Técnico de la Contaduría Pública (CTCP) ofrece una guía de honorarios sugeridos no vinculante, mientras que la Junta Central de Contadores (JCC) establece tarifas administrativas obligatorias.</p>
   </div>
-
-  <script>
-    const downloadBtn = document.getElementById('download-btn');
-    const audioUrl = 'https://contador.net.co/wp-content/uploads/2025/08/Contadores_2025__Guias_VS.mp3';
-
-    downloadBtn.addEventListener('click', async () => {
-      const originalText = downloadBtn.textContent;
-      downloadBtn.textContent = 'Descargando...';
-      downloadBtn.disabled = true;
-
-      try {
-        const response = await fetch(audioUrl);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'podcast-tarifas-contador.mp3'; // Filename for the download
-        document.body.appendChild(a);
-
-        a.click();
-
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } catch (error) {
-        console.error('Download failed:', error);
-        alert('La descarga falló. Por favor, inténtelo de nuevo.');
-      } finally {
-        downloadBtn.textContent = originalText;
-        downloadBtn.disabled = false;
-      }
-    });
-  </script>
 
 </body>
 </html>
