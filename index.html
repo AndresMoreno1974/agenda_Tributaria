@@ -706,7 +706,7 @@ function expandAndRefineSentence(sentence) {
     };
     const cleanSentence = newSentence.replace(/[.!?\s]+$/, '').trim();
     for (const keyword in expansionMap) {
-        if (cleanSentence.toLowerCase().includes(keyword) && Math.random() > 0.3) {
+        if (cleanSentence.toLowerCase().includes(keyword)) {
             return `${cleanSentence}, ${expansionMap[keyword]}${punc}`;
         }
     }
@@ -735,6 +735,15 @@ function paraphraseText() {
 
         // PASS 1: Structural & Conceptual Expansion
         const sentences = workingText.match(/[^.!?]+[.!?\s]*/g) || [workingText];
+
+        // Shuffle sentences for texts with more than 3 sentences to dramatically alter the structure
+        if (sentences.length > 3) {
+            for (let i = sentences.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [sentences[i], sentences[j]] = [sentences[j], sentences[i]];
+            }
+        }
+
         const transformedSentences = sentences.map(sentence => {
             if (!sentence.trim()) return '';
             let s = sentence;
@@ -745,7 +754,7 @@ function paraphraseText() {
             const punc = (s.match(/[.!?]$/) || ['.'])[0];
             let cleanSentence = s.replace(/[.!?\s]+$/, '').trim();
 
-            if (Math.random() > 0.6) { // 40% chance to prepend a connector
+            if (Math.random() > 0.2) { // 80% chance to prepend a connector
                 const connector = connectors[Math.floor(Math.random() * connectors.length)];
                 cleanSentence = `${connector} ${cleanSentence.charAt(0).toLowerCase() + cleanSentence.slice(1)}`;
             }
