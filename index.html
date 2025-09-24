@@ -721,103 +721,102 @@ function paraphraseText() {
             return;
         }
 
-        // --- NEW INTENSIVE PARAPHRASING ENGINE ---
+        // Process text paragraph by paragraph to handle long texts gracefully
+        const paragraphs = originalText.split(/(\n\s*\n)/);
 
-        // 1. High-level thematic rewrite. If successful, we're done.
-        const thematicRewrite = applyThematicRewrite(originalText);
-        if (thematicRewrite) {
-            document.getElementById("finalResult").innerText = thematicRewrite + "\n\n✨ Texto conceptualizado y expandido por el motor semántico de Gemini.";
-            return;
-        }
+        const paraphrasedParagraphs = paragraphs.map(p => {
+            // If the part is just a newline, or empty, keep it as is.
+            if (/^\n\s*\n$/.test(p) || !p.trim()) return p;
 
-        // 2. If no thematic rewrite, proceed with a deep, multi-pass transformation.
-        let workingText = originalText;
+            // --- Apply intensive paraphrasing to each paragraph ---
 
-        // PASS 1: Structural & Conceptual Expansion
-        const sentences = workingText.match(/[^.!?]+[.!?\s]*/g) || [workingText];
-
-        // Shuffle sentences for texts with more than 3 sentences to dramatically alter the structure
-        if (sentences.length > 3) {
-            for (let i = sentences.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [sentences[i], sentences[j]] = [sentences[j], sentences[i]];
-            }
-        }
-
-        const transformedSentences = sentences.map(sentence => {
-            if (!sentence.trim()) return '';
-            let s = sentence;
-            s = expandAndRefineSentence(s); // Use existing expansion logic
-
-            // Add more structural variety
-            const connectors = ["Es crucial considerar que", "Desde otra perspectiva,", "Asimismo, es evidente que", "Cabe destacar que"];
-            const punc = (s.match(/[.!?]$/) || ['.'])[0];
-            let cleanSentence = s.replace(/[.!?\s]+$/, '').trim();
-
-            if (Math.random() > 0.2) { // 80% chance to prepend a connector
-                const connector = connectors[Math.floor(Math.random() * connectors.length)];
-                cleanSentence = `${connector} ${cleanSentence.charAt(0).toLowerCase() + cleanSentence.slice(1)}`;
+            // 1. High-level thematic rewrite for the current paragraph.
+            const thematicRewrite = applyThematicRewrite(p);
+            if (thematicRewrite) {
+                return thematicRewrite;
             }
 
-            return cleanSentence + punc; // Re-add punctuation
+            // 2. If no thematic rewrite, proceed with a deep, multi-pass transformation.
+            let workingText = p;
+
+            // PASS 1: Structural & Conceptual Expansion
+            const sentences = workingText.match(/[^.!?]+[.!?\s]*/g) || [workingText];
+
+            if (sentences.length > 3) {
+                for (let i = sentences.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [sentences[i], sentences[j]] = [sentences[j], sentences[i]];
+                }
+            }
+
+            const transformedSentences = sentences.map(sentence => {
+                if (!sentence.trim()) return '';
+                let s = sentence;
+                s = expandAndRefineSentence(s);
+
+                const connectors = ["Es crucial considerar que", "Desde otra perspectiva,", "Asimismo, es evidente que", "Cabe destacar que"];
+                const punc = (s.match(/[.!?]$/) || ['.'])[0];
+                let cleanSentence = s.replace(/[.!?\s]+$/, '').trim();
+
+                if (Math.random() > 0.2) { // 80% chance
+                    const connector = connectors[Math.floor(Math.random() * connectors.length)];
+                    cleanSentence = `${connector} ${cleanSentence.charAt(0).toLowerCase() + cleanSentence.slice(1)}`;
+                }
+
+                return cleanSentence + punc;
+            });
+            workingText = transformedSentences.join(' ');
+
+            // PASS 2: Phrase-level substitution
+            let processedText = ` ${workingText.trim()} `;
+            Object.keys(phrases).forEach(phrase => {
+                const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
+                if (regex.test(processedText)) {
+                    const replacement = phrases[phrase][Math.floor(Math.random() * phrases[phrase].length)];
+                    processedText = processedText.replace(regex, (match) => {
+                        return match[0] === match[0].toUpperCase() ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement;
+                    });
+                }
+            });
+
+            // PASS 3: Word-level substitution
+            const parts = processedText.trim().split(/([ \n\t.,!?;:()"“”«»]+)/);
+            const articles = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas'];
+
+            for (let i = 0; i < parts.length; i++) {
+                let part = parts[i];
+                if (!part.trim()) continue;
+                const lowerPart = part.toLowerCase();
+                const syns = synonyms[lowerPart];
+                if (syns) {
+                    const originalInfo = concordanceEngine.getWordInfo(part);
+                    let synonym = syns[Math.floor(Math.random() * syns.length)];
+                    let adapted = concordanceEngine.adaptSynonym(synonym, originalInfo);
+                    if (part[0] === part[0].toUpperCase()) {
+                        adapted = adapted.charAt(0).toUpperCase() + adapted.slice(1);
+                    }
+                    parts[i] = adapted;
+                    const newNounInfo = concordanceEngine.getWordInfo(adapted);
+                    if (i > 1) {
+                        const prevPart = parts[i - 2].trim();
+                        if (articles.includes(prevPart.toLowerCase())) {
+                            parts[i - 2] = parts[i - 2].replace(prevPart, concordanceEngine.adaptArticle(prevPart, newNounInfo));
+                        }
+                    }
+                    if (i < parts.length - 2) {
+                        const nextPart = parts[i + 2].trim();
+                        if (synonyms[nextPart.toLowerCase()]) {
+                            parts[i + 2] = parts[i + 2].replace(nextPart, concordanceEngine.adaptAdjective(nextPart, newNounInfo));
+                        }
+                    }
+                }
+            }
+            return parts.join('');
         });
-        workingText = transformedSentences.join(' ');
 
-        // PASS 2: Phrase-level substitution
-        let processedText = ` ${workingText.trim()} `;
-        Object.keys(phrases).forEach(phrase => {
-            const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
-            if (regex.test(processedText)) {
-                const replacement = phrases[phrase][Math.floor(Math.random() * phrases[phrase].length)];
-                processedText = processedText.replace(regex, (match) => {
-                    if (match[0] === match[0].toUpperCase()) {
-                        return replacement.charAt(0).toUpperCase() + replacement.slice(1);
-                    }
-                    return replacement;
-                });
-            }
-        });
-
-        // PASS 3: Word-level substitution with grammatical concordance
-        const parts = processedText.trim().split(/([ \n\t.,!?;:()"“”«»]+)/);
-        const articles = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas'];
-
-        for (let i = 0; i < parts.length; i++) {
-            let part = parts[i];
-            if (!part.trim()) continue;
-
-            const lowerPart = part.toLowerCase();
-            const syns = synonyms[lowerPart];
-
-            if (syns) {
-                const originalInfo = concordanceEngine.getWordInfo(part);
-                let synonym = syns[Math.floor(Math.random() * syns.length)];
-                let adapted = concordanceEngine.adaptSynonym(synonym, originalInfo);
-
-                if (part[0] === part[0].toUpperCase()) {
-                    adapted = adapted.charAt(0).toUpperCase() + adapted.slice(1);
-                }
-                parts[i] = adapted;
-
-                const newNounInfo = concordanceEngine.getWordInfo(adapted);
-                if (i > 1) { // Adapt previous article
-                    const prevPart = parts[i - 2].trim();
-                    if (articles.includes(prevPart.toLowerCase())) {
-                        parts[i - 2] = parts[i - 2].replace(prevPart, concordanceEngine.adaptArticle(prevPart, newNounInfo));
-                    }
-                }
-                if (i < parts.length - 2) { // Adapt next adjective
-                    const nextPart = parts[i + 2].trim();
-                    if (synonyms[nextPart.toLowerCase()]) {
-                        parts[i + 2] = parts[i + 2].replace(nextPart, concordanceEngine.adaptAdjective(nextPart, newNounInfo));
-                    }
-                }
-            }
-        }
-        workingText = parts.join('');
-
-        // 4. Final cleanup and formatting
-        let cleanedText = workingText.replace(/\s+/g, ' ').trim().replace(/\s+([,.;:!?])/g, '$1');
+        // 4. Final assembly and cleanup
+        let finalParaphrasedText = paraphrasedParagraphs.join('');
+        let cleanedText = finalParaphrasedText.replace(/\s+/g, ' ').trim().replace(/\s+([,.;:!?])/g, '$1');
         cleanedText = cleanedText.replace(/([.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
         cleanedText = cleanedText.charAt(0).toUpperCase() + cleanedText.slice(1);
 
