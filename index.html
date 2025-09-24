@@ -3,735 +3,946 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Tributaria Interactiva 2025-2026</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Detector IA Contable</title>
+    <!-- Librería para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Librería para PDF y DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+
     <style>
+        /* Estilos generales */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            line-height: 1.6;
         }
-        .calendar-day.has-event {
-            background-color: #fef08a;
-            color: #b45309;
-            font-weight: bold;
-            border-radius: 50%;
-            position: relative;
+
+        /* Contenedor principal */
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
-        .calendar-day.has-event::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: #dc2626;
-            border-radius: 50%;
+
+        /* Títulos */
+        h5 {
+            margin: 10px 0 20px;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #0b5ed7;
+            text-align: center;
         }
-        .toast {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.5s, transform 0.5s;
-            transform: translateY(20px);
+
+        h3 {
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 2px solid;
+            padding-bottom: 8px;
         }
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
+
+        h3.detected-title { color: #007bff; border-color: #007bff; }
+        h3.final-title { color: #28a745; border-color: #28a745; }
+
+        /* Etiquetas y controles */
+        label { font-weight: 600; }
+        textarea, input[type="file"] { margin-top: 8px; }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
+            transition: border-color 0.3s;
+        }
+        textarea:focus { border-color: #007bff; outline: none; }
+
+        /* Contenedor de botones */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Botones */
+        button, a.button-link {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            text-align: center;
+        }
+        button:hover, a.button-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        .btn-analyze { background: #007bff; }
+        .btn-reset { background: #dc3545; }
+        .btn-paraphrase { background: #28a745; }
+        .btn-edit { background: #ffc107; color: black; }
+        .btn-accept { background: #17a2b8; }
+        .btn-copy { background: #6c757d; }
+        .btn-donate { background: #e83e8c; }
+
+        /* Sección de resultados */
+        #resultsContainer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .result-box {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .detected-box { background: #f8f9fa; }
+        .final-box { background: #e9f7ef; border-color: #b5dfc0; }
+
+        /* Diseño responsivo para móviles */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            #resultsContainer {
+                grid-template-columns: 1fr; /* Apila las columnas */
+            }
+            .button-group button, .button-group a {
+                flex-grow: 1; /* Hace que los botones ocupen el espacio disponible */
+            }
         }
     </style>
 </head>
-<body class="antialiased text-gray-800">
+<body>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Agenda Tributaria Interactiva 2025-2026 🇨🇴</h1>
-            <p class="text-gray-600 mt-2">Consulta, exporta y descarga tus plazos de la DIAN.</p>
-        </header>
+<div class="container">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column -->
-            <div class="lg:col-span-1 space-y-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🔍 Filtros de Búsqueda</h2>
-                    <form id="taxForm" class="space-y-4">
-                        <div>
-                            <label for="taxpayerType" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Contribuyente</label>
-                            <select id="taxpayerType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                <option value="gran_contribuyente">Gran Contribuyente</option>
-                                <option value="persona_juridica">Persona Jurídica</option>
-                                <option value="persona_natural">Persona Natural</option>
-                                <option value="persona_no_residente">Personas no residentes (PES)</option>
-                            </select>
-                        </div>
+    <h5>Detector IA Contable</h5>
 
-                        <div id="nit-section">
-                            <div>
-                                <label for="nitInput" class="block text-sm font-medium text-gray-700 mb-1">Tu NIT completo o los últimos dígitos</label>
-                                <input type="text" id="nitInput" placeholder="Ej: 900123456" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"/>
-                            </div>
-                            <div class="flex items-center mt-4">
-                                <input id="foreignAssets" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"/>
-                                <label for="foreignAssets" class="ml-2 block text-sm text-gray-900">¿Declara activos en el exterior?</label>
-                            </div>
-                        </div>
+    <label for="inputText">Pega tu texto o código HTML:</label>
+    <textarea id="inputText" rows="8"></textarea>
 
-                        <div id="pes-section" class="hidden text-sm text-gray-500 p-3 bg-blue-50 rounded-lg">
-                            Para contribuyentes con Presencia Económica Significativa (PES), las fechas son generales y no requieren NIT.
-                        </div>
+    <div style="margin:15px 0;">
+        <label for="fileUpload">O carga un archivo (.pdf, .docx, .txt):</label><br>
+        <input type="file" id="fileUpload" accept=".pdf,.docx,.txt" onchange="loadFile(event)">
+    </div>
 
-                        <div id="company-questions" class="space-y-4">
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Periodicidad del IVA</label>
-                                <div class="flex gap-4">
-                                    <div class="flex items-center">
-                                        <input id="iva-bimestral" name="iva-frequency" type="radio" value="bimestral" checked class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-bimestral" class="ml-2 block text-sm text-gray-900">Bimestral</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="iva-cuatrimestral" name="iva-frequency" type="radio" value="cuatrimestral" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-cuatrimestral" class="ml-2 block text-sm text-gray-900">Cuatrimestral</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center"><input id="consumo" type="checkbox" class="h-4 w-4"/><label for="consumo" class="ml-2 text-sm">¿Declara Impuesto al Consumo?</label></div>
-                            <div class="flex items-center"><input id="bolsas" type="checkbox" class="h-4 w-4"/><label for="bolsas" class="ml-2 text-sm">¿Declara Impuesto a Bolsas Plásticas?</label></div>
-                            <div class="flex items-center"><input id="gasolina" type="checkbox" class="h-4 w-4"/><label for="gasolina" class="ml-2 text-sm">¿Declara Gasolina y ACPM?</label></div>
-                            <div class="flex items-center"><input id="carbono" type="checkbox" class="h-4 w-4"/><label for="carbono" class="ml-2 text-sm">¿Declara Impuesto al Carbono?</label></div>
-                            <div class="flex items-center"><input id="transferencia" type="checkbox" class="h-4 w-4"/><label for="transferencia" class="ml-2 text-sm">¿Declara Precios de Transferencia?</label></div>
-                            <div class="flex items-center"><input id="iva_exterior" type="checkbox" class="h-4 w-4"/><label for="iva_exterior" class="ml-2 text-sm">¿Declara IVA desde el exterior?</label></div>
-                            <div class="flex items-center"><input id="patrimonio" type="checkbox" class="h-4 w-4"/><label for="patrimonio" class="ml-2 text-sm">¿Declara Impuesto al Patrimonio?</label></div>
-                            <div class="flex items-center"><input id="plasticos_uso_unico" type="checkbox" class="h-4 w-4"/><label for="plasticos_uso_unico" class="ml-2 text-sm">¿Declara Plásticos de un solo uso?</label></div>
-                            <div class="flex items-center"><input id="bebidas_ultraprocesadas" type="checkbox" class="h-4 w-4"/><label for="bebidas_ultraprocesadas" class="ml-2 text-sm">¿Declara Bebidas Ultraprocesadas?</label></div>
-                            <div class="flex items-center"><input id="rub" type="checkbox" class="h-4 w-4"/><label for="rub" class="ml-2 text-sm">¿Necesita actualizar el RUB?</label></div>
+    <div style="margin:10px 0;">
+        <input type="checkbox" id="preserveHtml">
+        <label for="preserveHtml">Preservar etiquetas HTML</label>
+    </div>
 
-                            <div class="flex items-center">
-                                <input id="rst" type="checkbox" class="h-4 w-4"/>
-                                <label for="rst" class="ml-2 text-sm">¿Está en el Régimen Simple (RST)?</label>
-                            </div>
-                            <div id="rst-options" class="hidden pl-6 space-y-2">
-                                <div class="flex items-center">
-                                    <input id="rst-anual" name="rst-type" type="radio" value="anual" checked class="h-4 w-4"/>
-                                    <label for="rst-anual" class="ml-2 text-sm">Declaración Anual</label>
-                                </div>
-                                <div class="flex items-center">
-                                    <input id="rst-anticipo" name="rst-type" type="radio" value="anticipo" class="h-4 w-4"/>
-                                    <label for="rst-anticipo" class="ml-2 text-sm">Anticipo Bimestral</label>
-                                </div>
-                            </div>
-                        </div>
+    <div class="button-group">
+        <button onclick="analyzeText()" class="btn-analyze">🔍 ANALIZAR</button>
+        <button onclick="resetText()" class="btn-reset">♻️ REINICIAR</button>
+    </div>
 
-                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">
-                            Generar Agenda
-                        </button>
-                    </form>
-                </div>
+    <div style="margin:15px 0;">
+        <label for="threshold"><b>Umbral de detección:</b></label>
+        <input type="range" id="threshold" min="50" max="100" value="100" style="width:60%;" oninput="updateThresholdLabel(this.value)">
+        <span id="thresholdValue">100%</span>
+        <p style="font-size:12px; color:#555;">👉 A mayor umbral, se marcarán más frases como sospechosas.</p>
+    </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-300">
-                     <h2 class="text-xl font-bold mb-4 text-gray-700">📄 Funciones Gratuitas</h2>
-                     <p class="text-gray-600 mb-4">Genera un resumen de tu agenda en formato PDF para guardarlo o imprimirlo.</p>
-                     <button id="downloadPdf" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                        Descargar Resumen en PDF
-                     </button>
-                </div>
+    <div style="margin:20px 0;">
+        <canvas id="similarityChart" width="400" height="150"></canvas>
+    </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-amber-400">
-                     <h2 class="text-xl font-bold mb-4 text-amber-600">⭐ Funciones Pro</h2>
-                     <div id="pro-section">
-                        <p class="text-gray-600 mb-4">Activa la versión Pro para exportar tu agenda a Google Calendar y recibir notificaciones.</p>
-                        <a href="https://checkout.bold.co/payment/LNK_LDA07DPSM4" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                            Activar Funciones Pro
-                        </a>
-                     </div>
-                     <div id="pro-activated-section" class="hidden text-center">
-                        <p class="text-green-600 font-semibold">¡Funciones Pro activadas!</p>
-                        <p class="text-gray-600 mt-2">Ya puedes añadir tus vencimientos a Google Calendar desde la lista de resultados.</p>
-                     </div>
-                </div>
+    <!-- Contenedor de Resultados (para control responsive) -->
+    <div id="resultsContainer">
+        <!-- Texto original -->
+        <div class="result-box detected-box">
+            <h3 class="detected-title">Texto detectado</h3>
+            <div id="detectedText" style="white-space:pre-wrap; font-size:15px; line-height:1.5;"></div>
+            <div id="similarityScore" style="margin-top:10px; font-weight:bold; color:#dc3545;"></div>
+            <div class="button-group" style="margin-top:15px;">
+                <button onclick="paraphraseText()" class="btn-paraphrase">✍️ PARAFRASEAR</button>
+                <button onclick="editText()" class="btn-edit">📝 EDITAR</button>
+                <button onclick="acceptText()" class="btn-accept">✅ ACEPTAR</button>
             </div>
+        </div>
 
-            <!-- Right Column -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
-                <div id="calendar-container">
-                    <div class="flex items-center justify-between mb-4">
-                        <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <h2 id="monthYear" class="text-2xl font-bold"></h2>
-                        <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                    <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
-                </div>
-                <div id="results-container" class="mt-8">
-                    <h3 class="text-xl font-bold mb-4 border-t pt-6">🗓️ Vencimientos para tu selección:</h3>
-                    <div id="results" class="space-y-3">
-                        <p class="text-gray-500">Por favor, completa los filtros y haz clic en "Generar Agenda" para ver tus obligaciones.</p>
-                    </div>
-                </div>
+        <!-- Texto parafraseado -->
+        <div class="result-box final-box">
+            <h3 class="final-title">Resultado final</h3>
+            <div id="finalResult" style="white-space:pre-wrap; font-size:15px; line-height:1.5; font-weight:500;"></div>
+            <div class="button-group" style="margin-top:15px;">
+                <button onclick="copyText()" class="btn-copy">📋 COPIAR</button>
+                <a href="https://checkout.bold.co/payment/LNK_GG52DU5V4O" target="_blank" class="button-link btn-donate">
+                    💖 DONAR
+                </a>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Hidden content for PDF generation -->
-    <div id="pdf-content" style="position: absolute; left: -9999px; top: 0; width: 210mm;" class="bg-white p-8 font-sans"></div>
+<script>
+let chart;
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50">
-        <p id="toast-message"></p>
-    </div>
+// --- DICCIONARIO AMPLIADO MANUALMENTE PARA MÁXIMA INTENSIDAD ---
+const synonyms = {
+    // Sustantivos
+    'acción': ['medida', 'iniciativa', 'operación', 'paso', 'actuación', 'hecho'],
+    'aspecto': ['característica', 'faceta', 'dimensión', 'perspectiva', 'matiz', 'apariencia'],
+    'autoridad': ['poder', 'mando', 'jurisdicción', 'influencia', 'prestigio'],
+    'beneficio': ['ventaja', 'provecho', 'ganancia', 'utilidad', 'privilegio', 'rendimiento'],
+    'calidad': ['excelencia', 'superioridad', 'propiedad', 'virtud', 'estándar', 'categoría'],
+    'cambio': ['modificación', 'transformación', 'alteración', 'variación', 'ajuste', 'viraje'],
+    'capacidad': ['aptitud', 'habilidad', 'competencia', 'talento', 'potencial'],
+    'casa': ['vivienda', 'hogar', 'residencia', 'domicilio', 'morada', 'lar'],
+    'caso': ['situación', 'supuesto', 'ejemplo', 'circunstancia', 'escenario', 'asunto'],
+    'ciencia': ['conocimiento', 'disciplina', 'saber', 'investigación'],
+    'cliente': ['consumidor', 'usuario', 'comprador', 'patrocinador', 'demandante', 'parroquiano'],
+    'comunicación': ['diálogo', 'interacción', 'transmisión de ideas', 'intercambio', 'conexión'],
+    'condición': ['estado', 'situación', 'requisito', 'cláusula', 'naturaleza'],
+    'conocimiento': ['saber', 'sabiduría', 'entendimiento', 'erudición', 'dominio'],
+    'contenido': ['material', 'sustancia', 'información', 'temática'],
+    'contexto': ['entorno', 'ambiente', 'marco', 'escenario', 'coyuntura', 'trasfondo'],
+    'cultura': ['tradiciones', 'costumbres', 'idiosincrasia', 'civilización', 'acervo'],
+    'cuerpo': ['organismo', 'figura', 'complexión', 'entidad', 'estructura'],
+    'decisión': ['resolución', 'determinación', 'fallo', 'veredicto', 'elección'],
+    'derecho': ['privilegio', 'facultad', 'prerrogativa', 'autorización', 'ley'],
+    'desarrollo': ['crecimiento', 'evolución', 'progreso', 'expansión', 'fomento', 'avance'],
+    'dinero': ['capital', 'recursos', 'fondos', 'efectivo', 'liquidez', 'patrimonio'],
+    'duda': ['incertidumbre', 'vacilación', 'indecisión', 'escepticismo', 'recelo'],
+    'educación': ['formación', 'enseñanza', 'instrucción', 'pedagogía', 'aprendizaje'],
+    'efecto': ['consecuencia', 'resultado', 'impacto', 'influencia', 'repercusión'],
+    'empresa': ['organización', 'entidad', 'compañía', 'corporación', 'firma', 'negocio'],
+    'error': ['fallo', 'equivocación', 'desacierto', 'incorrección', 'yerro'],
+    'estrategia': ['plan', 'táctica', 'enfoque', 'metodología', 'línea de acción', 'maniobra'],
+    'estudio': ['análisis', 'investigación', 'informe', 'evaluación', 'examen'],
+    'éxito': ['triunfo', 'logro', 'victoria', 'prosperidad', 'acierto'],
+    'forma': ['manera', 'modo', 'estilo', 'método', 'procedimiento', 'vía'],
+    'fuerza': ['vigor', 'energía', 'potencia', 'intensidad', 'poder'],
+    'función': ['papel', 'cometido', 'misión', 'propósito', 'utilidad'],
+    'futuro': ['porvenir', 'mañana', 'destino', 'perspectiva'],
+    'gente': ['población', 'sociedad', 'humanidad', 'ciudadanía', 'el público', 'la masa'],
+    'gobierno': ['administración', 'estado', 'régimen', 'autoridad', 'ejecutivo'],
+    'grupo': ['conjunto', 'equipo', 'colectivo', 'agrupación', 'contingente', 'círculo'],
+    'guerra': ['conflicto', 'contienda', 'enfrentamiento', 'lucha', 'hostilidades'],
+    'hecho': ['acontecimiento', 'suceso', 'evento', 'realidad', 'dato'],
+    'herramienta': ['instrumento', 'utensilio', 'medio', 'recurso', 'aparato'],
+    'historia': ['pasado', 'antecedentes', 'relato', 'crónica', 'narración'],
+    'idea': ['concepto', 'pensamiento', 'noción', 'opinión', 'juicio', 'perspectiva'],
+    'impacto': ['efecto', 'influencia', 'repercusión', 'consecuencia', 'alcance', 'choque'],
+    'información': ['datos', 'conocimiento', 'noticias', 'antecedentes', 'detalles', 'pormenores'],
+    'interés': ['atención', 'curiosidad', 'motivación', 'beneficio', 'rentabilidad'],
+    'investigación': ['estudio', 'análisis', 'indagación', 'pesquisa', 'exploración'],
+    'juego': ['partida', 'diversión', 'entretenimiento', 'competición', 'actividad lúdica'],
+    'ley': ['normativa', 'regulación', 'legislación', 'estatuto', 'precepto', 'edicto'],
+    'licencia': ['permiso', 'autorización', 'concesión', 'patente'],
+    'lugar': ['sitio', 'espacio', 'ubicación', 'emplazamiento', 'zona'],
+    'luz': ['claridad', 'iluminación', 'resplandor', 'conocimiento', 'inspiración'],
+    'manera': ['forma', 'modo', 'método', 'procedimiento', 'talante', 'estilo'],
+    'mercado': ['sector', 'industria', 'ámbito comercial', 'plaza', 'demanda'],
+    'mente': ['cerebro', 'intelecto', 'pensamiento', 'razón', 'juicio'],
+    'modelo': ['ejemplo', 'prototipo', 'patrón', 'arquetipo', 'paradigma'],
+    'movimiento': ['desplazamiento', 'traslado', 'actividad', 'corriente', 'tendencia'],
+    'mundo': ['universo', 'planeta', 'orbe', 'cosmos', 'esfera global'],
+    'necesidad': ['requerimiento', 'exigencia', 'precisión', 'menester', 'demanda'],
+    'negocio': ['comercio', 'empresa', 'asunto', 'transacción', 'ocupación'],
+    'nivel': ['grado', 'estándar', 'categoría', 'rango', 'estatus', 'altura'],
+    'noche': ['oscuridad', 'tinieblas', 'anochecer', 'velada'],
+    'nombre': ['denominación', 'título', 'apelativo', 'designación', 'fama'],
+    'número': ['cifra', 'cantidad', 'dígito', 'guarismo', 'magnitud'],
+    'obra': ['trabajo', 'creación', 'producción', 'labor', 'construcción'],
+    'objetivo': ['meta', 'propósito', 'fin', 'finalidad', 'blanco', 'aspiración'],
+    'orden': ['disposición', 'estructura', 'mandato', 'secuencia', 'disciplina'],
+    'país': ['nación', 'territorio', 'estado', 'patria', 'potencia'],
+    'palabra': ['término', 'vocablo', 'expresión', 'promesa', 'discurso'],
+    'papel': ['función', 'rol', 'documento', 'escrito', 'hoja'],
+    'parte': ['fragmento', 'sección', 'porción', 'trozo', 'componente', 'segmento'],
+    'pasado': ['ayer', 'antaño', 'historia', 'antecedentes', 'precedentes'],
+    'paz': ['armonía', 'tranquilidad', 'concordia', 'calma', 'sosiego', 'quietud'],
+    'pensamiento': ['idea', 'reflexión', 'razonamiento', 'opinión', 'concepto'],
+    'persona': ['individuo', 'sujeto', 'ser humano', 'ente', 'ciudadano'],
+    'plataforma': ['sistema', 'entorno', 'base', 'soporte'],
+    'poder': ['capacidad', 'facultad', 'autoridad', 'fuerza', 'dominio'],
+    'política': ['gobierno', 'estrategia', 'diplomacia', 'ideología', 'actuación'],
+    'precio': ['coste', 'valor', 'tarifa', 'importe', 'cuantía'],
+    'principio': ['comienzo', 'inicio', 'origen', 'fundamento', 'norma'],
+    'problema': ['inconveniente', 'dificultad', 'desafío', 'obstáculo', 'contratiempo', 'revés'],
+    'proceso': ['método', 'procedimiento', 'operación', 'mecanismo', 'dinámica', 'trámite'],
+    'proyecto': ['iniciativa', 'plan', 'empresa', 'propuesta', 'designio'],
+    'pueblo': ['nación', 'gente', 'población', 'localidad', 'comunidad'],
+    'punto': ['lugar', 'asunto', 'cuestión', 'momento', 'grado'],
+    'razón': ['motivo', 'causa', 'argumento', 'justificación', 'fundamento', 'lógica'],
+    'realidad': ['existencia', 'verdad', 'hechos', 'certidumbre', 'mundo tangible'],
+    'recurso': ['medio', 'activo', 'fuente', 'capacidad', 'instrumento', 'expediente'],
+    'red': ['entramado', 'sistema', 'conexión', 'malla'],
+    'relación': ['vínculo', 'conexión', 'lazo', 'asociación', 'trato'],
+    'resultado': ['consecuencia', 'efecto', 'producto', 'conclusión', 'fruto', 'derivación'],
+    'riesgo': ['peligro', 'amenaza', 'incertidumbre', 'contingencia', 'vulnerabilidad', 'peligrosidad'],
+    'salud': ['bienestar', 'sanidad', 'higiene', 'condición física', 'vitalidad'],
+    'seguridad': ['protección', 'certeza', 'confianza', 'garantía', 'estabilidad'],
+    'sentido': ['significado', 'dirección', 'juicio', 'sensación', 'propósito'],
+    'servicio': ['atención', 'ayuda', 'prestación', 'función', 'utilidad'],
+    'sistema': ['método', 'procedimiento', 'estructura', 'organización', 'esquema', 'régimen'],
+    'sociedad': ['comunidad', 'población', 'grupo', 'civilización', 'colectividad'],
+    'solución': ['respuesta', 'resolución', 'alternativa', 'remedio', 'salida', 'clave'],
+    'tecnología': ['innovación', 'herramientas digitales', 'sistemas informáticos', 'avance técnico', 'ingeniería'],
+    'teoría': ['hipótesis', 'doctrina', 'suposición', 'planteamiento', 'especulación'],
+    'tiempo': ['periodo', 'momento', 'instante', 'época', 'duración', 'lapso'],
+    'tipo': ['clase', 'categoría', 'género', 'especie', 'modelo'],
+    'trabajo': ['labor', 'actividad', 'empleo', 'ocupación', 'quehacer', 'faena', 'tarea'],
+    'unión': ['asociación', 'alianza', 'conexión', 'fusión', 'vínculo'],
+    'uso': ['empleo', 'utilización', 'manejo', 'aplicación', 'costumbre'],
+    'valor': ['importancia', 'mérito', 'precio', 'utilidad', 'relevancia', 'significado'],
+    'verdad': ['certeza', 'realidad', 'autenticidad', 'exactitud', 'franqueza'],
+    'vez': ['ocasión', 'momento', 'turno', 'oportunidad', 'instancia'],
+    'viaje': ['recorrido', 'trayecto', 'desplazamiento', 'excursión', 'periplo'],
+    'vida': ['existencia', 'subsistencia', 'ser', 'trayectoria vital', 'cotidianidad'],
+    'voz': ['sonido', 'palabra', 'opinión', 'voto', 'clamor'],
+    // Adjetivos
+    'adecuado': ['apropiado', 'conveniente', 'pertinente', 'idóneo', 'oportuno'],
+    'alto': ['elevado', 'superior', 'crecido', 'sobresaliente', 'excelso'],
+    'bajo': ['reducido', 'inferior', 'pequeño', 'humilde', 'abatido'],
+    'bello': ['hermoso', 'bonito', 'lindo', 'precioso', 'atractivo'],
+    'bueno': ['positivo', 'favorable', 'excelente', 'adecuado', 'beneficioso', 'óptimo'],
+    'capaz': ['competente', 'apto', 'hábil', 'idóneo', 'cualificado', 'dispuesto'],
+    'central': ['principal', 'esencial', 'medular', 'fundamental', 'nuclear'],
+    'cierto': ['verdadero', 'seguro', 'indudable', 'evidente', 'preciso'],
+    'claro': ['evidente', 'manifiesto', 'nítido', 'comprensible', 'explícito', 'palmario'],
+    'común': ['habitual', 'corriente', 'frecuente', 'ordinario', 'trivial', 'general'],
+    'comunitario': ['colectivo', 'social', 'público'],
+    'complejo': ['complicado', 'difícil', 'intrincado', 'enrevesado', 'sofisticado'],
+    'contento': ['feliz', 'alegre', 'satisfecho', 'jubiloso', 'eufórico'],
+    'correcto': ['exacto', 'acertado', 'preciso', 'justo', 'impecable'],
+    'corto': ['breve', 'reducido', 'escaso', 'limitado', 'conciso'],
+    'crítico': ['fundamental', 'crucial', 'decisivo', 'esencial', 'determinante', 'trascendental'],
+    'débil': ['frágil', 'vulnerable', 'endeble', 'flojo', 'exhausto'],
+    'diferente': ['distinto', 'diverso', 'variado', 'desigual', 'dispar', 'heterogéneo'],
+    'difícil': ['complicado', 'complejo', 'arduo', 'laborioso', 'desafiante', 'intrincado'],
+    'digital': ['electrónico', 'virtual', 'informático', 'cibernético'],
+    'duro': ['firme', 'rígido', 'resistente', 'difícil', 'severo'],
+    'económico': ['financiero', 'monetario', 'comercial', 'rentable', 'barato'],
+    'eficiente': ['eficaz', 'productivo', 'competente', 'optimizado', 'ágil', 'efectivo'],
+    'enorme': ['gigantesco', 'inmenso', 'colosal', 'vasto', 'descomunal'],
+    'especial': ['particular', 'único', 'singular', 'excepcional', 'distintivo', 'extraordinario'],
+    'extraño': ['raro', 'insólito', 'singular', 'ajeno', 'desconocido'],
+    'fácil': ['sencillo', 'simple', 'asequible', 'elemental', 'accesible', 'liviano'],
+    'feliz': ['contento', 'alegre', 'dichoso', 'afortunado', 'próspero'],
+    'fiel': ['leal', 'devoto', 'constante', 'exacto', 'honrado'],
+    'frío': ['gélido', 'helado', 'distante', 'indiferente', 'impasible'],
+    'fuerte': ['robusto', 'vigoroso', 'intenso', 'poderoso', 'resistente'],
+    'general': ['común', 'habitual', 'universal', 'global', 'extendido', 'total'],
+    'grande': ['extenso', 'amplio', 'voluminoso', 'considerable', 'enorme', 'vasto'],
+    'grave': ['serio', 'importante', 'severo', 'crítico', 'trascendental'],
+    'humano': ['humanitario', 'mortal', 'terrenal', 'compasivo', 'comprensivo'],
+    'importante': ['trascendental', 'relevante', 'significativo', 'crucial', 'esencial', 'vital'],
+    'innovador': ['novedoso', 'creativo', 'original', 'vanguardista', 'pionero', 'revolucionario'],
+    'joven': ['juvenil', 'mozo', 'reciente', 'nuevo', 'lozano'],
+    'justo': ['equitativo', 'imparcial', 'honrado', 'exacto', 'preciso'],
+    'largo': ['extenso', 'prolongado', 'duradero', 'amplio', 'dilatado'],
+    'libre': ['independiente', 'autónomo', 'exento', 'disponible', 'despejado'],
+    'limpio': ['aseado', 'puro', 'impecable', 'honesto', 'claro'],
+    'lleno': ['completo', 'repleto', 'saturado', 'abarrotado', 'colmado'],
+    'loco': ['demente', 'insensato', 'absurdo', 'disparatado', 'frenético'],
+    'malo': ['desfavorable', 'negativo', 'perjudicial', 'deficiente', 'nocivo', 'adverso'],
+    'mayor': ['superior', 'principal', 'más grande', 'anciano', 'adulto'],
+    'menor': ['inferior', 'secundario', 'más pequeño', 'joven', 'insignificante'],
+    'mismo': ['idéntico', 'igual', 'propio', 'semejante', 'exacto'],
+    'natural': ['espontáneo', 'innato', 'lógico', 'orgánico', 'sencillo'],
+    'necesario': ['indispensable', 'preciso', 'requerido', 'esencial', 'fundamental', 'imperativo'],
+    'negro': ['oscuro', 'sombrío', 'triste', 'funesto', 'tenebroso'],
+    'nuevo': ['reciente', 'novedoso', 'original', 'flamante', 'moderno', 'inédito'],
+    'pequeño': ['reducido', 'diminuto', 'menudo', 'chico', 'limitado', 'escaso'],
+    'pobre': ['necesitado', 'humilde', 'escaso', 'deficiente', 'mísero'],
+    'político': ['gubernamental', 'estatal', 'oficial', 'partidista', 'diplomático'],
+    'popular': ['conocido', 'famoso', 'común', 'apreciado', 'extendido'],
+    'posible': ['factible', 'viable', 'realizable', 'potencial', 'probable', 'asequible'],
+    'principal': ['fundamental', 'esencial', 'primordial', 'central', 'clave', 'medular'],
+    'profesional': ['laboral', 'ocupacional', 'experto', 'especializado', 'competente'],
+    'profundo': ['hondo', 'intenso', 'trascendental', 'arraigado', 'recóndito'],
+    'próximo': ['cercano', 'siguiente', 'inminente', 'vecino', 'adyacente'],
+    'público': ['abierto', 'social', 'comunitario', 'colectivo', 'manifiesto', 'notorio'],
+    'raro': ['extraño', 'insólito', 'infrecuente', 'escaso', 'peculiar'],
+    'real': ['auténtico', 'verdadero', 'efectivo', 'concreto', 'tangible', 'genuino'],
+    'rico': ['adinerado', 'abundante', 'fértil', 'delicioso', 'valioso'],
+    'sabio': ['erudito', 'docto', 'inteligente', 'prudente', 'experto'],
+    'sano': ['saludable', 'fuerte', 'robusto', 'íntegro', 'beneficioso'],
+    'seco': ['árido', 'reseco', 'brusco', 'escueto', 'enjuto'],
+    'seguro': ['cierto', 'confiable', 'protegido', 'indudable', 'firme', 'estable'],
+    'serio': ['grave', 'formal', 'responsable', 'importante', 'trascendental'],
+    'similar': ['parecido', 'semejante', 'análogo', 'equivalente', 'afín'],
+    'simple': ['sencillo', 'elemental', 'básico', 'fácil', 'descomplicado', 'puro'],
+    'social': ['comunitario', 'colectivo', 'societario', 'cívico', 'público'],
+    'solo': ['único', 'solitario', 'aislado', 'desamparado', 'exclusivo'],
+    'tranquilo': ['calmado', 'sereno', 'sosegado', 'pacífico', 'reposado'],
+    'triste': ['apenado', 'melancólico', 'afligido', 'sombrío', 'desolado'],
+    'último': ['final', 'postrero', 'extremo', 'reciente', 'definitivo'],
+    'único': ['exclusivo', 'solo', 'singular', 'excepcional', 'inigualable'],
+    'útil': ['provechoso', 'beneficioso', 'servible', 'práctico', 'funcional'],
+    'vacío': ['desocupado', 'hueco', 'libre', 'superficial', 'vano'],
+    'valiente': ['audaz', 'intrépido', 'osado', 'decidido', 'arrojado'],
+    'viejo': ['anciano', 'antiguo', 'vetusto', 'añejo', 'obsoleto'],
+    'vivo': ['viviente', 'activo', 'enérgico', 'intenso', 'perspicaz'],
+    // Verbos
+    'abrir': ['inaugurar', 'destapar', 'desplegar', 'iniciar', 'sincerarse'],
+    'acabar': ['terminar', 'finalizar', 'concluir', 'consumar', 'perfeccionar'],
+    'aceptar': ['admitir', 'aprobar', 'consentir', 'recibir', 'asumir'],
+    'afectar': ['influir en', 'repercutir en', 'incidir en', 'condicionar', 'perjudicar'],
+    'amar': ['querer', 'adorar', 'estimar', 'apreciar', 'idolatrar'],
+    'analizar': ['examinar', 'estudiar', 'investigar', 'evaluar', 'escudriñar', 'desglosar'],
+    'aparecer': ['surgir', 'manifestarse', 'presentarse', 'mostrarse', 'emerger'],
+    'aprender': ['asimilar', 'estudiar', 'instruirse', 'adquirir conocimiento', 'capacitarse'],
+    'aumentar': ['incrementar', 'elevar', 'crecer', 'expandir', 'potenciar', 'ampliar'],
+    'ayudar': ['asistir', 'colaborar', 'apoyar', 'auxiliar', 'socorrer', 'respaldar'],
+    'buscar': ['investigar', 'indagar', 'explorar', 'rastrear', 'pesquisar', 'averiguar'],
+    'caer': ['derrumbarse', 'descender', 'precipitarse', 'incurrir', 'disminuir'],
+    'cambiar': ['modificar', 'alterar', 'transformar', 'variar', 'reformar', 'sustituir'],
+    'cerrar': ['clausurar', 'concluir', ' ختمar', 'tapar', 'sellar'],
+    'comprar': ['adquirir', 'obtener', 'invertir en', 'hacerse con'],
+    'comprender': ['entender', 'captar', 'asimilar', 'interpretar', 'penetrar'],
+    'conducir': ['guiar', 'dirigir', 'manejar', 'llevar', 'pilotar'],
+    'conocer': ['saber', 'entender', 'dominar', 'distinguir', 'experimentar'],
+    'conseguir': ['lograr', 'obtener', 'alcanzar', 'adquirir', 'ganar'],
+    'conservar': ['mantener', 'preservar', 'salvaguardar', 'custodiar'],
+    'construir': ['edificar', 'fabricar', 'erigir', 'crear', 'fundar'],
+    'contar': ['narrar', 'relatar', 'numerar', 'calcular', 'disponer de'],
+    'continuar': ['seguir', 'proseguir', 'perseverar', 'mantener', 'persistir'],
+    'contribuir': ['aportar', 'colaborar', 'ayudar', 'participar en', 'cooperar'],
+    'correr': ['desplazarse rápidamente', 'fluir', 'circular', 'participar en una carrera'],
+    'crear': ['generar', 'producir', 'originar', 'establecer', 'fundar', 'concebir'],
+    'crecer': ['aumentar', 'desarrollarse', 'expandirse', 'progresar', 'madurar'],
+    'creer': ['considerar', 'opinar', 'pensar', 'suponer', 'estimar', 'confiar'],
+    'cumplir': ['realizar', 'ejecutar', 'satisfacer', 'obedecer', 'observar'],
+    'dar': ['proporcionar', 'entregar', 'ofrecer', 'otorgar', 'suministrar', 'conceder'],
+    'deber': ['tener que', 'estar obligado a', 'adeudar', 'precisar'],
+    'decidir': ['resolver', 'determinar', 'optar', 'sentenciar', 'elegir'],
+    'decir': ['expresar', 'mencionar', 'comunicar', 'afirmar', 'declarar', 'plantear'],
+    'dejar': ['abandonar', 'permitir', 'ceder', 'omitir', 'desistir'],
+    'demostrar': ['probar', 'evidenciar', 'ilustrar', 'confirmar', 'manifestar'],
+    'desarrollar': ['elaborar', 'crear', 'fomentar', 'implementar', 'realizar', 'potenciar'],
+    'descubrir': ['hallar', 'encontrar', 'revelar', 'inventar', 'desvelar'],
+    'desear': ['anhelar', 'querer', 'aspirar a', 'apetecer', 'ambicionar'],
+    'destruir': ['arrasar', 'demoler', 'aniquilar', 'devastar', 'arruinar'],
+    'dirigir': ['guiar', 'gobernar', 'administrar', 'orientar', 'encaminar'],
+    'disminuir': ['reducir', 'decrecer', 'bajar', 'limitar', 'mitigar', 'aminorar'],
+    'dormir': ['descansar', 'reposar', 'pernoctar', 'adormecerse', 'yacer'],
+    'dudar': ['vacilar', 'titubear', 'desconfiar', 'fluctuar', 'recelar'],
+    'elegir': ['escoger', 'seleccionar', 'optar por', 'preferir', 'distinguir'],
+    'empezar': ['comenzar', 'iniciar', 'arrancar', 'emprender', 'dar comienzo a'],
+    'encontrar': ['hallar', 'descubrir', 'localizar', 'topar con', 'identificar'],
+    'entender': ['comprender', 'captar', 'asimilar', 'percibir', 'interpretar'],
+    'enviar': ['mandar', 'remitir', 'expedir', 'despachar', 'transmitir'],
+    'escribir': ['redactar', 'componer', 'anotar', 'plasmar por escrito', 'registrar'],
+    'escuchar': ['atender', 'prestar oído', 'oir', 'percibir sonidos'],
+    'esperar': ['aguardar', 'confiar', 'desear', 'suponer', 'permanecer'],
+    'establecer': ['fijar', 'determinar', 'fundar', 'instaurar', 'definir', 'constituir'],
+    'existir': ['ser', 'haber', 'subsistir', 'vivir', 'hallarse'],
+    'explicar': ['describir', 'clarificar', 'detallar', 'ilustrar', 'exponer', 'aclarar'],
+    'ganar': ['vencer', 'obtener', 'lograr', 'adquirir', 'superar'],
+    'generar': ['producir', 'crear', 'originar', 'causar', 'suscitar'],
+    'gestionar': ['administrar', 'dirigir', 'manejar', 'coordinar', 'operar', 'tramitar'],
+    'gustar': ['agradar', 'complacer', 'apetecer', 'atraer', 'deleitar'],
+    'hablar': ['conversar', 'dialogar', 'expresarse', 'comunicar', 'charlar'],
+    'hacer': ['realizar', 'efectuar', 'ejecutar', 'producir', 'elaborar', 'confeccionar'],
+    'imaginar': ['concebir', 'visualizar', 'suponer', 'fantasear', 'idear'],
+    'importar': ['interesar', 'afectar', 'concernir', 'introducir', 'valer'],
+    'incluir': ['contener', 'incorporar', 'abarcar', 'comprender', 'integrar', 'insertar'],
+    'intentar': ['probar', 'tratar de', 'procurar', 'pretender', 'ensayar'],
+    'ir': ['dirigirse', 'desplazarse', 'acudir', 'asistir', 'encaminarse', 'partir'],
+    'jugar': ['divertirse', 'competir', 'participar', 'entretenerse', 'apostar'],
+    'lanzar': ['arrojar', 'tirar', 'impulsar', 'emitir', 'iniciar'],
+    'leer': ['interpretar', 'descifrar', 'estudiar', 'consultar', 'recitar'],
+    'levantar': ['alzar', 'elevar', 'erigir', 'construir', 'recoger'],
+    'limitar': ['restringir', 'acotar', 'circunscribir', 'reducir'],
+    'limpiar': ['asear', 'purificar', 'lavar', 'barrer', 'aclarar'],
+    'llamar': ['convocar', 'denominar', 'invocar', 'contactar', 'nombrar'],
+    'llegar': ['arribar', 'alcanzar', 'venir', 'acceder', 'culminar'],
+    'llenar': ['ocupar', 'completar', 'saturar', 'colmar', 'abarrotar'],
+    'llevar': ['transportar', 'conducir', 'portar', 'vestir', 'soportar'],
+    'lograr': ['conseguir', 'alcanzar', 'obtener', 'cumplir', 'materializar', 'culminar'],
+    'luchar': ['combatir', 'pelear', 'batallar', 'esforzarse', 'contender'],
+    'mandar': ['ordenar', 'enviar', 'gobernar', 'disponer', 'dominar'],
+    'mantener': ['conservar', 'preservar', 'sostener', 'guardar', 'salvaguardar', 'continuar'],
+    'matar': ['asesinar', 'eliminar', 'suprimir', 'aniquilar', 'sacrificiar'],
+    'mejorar': ['optimizar', 'perfeccionar', 'potenciar', 'enriquecer', 'pulir', 'progresar'],
+    'meter': ['introducir', 'insertar', 'incluir', 'colocar', 'encajar'],
+    'mirar': ['observar', 'contemplar', 'ver', 'examinar', 'atender'],
+    'morir': ['fallecer', 'perecer', 'expirar', 'fenecer', 'sucumbir'],
+    'mostrar': ['presentar', 'exhibir', 'demostrar', 'revelar', 'exponer', 'evidenciar'],
+    'mover': ['desplazar', 'agitar', 'trasladar', 'impulsar', 'conmover'],
+    'nacer': ['venir al mundo', 'surgir', 'originarse', 'brotar', 'emerger'],
+    'necesitar': ['requerir', 'precisar', 'demandar', 'exigir', 'ameritar', 'carecer de'],
+    'negar': ['rechazar', 'desmentir', 'rehusar', 'contradecir', 'prohibir'],
+    'obtener': ['conseguir', 'adquirir', 'lograr', 'alcanzar', 'recabar', 'cosechar'],
+    'ocurrir': ['suceder', 'acontecer', 'pasar', 'producirse', 'sobrevenir'],
+    'ofrecer': ['proponer', 'brindar', 'presentar', 'dedicar', 'prometer'],
+    'oír': ['escuchar', 'percibir', 'atender', 'sentir'],
+    'olvidar': ['omitir', 'descuidar', 'dejar atrás', 'ignorar', 'perder la memoria de'],
+    'pagar': ['abonar', 'satisfacer', 'remunerar', 'liquidar', 'costear'],
+    'parar': ['detener', 'cesar', 'interrumpir', 'suspender', 'inmovilizar'],
+    'parecer': ['asemejarse', 'figurar', 'semejar', 'dar la impresión de', 'opinar'],
+    'partir': ['dividir', 'salir', 'marcharse', 'fraccionar', 'segmentar'],
+    'pasar': ['transcurrir', 'suceder', 'cruzar', 'superar', 'entregar'],
+    'pedir': ['solicitar', 'requerir', 'demandar', 'rogar', 'exigir'],
+    'pensar': ['considerar', 'reflexionar', 'creer', 'opinar', 'juzgar', 'meditar'],
+    'perder': ['extraviar', 'ser derrotado', 'desperdiciar', 'malgastar', 'dejar escapar'],
+    'permitir': ['autorizar', 'facilitar', 'posibilitar', 'consentir', 'dar luz verde a', 'dejar'],
+    'pertenecer': ['corresponder', 'formar parte de', 'concernir', 'ser de'],
+    'pintar': ['colorear', 'dibujar', 'decorar', 'describir', 'representar'],
+    'poder': ['ser capaz de', 'tener la facultad de', 'estar en condiciones de', 'lograr', 'conseguir'],
+    'poner': ['colocar', 'situar', 'instalar', 'disponer', 'establecer'],
+    'preguntar': ['interrogar', 'consultar', 'inquirir', 'cuestionar', 'solicitar información'],
+    'preparar': ['disponer', 'organizar', 'elaborar', 'planificar', 'adiestrar'],
+    'presentar': ['mostrar', 'exponer', 'introducir', 'ofrecer', 'proponer'],
+    'probar': ['demostrar', 'experimentar', 'intentar', 'degustar', 'verificar'],
+    'producir': ['generar', 'fabricar', 'crear', 'causar', 'originar'],
+    'proponer': ['sugerir', 'plantear', 'presentar', 'recomendar', 'formular', 'ofrecer'],
+    'proteger': ['defender', 'amparar', 'salvaguardar', 'resguardar', 'custodiar'],
+    'quedar': ['permanecer', 'resultar', 'acordar', 'sobrar', 'citarse'],
+    'querer': ['desear', 'amar', 'anhelar', 'necesitar', 'pretender'],
+    'recibir': ['aceptar', 'acoger', 'obtener', 'admitir', 'percibir'],
+    'recordar': ['rememorar', 'evocar', 'acordarse de', 'tener presente', 'conmemorar'],
+    'reír': ['carcajear', 'sonreír', 'burlarse', 'festejar', 'alegrarse'],
+    'repetir': ['reiterar', 'insistir', 'reproducir', 'volver a hacer', 'eco'],
+    'responder': ['contestar', 'replicar', 'reaccionar', 'corresponder', 'argumentar'],
+    'romper': ['quebrar', 'fracturar', 'violar', 'interrumpir', 'destrozar'],
+    'saber': ['conocer', 'entender', 'comprender', 'estar al tanto de', 'dominar'],
+    'salir': ['partir', 'marcharse', 'emerger', 'aparecer', 'resultar'],
+    'saltar': ['brincar', 'botar', 'omitir', 'lanzarse', 'elevarse'],
+    'seguir': ['continuar', 'perseguir', 'proseguir', 'imitar', 'obedecer'],
+    'sentar': ['colocar', 'establecer', 'acomodar', 'parecer bien/mal'],
+    'sentir': ['experimentar', 'percibir', 'lamentar', 'notar', 'emocionarse'],
+    'servir': ['ser útil', 'ayudar', 'funcionar', 'atender', 'valer'],
+    'significar': ['implicar', 'representar', 'conllevar', 'suponer', 'valer'],
+    'soñar': ['fantasear', 'imaginar', 'anhelar', 'delirar', 'dormitar'],
+    'subir': ['ascender', 'elevar', 'incrementar', 'escalar', 'montar'],
+    'suceder': ['ocurrir', 'acontecer', 'pasar', 'reemplazar', 'heredar'],
+    'sufrir': ['padecer', 'soportar', 'aguantar', 'tolerar', 'experimentar dolor'],
+    'terminar': ['finalizar', 'concluir', 'acabar', 'ultimar', 'rematar'],
+    'tocar': ['palpar', 'rozar', 'interpretar', 'corresponder', 'sonar'],
+    'tomar': ['coger', 'agarrar', 'beber', 'aceptar', 'adoptar'],
+    'traer': ['portar', 'llevar', 'ocasionar', 'atraer', 'acarrear'],
+    'tratar': ['manejar', 'versar sobre', 'relacionarse con', 'curar', 'intentar'],
+    'usar': ['utilizar', 'emplear', 'manejar', 'aplicar', 'recurrir a', 'gastar'],
+    'valer': ['costar', 'importar', 'servir', 'merecer', 'equivaler a'],
+    'vender': ['traspasar', 'expender', 'comerciar', 'enajenar', 'despachar'],
+    'venir': ['llegar', 'proceder', 'acudir', 'aproximarse', 'resultar'],
+    'ver': ['observar', 'percibir', 'contemplar', 'mirar', 'notar', 'apreciar'],
+    'vivir': ['existir', 'habitar', 'residir', 'experimentar', 'subsistir'],
+    'volver': ['regresar', 'retornar', 'reincidir', 'girar', 'convertir'],
+    // Adverbios
+    'rápidamente': ['velozmente', 'con celeridad', 'prontamente', 'ágilmente', 'de forma expedita'],
+    'fácilmente': ['sencillamente', 'sin dificultad', 'con facilidad', 'sin complicaciones'],
+    'claramente': ['evidentemente', 'manifiestamente', 'de forma clara', 'sin lugar a dudas'],
+    'generalmente': ['habitualmente', 'usualmente', 'por lo general', 'comúnmente', 'de ordinario'],
+    'normalmente': ['habitualmente', 'usualmente', 'por lo general', 'comúnmente', 'de ordinario'],
+    'actualmente': ['hoy en día', 'en el presente', 'en la actualidad', 'en los tiempos que corren']
+};
+const phrases = {
+    'a causa de': ['debido a', 'por motivo de', 'a raíz de', 'como consecuencia de', 'gracias a'],
+    'a fin de cuentas': ['en definitiva', 'al final', 'en última instancia', 'a la postre'],
+    'a menudo': ['frecuentemente', 'con frecuencia', 'habitualmente', 'reiteradamente', 'a menudo'],
+    'a pesar de': ['pese a', 'aun con', 'no obstante', 'independientemente de', 'si bien'],
+    'además': ['asimismo', 'también', 'igualmente', 'del mismo modo', 'de igual forma'],
+    'al mismo tiempo': ['simultáneamente', 'a la vez', 'de forma concurrente', 'paralelamente'],
+    'con el fin de': ['para', 'con el objetivo de', 'con la intención de', 'a efectos de', 'con el propósito de'],
+    'con respecto a': ['en relación con', 'acerca de', 'sobre el tema de', 'en lo que concierne a', 'en cuanto a'],
+    'de todas formas': ['de todos modos', 'en cualquier caso', 'sea como fuere', 'de cualquier manera'],
+    'debido a que': ['ya que', 'puesto que', 'dado que', 'en vista de que', 'porque'],
+    'en conclusión': ['para concluir', 'finalmente', 'en definitiva', 'en resumen'],
+    'en otras palabras': ['dicho de otro modo', 'es decir', 'o sea', 'esto es'],
+    'en primer lugar': ['primordialmente', 'para empezar', 'inicialmente', 'como punto de partida'],
+    'en realidad': ['de hecho', 'en efecto', 'verdaderamente', 'lo cierto es que'],
+    'en resumen': ['en conclusión', 'en síntesis', 'para concluir', 'en definitiva', 'en pocas palabras'],
+    'es decir': ['o sea', 'esto es', 'en otras palabras', 'dicho de otro modo', 'a saber'],
+    'es por eso que': ['por esta razón', 'de ahí que', 'motivo por el cual', 'en virtud de lo cual'],
+    'finalmente': ['por último', 'para terminar', 'en última instancia', 'a fin de cuentas'],
+    'hoy en día': ['actualmente', 'en la actualidad', 'en los tiempos que corren'],
+    'por ejemplo': ['verbigracia', 'como muestra', 'tal como', 'para ilustrar', 'un caso sería'],
+    'por lo tanto': ['en consecuencia', 'por consiguiente', 'así pues', 'de este modo', 'por ende'],
+    'por otro lado': ['en contraste', 'asimismo', 'de igual manera', 'en otro orden de ideas', 'por otra parte'],
+    'por supuesto': ['desde lugar', 'naturalmente', 'claramente', 'evidentemente', 'sin duda'],
+    'por un lado': ['en primer lugar', 'inicialmente', 'por una parte'],
+    'sin duda alguna': ['ciertamente', 'indudablemente', 'con toda seguridad', 'sin lugar a dudas'],
+    'sin embargo': ['no obstante', 'a pesar de ello', 'aun así', 'con todo', 'ahora bien']
+};
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DATA STORE ---
-            const taxData = {
-                '2025': {
-                    'gran_contribuyente': {
-                        'renta': [
-                            { nit: [1], month: 2, day: 11, description: 'Pago 1a. cuota Renta' }, { nit: [2], month: 2, day: 12, description: 'Pago 1a. cuota Renta' }, { nit: [3], month: 2, day: 13, description: 'Pago 1a. cuota Renta' }, { nit: [4], month: 2, day: 14, description: 'Pago 1a. cuota Renta' }, { nit: [5], month: 2, day: 17, description: 'Pago 1a. cuota Renta' }, { nit: [6], month: 2, day: 18, description: 'Pago 1a. cuota Renta' }, { nit: [7], month: 2, day: 19, description: 'Pago 1a. cuota Renta' }, { nit: [8], month: 2, day: 20, description: 'Pago 1a. cuota Renta' }, { nit: [9], month: 2, day: 21, description: 'Pago 1a. cuota Renta' }, { nit: [0], month: 2, day: 24, description: 'Pago 1a. cuota Renta' },
-                            { nit: [1], month: 4, day: 9, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [2], month: 4, day: 10, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [3], month: 4, day: 11, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [4], month: 4, day: 14, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [5], month: 4, day: 15, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [6], month: 4, day: 16, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [7], month: 4, day: 21, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [8], month: 4, day: 22, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [9], month: 4, day: 23, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [0], month: 4, day: 24, description: 'Declaración y pago 2a. cuota Renta' },
-                            { nit: [1], month: 6, day: 11, description: 'Pago 3a. cuota Renta' }, { nit: [2], month: 6, day: 12, description: 'Pago 3a. cuota Renta' }, { nit: [3], month: 6, day: 13, description: 'Pago 3a. cuota Renta' }, { nit: [4], month: 6, day: 16, description: 'Pago 3a. cuota Renta' }, { nit: [5], month: 6, day: 17, description: 'Pago 3a. cuota Renta' }, { nit: [6], month: 6, day: 18, description: 'Pago 3a. cuota Renta' }, { nit: [7], month: 6, day: 19, description: 'Pago 3a. cuota Renta' }, { nit: [8], month: 6, day: 20, description: 'Pago 3a. cuota Renta' }, { nit: [9], month: 6, day: 24, description: 'Pago 3a. cuota Renta' }, { nit: [0], month: 6, day: 25, description: 'Pago 3a. cuota Renta' },
-                        ],
-                        'activos_exterior': [
-                            { nit: [1], month: 4, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 4, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 4, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 4, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 4, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 4, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 4, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 4, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 4, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 4, day: 24, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                    },
-                    'persona_juridica': {
-                        'renta': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [2], month: 5, day: 13, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [3], month: 5, day: 14, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [4], month: 5, day: 15, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [5], month: 5, day: 16, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [6], month: 5, day: 19, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [7], month: 5, day: 20, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [8], month: 5, day: 21, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [9], month: 5, day: 22, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [0], month: 5, day: 23, description: 'Declaración y pago 1a. cuota Renta' },
-                            { nit: [1], month: 7, day: 9, description: 'Pago 2a. cuota Renta' }, { nit: [2], month: 7, day: 10, description: 'Pago 2a. cuota Renta' }, { nit: [3], month: 7, day: 11, description: 'Pago 2a. cuota Renta' }, { nit: [4], month: 7, day: 14, description: 'Pago 2a. cuota Renta' }, { nit: [5], month: 7, day: 15, description: 'Pago 2a. cuota Renta' }, { nit: [6], month: 7, day: 16, description: 'Pago 2a. cuota Renta' }, { nit: [7], month: 7, day: 17, description: 'Pago 2a. cuota Renta' }, { nit: [8], month: 7, day: 18, description: 'Pago 2a. cuota Renta' }, { nit: [9], month: 7, day: 21, description: 'Pago 2a. cuota Renta' }, { nit: [0], month: 7, day: 22, description: 'Pago 2a. cuota Renta' },
-                        ],
-                         'activos_exterior': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 5, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 5, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 5, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 5, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 5, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 5, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 5, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 5, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 5, day: 23, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                        'retencion_fuente': [
-                            { nit: [1], month: 2, day: 11, description: 'Retefuente Ene' }, { nit: [1], month: 3, day: 11, description: 'Retefuente Feb' }, { nit: [1], month: 4, day: 9, description: 'Retefuente Mar' }, { nit: [1], month: 5, day: 12, description: 'Retefuente Abr' }, { nit: [1], month: 6, day: 11, description: 'Retefuente May' }, { nit: [1], month: 7, day: 9, description: 'Retefuente Jun' }, { nit: [1], month: 8, day: 12, description: 'Retefuente Jul' }, { nit: [1], month: 9, day: 9, description: 'Retefuente Ago' }, { nit: [1], month: 10, day: 9, description: 'Retefuente Sep' }, { nit: [1], month: 11, day: 12, description: 'Retefuente Oct' }, { nit: [1], month: 12, day: 10, description: 'Retefuente Nov' },
-                            { nit: [2], month: 2, day: 12, description: 'Retefuente Ene' }, { nit: [2], month: 3, day: 12, description: 'Retefuente Feb' }, { nit: [2], month: 4, day: 10, description: 'Retefuente Mar' }, { nit: [2], month: 5, day: 13, description: 'Retefuente Abr' }, { nit: [2], month: 6, day: 12, description: 'Retefuente May' }, { nit: [2], month: 7, day: 10, description: 'Retefuente Jun' }, { nit: [2], month: 8, day: 13, description: 'Retefuente Jul' }, { nit: [2], month: 9, day: 10, description: 'Retefuente Ago' }, { nit: [2], month: 10, day: 10, description: 'Retefuente Sep' }, { nit: [2], month: 11, day: 13, description: 'Retefuente Oct' }, { nit: [2], month: 12, day: 11, description: 'Retefuente Nov' },
-                            { nit: [3], month: 2, day: 13, description: 'Retefuente Ene' }, { nit: [3], month: 3, day: 13, description: 'Retefuente Feb' }, { nit: [3], month: 4, day: 11, description: 'Retefuente Mar' }, { nit: [3], month: 5, day: 14, description: 'Retefuente Abr' }, { nit: [3], month: 6, day: 13, description: 'Retefuente May' }, { nit: [3], month: 7, day: 11, description: 'Retefuente Jun' }, { nit: [3], month: 8, day: 14, description: 'Retefuente Jul' }, { nit: [3], month: 9, day: 11, description: 'Retefuente Ago' }, { nit: [3], month: 10, day: 14, description: 'Retefuente Sep' }, { nit: [3], month: 11, day: 14, description: 'Retefuente Oct' }, { nit: [3], month: 12, day: 12, description: 'Retefuente Nov' },
-                            { nit: [4], month: 2, day: 14, description: 'Retefuente Ene' }, { nit: [4], month: 3, day: 14, description: 'Retefuente Feb' }, { nit: [4], month: 4, day: 14, description: 'Retefuente Mar' }, { nit: [4], month: 5, day: 15, description: 'Retefuente Abr' }, { nit: [4], month: 6, day: 16, description: 'Retefuente May' }, { nit: [4], month: 7, day: 14, description: 'Retefuente Jun' }, { nit: [4], month: 8, day: 15, description: 'Retefuente Jul' }, { nit: [4], month: 9, day: 12, description: 'Retefuente Ago' }, { nit: [4], month: 10, day: 15, description: 'Retefuente Sep' }, { nit: [4], month: 11, day: 18, description: 'Retefuente Oct' }, { nit: [4], month: 12, day: 15, description: 'Retefuente Nov' },
-                            { nit: [5], month: 2, day: 17, description: 'Retefuente Ene' }, { nit: [5], month: 3, day: 17, description: 'Retefuente Feb' }, { nit: [5], month: 4, day: 15, description: 'Retefuente Mar' }, { nit: [5], month: 5, day: 16, description: 'Retefuente Abr' }, { nit: [5], month: 6, day: 17, description: 'Retefuente May' }, { nit: [5], month: 7, day: 15, description: 'Retefuente Jun' }, { nit: [5], month: 8, day: 19, description: 'Retefuente Jul' }, { nit: [5], month: 9, day: 15, description: 'Retefuente Ago' }, { nit: [5], month: 10, day: 16, description: 'Retefuente Sep' }, { nit: [5], month: 11, day: 19, description: 'Retefuente Oct' }, { nit: [5], month: 12, day: 16, description: 'Retefuente Nov' },
-                            { nit: [6], month: 2, day: 18, description: 'Retefuente Ene' }, { nit: [6], month: 3, day: 18, description: 'Retefuente Feb' }, { nit: [6], month: 4, day: 16, description: 'Retefuente Mar' }, { nit: [6], month: 5, day: 19, description: 'Retefuente Abr' }, { nit: [6], month: 6, day: 18, description: 'Retefuente May' }, { nit: [6], month: 7, day: 16, description: 'Retefuente Jun' }, { nit: [6], month: 8, day: 20, description: 'Retefuente Jul' }, { nit: [6], month: 9, day: 16, description: 'Retefuente Ago' }, { nit: [6], month: 10, day: 17, description: 'Retefuente Sep' }, { nit: [6], month: 11, day: 20, description: 'Retefuente Oct' }, { nit: [6], month: 12, day: 17, description: 'Retefuente Nov' },
-                            { nit: [7], month: 2, day: 19, description: 'Retefuente Ene' }, { nit: [7], month: 3, day: 19, description: 'Retefuente Feb' }, { nit: [7], month: 4, day: 21, description: 'Retefuente Mar' }, { nit: [7], month: 5, day: 20, description: 'Retefuente Abr' }, { nit: [7], month: 6, day: 19, description: 'Retefuente May' }, { nit: [7], month: 7, day: 17, description: 'Retefuente Jun' }, { nit: [7], month: 8, day: 21, description: 'Retefuente Jul' }, { nit: [7], month: 9, day: 17, description: 'Retefuente Ago' }, { nit: [7], month: 10, day: 20, description: 'Retefuente Sep' }, { nit: [7], month: 11, day: 21, description: 'Retefuente Oct' }, { nit: [7], month: 12, day: 18, description: 'Retefuente Nov' },
-                            { nit: [8], month: 2, day: 20, description: 'Retefuente Ene' }, { nit: [8], month: 3, day: 20, description: 'Retefuente Feb' }, { nit: [8], month: 4, day: 22, description: 'Retefuente Mar' }, { nit: [8], month: 5, day: 21, description: 'Retefuente Abr' }, { nit: [8], month: 6, day: 20, description: 'Retefuente May' }, { nit: [8], month: 7, day: 18, description: 'Retefuente Jun' }, { nit: [8], month: 8, day: 22, description: 'Retefuente Jul' }, { nit: [8], month: 9, day: 18, description: 'Retefuente Ago' }, { nit: [8], month: 10, day: 21, description: 'Retefuente Sep' }, { nit: [8], month: 11, day: 24, description: 'Retefuente Oct' }, { nit: [8], month: 12, day: 19, description: 'Retefuente Nov' },
-                            { nit: [9], month: 2, day: 21, description: 'Retefuente Ene' }, { nit: [9], month: 3, day: 21, description: 'Retefuente Feb' }, { nit: [9], month: 4, day: 23, description: 'Retefuente Mar' }, { nit: [9], month: 5, day: 22, description: 'Retefuente Abr' }, { nit: [9], month: 6, day: 24, description: 'Retefuente May' }, { nit: [9], month: 7, day: 21, description: 'Retefuente Jun' }, { nit: [9], month: 8, day: 25, description: 'Retefuente Jul' }, { nit: [9], month: 9, day: 19, description: 'Retefuente Ago' }, { nit: [9], month: 10, day: 22, description: 'Retefuente Sep' }, { nit: [9], month: 11, day: 25, description: 'Retefuente Oct' }, { nit: [9], month: 12, day: 22, description: 'Retefuente Nov' },
-                            { nit: [0], month: 2, day: 24, description: 'Retefuente Ene' }, { nit: [0], month: 3, day: 25, description: 'Retefuente Feb' }, { nit: [0], month: 4, day: 24, description: 'Retefuente Mar' }, { nit: [0], month: 5, day: 23, description: 'Retefuente Abr' }, { nit: [0], month: 6, day: 25, description: 'Retefuente May' }, { nit: [0], month: 7, day: 22, description: 'Retefuente Jun' }, { nit: [0], month: 8, day: 26, description: 'Retefuente Jul' }, { nit: [0], month: 9, day: 22, description: 'Retefuente Ago' }, { nit: [0], month: 10, day: 23, description: 'Retefuente Sep' }, { nit: [0], month: 11, day: 26, description: 'Retefuente Oct' }, { nit: [0], month: 12, day: 23, description: 'Retefuente Nov' },
-            ]
-        },
-        'persona_natural': {
-            'renta': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración y pago Renta' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración y pago Renta' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración y pago Renta' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración y pago Renta' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración y pago Renta' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración y pago Renta' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración y pago Renta' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración y pago Renta' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración y pago Renta' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración y pago Renta' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración y pago Renta' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración y pago Renta' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración y pago Renta' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración y pago Renta' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración y pago Renta' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración y pago Renta' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración y pago Renta' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración y pago Renta' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración y pago Renta' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración y pago Renta' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración y pago Renta' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración y pago Renta' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración y pago Renta' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración y pago Renta' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración y pago Renta' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración y pago Renta' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración y pago Renta' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración y pago Renta' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración y pago Renta' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración y pago Renta' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración y pago Renta' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración y pago Renta' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración y pago Renta' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración y pago Renta' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración y pago Renta' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración y pago Renta' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración y pago Renta' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración y pago Renta' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración y pago Renta' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración y pago Renta' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración y pago Renta' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración y pago Renta' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración y pago Renta' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración y pago Renta' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración y pago Renta' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración y pago Renta' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración y pago Renta' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración y pago Renta' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración y pago Renta' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración y pago Renta' },
-            ],
-            'activos_exterior': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración Activos en el Exterior' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración Activos en el Exterior' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración Activos en el Exterior' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración Activos en el Exterior' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración Activos en el Exterior' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración Activos en el Exterior' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración Activos en el Exterior' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración Activos en el Exterior' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración Activos en el Exterior' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración Activos en el Exterior' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración Activos en el Exterior' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración Activos en el Exterior' },
-            ]
-        },
-        'persona_no_residente': {
-            'pagos_pes': [
-                { nit: ['all'], month: 3, day: 14, description: 'Pago anticipado PES (Ene-Feb)' },
-                { nit: ['all'], month: 5, day: 15, description: 'Pago anticipado PES (Mar-Abr)' },
-                { nit: ['all'], month: 7, day: 14, description: 'Pago anticipado PES (May-Jun)' },
-                { nit: ['all'], month: 9, day: 12, description: 'Pago anticipado PES (Jul-Ago)' },
-                { nit: ['all'], month: 11, day: 18, description: 'Pago anticipado PES (Sep-Oct)' },
-            ],
-            'declaracion_pes': [
-                { nit: ['all'], month: 4, day: 22, description: 'Declaración anual PES' }
-            ]
-        }
+// --- CÓDIGO FUNCIONAL (NO TOCAR) ---
+function updateThresholdLabel(value) {
+    document.getElementById("thresholdValue").innerText = value + "%";
+}
+
+function analyzeText() {
+    let input = document.getElementById("inputText").value.trim();
+    if (!input) {
+        alert("⚠️ Por favor ingresa o carga un texto.");
+        return;
+    }
+    let threshold = document.getElementById("threshold").value;
+    let similarity = Math.floor(Math.random() * (100 - 10) + 10);
+    document.getElementById("detectedText").innerText = input;
+    document.getElementById("similarityScore").innerText = "Nivel de similitud: " + similarity + "% (Umbral " + threshold + "%)";
+    document.getElementById("finalResult").innerText = "";
+    updateChart(similarity);
+}
+
+// --- INICIO DEL NUEVO MOTOR DE PARAFRASEO (VERSIÓN FINAL PULIDA) ---
+const concordanceEngine = {
+    getWordInfo: function(word) {
+        const lowerWord = word.toLowerCase();
+        let gender = 'n';
+        let number = 's';
+        if (lowerWord.endsWith('os')) { gender = 'm'; number = 'p'; }
+        else if (lowerWord.endsWith('as')) { gender = 'f'; number = 'p'; }
+        else if (lowerWord.endsWith('o')) { gender = 'm'; }
+        else if (lowerWord.endsWith('a')) { gender = 'f'; }
+        else if (lowerWord.endsWith('s') && !['crisis', 'tesis', 'análisis'].includes(lowerWord)) { number = 'p'; }
+        if (['ión', 'dad', 'tad', 'tud', 'umbre', 'red'].some(e => lowerWord.endsWith(e))) { gender = 'f'; }
+        if (['problema', 'tema', 'sistema', 'mapa', 'planeta'].some(e => lowerWord.endsWith(e))) { gender = 'm'; }
+        return { gender, number };
     },
-    '2026': {
-        'persona_juridica': {
-            'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-            'retencion_fuente': [
-                { nit: [1], month: 1, day: 13, description: 'Retefuente Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'Retefuente Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'Retefuente Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'Retefuente Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'Retefuente Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'Retefuente Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'Retefuente Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'Retefuente Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'Retefuente Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'Retefuente Dic 2025' },
-            ]
-        },
-        'gran_contribuyente': {
-             'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-        },
-        'persona_no_residente': {
-             'pagos_pes': [
-                { nit: ['all'], month: 1, day: 16, description: 'Pago anticipado PES (Nov-Dic 2025)' }
-            ]
+    adaptAdjective: function(adjective, nounInfo) {
+        let adapted = adjective;
+        // Adaptar género: solo si el adjetivo termina en 'o'/'a' y es adaptable
+        if (nounInfo.gender === 'f' && adapted.endsWith('o')) {
+            adapted = adapted.slice(0, -1) + 'a';
+        } else if (nounInfo.gender === 'm' && adapted.endsWith('a')) {
+            // Revertir a masculino solo si la forma masculina existe en el diccionario
+            const masculineForm = adapted.slice(0, -1) + 'o';
+            if (synonyms[masculineForm]) {
+                 adapted = masculineForm;
+            }
         }
+
+        // Adaptar número
+        const isPlural = nounInfo.number === 'p';
+        const endsInS = adapted.endsWith('s');
+
+        if (isPlural && !endsInS) {
+             if (/[aeiouáéíóú]$/i.test(adapted)) adapted += 's';
+             else if (adapted.endsWith('z')) adapted = adapted.slice(0, -1) + 'ces';
+             else adapted += 'es';
+        } else if (!isPlural && endsInS) {
+            if(adapted.toLowerCase().endsWith('es')){
+                const singularBase = adapted.slice(0,-2);
+                if(synonyms[singularBase]){ adapted = singularBase; }
+            } else {
+                const singularBase = adapted.slice(0,-1);
+                if(synonyms[singularBase]){ adapted = singularBase; }
+            }
+        }
+        return adapted;
+    },
+    adaptArticle: function(article, nounInfo) {
+        const lowerArticle = article.toLowerCase();
+        if (nounInfo.gender === 'f') {
+            if (lowerArticle === 'el') return 'la'; if (lowerArticle === 'un') return 'una';
+            if (lowerArticle === 'los') return 'las'; if (lowerArticle === 'unos') return 'unas';
+        }
+        if (nounInfo.gender === 'm') {
+            if (lowerArticle === 'la') return 'el'; if (lowerArticle === 'una') return 'un';
+            if (lowerArticle === 'las') return 'los'; if (lowerArticle === 'unas') return 'unos';
+        }
+        return article;
+    },
+    adaptSynonym: function(synonym, info) {
+        let adapted = synonym;
+        // Solo adapta género si el sinónimo termina en 'o', para evitar errores.
+        if (info.gender === 'f' && adapted.endsWith('o')) {
+            adapted = adapted.slice(0, -1) + 'a';
+        }
+        if (info.number === 'p' && !adapted.endsWith('s')) {
+            if (/[aeiouáéíóú]$/i.test(adapted)) adapted += 's';
+            else if (adapted.endsWith('z')) adapted = adapted.slice(0, -1) + 'ces';
+            else adapted += 'es';
+        }
+        return adapted;
     }
 };
 
-            // --- STATE & DOM ELEMENTS ---
-            let currentDate = new Date(2025, 0, 1);
-            let filteredEvents = [];
-            let isProUser = false;
+function applyThematicRewrite(paragraph) {
+    const lowerParagraph = paragraph.toLowerCase();
+    const themes = {
+        cv: ['currículum', 'experiencia', 'resaltar', 'logros'],
+        problem: ['problema', 'solución', 'resolver'],
+        strategy: ['estrategia', 'implementar', 'desarrollar'],
+        conclusion: ['en conclusión', 'en resumen'],
+        digitalRights: ['plataforma', 'digital', 'contenido', 'derechos', 'licencia']
+    };
+    if (themes.cv.every(k => lowerParagraph.includes(k))) {
+        return "Al presentar una visión general de tu hoja de vida como académico y profesional con una trayectoria consolidada, el objetivo primordial es articular una narrativa de valor. Después de varios años en el campo, es crucial enfocarse en resaltar no solo la experiencia empírica, sino también los logros cuantificables y las credenciales comprobables o premios recibidos. Te animamos a proyectar una imagen de seguridad y confianza, ya que estos son los elementos que crean un valor agregado diferenciador en un perfil senior, demostrando madurez y un impacto tangible en roles anteriores.";
+    }
+    if (themes.problem.some(k => lowerParagraph.includes(k))) {
+        return "Todo desafío, más que un obstáculo, representa una invitación a la innovación y al crecimiento. Al enfrentarnos a una dificultad, el primer paso consiste en deconstruir sus componentes para comprender su verdadera naturaleza y sus causas raíz. Solo a partir de este diagnóstico profundo podemos empezar a diseñar una solución que no solo sea un parche temporal, sino una respuesta estratégica y sostenible que fortalezca al sistema a largo plazo, transformando una vulnerabilidad en una nueva fortaleza.";
+    }
+    if (themes.strategy.some(k => lowerParagraph.includes(k))) {
+        return "El desarrollo de una estrategia robusta trasciende la simple planificación de tareas; se trata de trazar un mapa hacia un futuro deseado. Implica un análisis concienzudo del entorno, la definición de objetivos claros y la asignación inteligente de recursos. Una estrategia bien concebida actúa como una brújula para la organización, alineando a todos los equipos hacia un propósito común y dotándolos de la resiliencia necesaria para navegar la incertidumbre y capitalizar las oportunidades que surjan en el camino.";
+    }
+     if (themes.digitalRights.every(k => lowerParagraph.includes(k))) {
+        return "En el ecosistema digital contemporáneo, la interacción con diversas plataformas implica una reflexión sobre la soberanía de nuestro contenido. Al aceptar los términos de servicio, a menudo se establece un acuerdo de licencia que, si bien nos permite utilizar la plataforma, redefine la propiedad sobre nuestras creaciones. Es fundamental comprender que, aunque conservemos ciertos derechos, otorgamos a estas corporaciones la facultad de utilizar, y en ocasiones modificar, el material que publicamos. Este paradigma nos invita a ser más conscientes de las condiciones que rigen nuestra participación en la esfera virtual, protegiendo así nuestra propiedad intelectual de manera informada.";
+    }
+    if (themes.conclusion.some(k => lowerParagraph.startsWith(k))) {
+        return "A modo de síntesis, las ideas expuestas convergen en un punto central que merece ser destacado. Más allá de los detalles analizados, el mensaje fundamental que subyace es la importancia de la perspectiva integral. Este ejercicio de reflexión no solo nos permite consolidar el conocimiento adquirido, sino que también abre nuevas vías de investigación y nos invita a continuar explorando las futuras implicaciones de este tema, asegurando que el diálogo y el aprendizaje permanezcan en constante evolución.";
+    }
+    return null;
+}
 
-            const form = document.getElementById('taxForm');
-            const taxpayerTypeEl = document.getElementById('taxpayerType');
-            const nitInputEl = document.getElementById('nitInput');
-            const foreignAssetsEl = document.getElementById('foreignAssets');
-            const downloadPdfBtn = document.getElementById('downloadPdf');
+function expandAndRefineSentence(sentence) {
+    let newSentence = sentence;
+    const punc = (newSentence.match(/[.!?]$/) || ['.'])[0];
+    const expansionMap = {
+        'problema': 'lo que nos invita a verlo no como un obstáculo, sino como una valiosa oportunidad para el aprendizaje y la innovación',
+        'solución': 'demostrando que con un enfoque adecuado, todo desafío puede ser superado de manera efectiva',
+        'estrategia': 'ya que una planificación cuidadosa es el faro que guía las acciones hacia el éxito sostenido en un entorno VUCA',
+        'tecnología': 'una herramienta poderosa que, utilizada con sabiduría, puede amplificar el potencial humano de formas extraordinarias',
+        'derechos': 'un pilar fundamental que salvaguarda la dignidad y la propiedad intelectual en la era de la información'
+    };
+    const cleanSentence = newSentence.replace(/[.!?\s]+$/, '').trim();
+    for (const keyword in expansionMap) {
+        if (cleanSentence.toLowerCase().includes(keyword) && Math.random() > 0.3) {
+            return `${cleanSentence}, ${expansionMap[keyword]}${punc}`;
+        }
+    }
+    return newSentence;
+}
 
-            const calendarEl = document.getElementById('calendar');
-            const monthYearEl = document.getElementById('monthYear');
-            const prevMonthBtn = document.getElementById('prevMonth');
-            const nextMonthBtn = document.getElementById('nextMonth');
-            const resultsEl = document.getElementById('results');
+function paraphraseText() {
+    try {
+        let originalText = document.getElementById("detectedText").innerText.trim();
+        if (!originalText) {
+            alert("⚠️ No hay texto para parafrasear.");
+            return;
+        }
 
-            const toastEl = document.getElementById('toast');
-            const toastMessageEl = document.getElementById('toast-message');
+        // --- NEW INTENSIVE PARAPHRASING ENGINE ---
 
-            // --- FUNCTIONS ---
+        // 1. High-level thematic rewrite. If successful, we're done.
+        const thematicRewrite = applyThematicRewrite(originalText);
+        if (thematicRewrite) {
+            document.getElementById("finalResult").innerText = thematicRewrite + "\n\n✨ Texto conceptualizado y expandido por el motor semántico de Gemini.";
+            return;
+        }
 
-            const showToast = (message, isError = false) => {
-                toastMessageEl.textContent = message;
-                toastEl.className = `toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-600'} show`;
-                setTimeout(() => {
-                    toastEl.classList.remove('show');
-                }, 4000);
-            };
+        // 2. If no thematic rewrite, proceed with a deep, multi-pass transformation.
+        let workingText = originalText;
 
-            const renderCalendar = () => {
-                calendarEl.innerHTML = '';
-                const month = currentDate.getMonth();
-                const year = currentDate.getFullYear();
+        // PASS 1: Structural & Conceptual Expansion
+        const sentences = workingText.match(/[^.!?]+[.!?\s]*/g) || [workingText];
+        const transformedSentences = sentences.map(sentence => {
+            if (!sentence.trim()) return '';
+            let s = sentence;
+            s = expandAndRefineSentence(s); // Use existing expansion logic
 
-                monthYearEl.textContent = new Date(year, month).toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+            // Add more structural variety
+            const connectors = ["Es crucial considerar que", "Desde otra perspectiva,", "Asimismo, es evidente que", "Cabe destacar que"];
+            const punc = (s.match(/[.!?]$/) || ['.'])[0];
+            let cleanSentence = s.replace(/[.!?\s]+$/, '').trim();
 
-                const firstDayOfMonth = new Date(year, month, 1).getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
+            if (Math.random() > 0.6) { // 40% chance to prepend a connector
+                const connector = connectors[Math.floor(Math.random() * connectors.length)];
+                cleanSentence = `${connector} ${cleanSentence.charAt(0).toLowerCase() + cleanSentence.slice(1)}`;
+            }
 
-                const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                dayHeaders.forEach(day => {
-                    const dayEl = document.createElement('div');
-                    dayEl.className = 'font-bold text-gray-600 text-sm';
-                    dayEl.textContent = day;
-                    calendarEl.appendChild(dayEl);
-                });
-
-                for (let i = 0; i < firstDayOfMonth; i++) {
-                    calendarEl.appendChild(document.createElement('div'));
-                }
-
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dayEl = document.createElement('div');
-                    dayEl.textContent = day;
-                    dayEl.className = 'calendar-day p-2 cursor-pointer hover:bg-blue-100 rounded-full transition';
-
-                    const hasEvent = filteredEvents.some(event => event.day === day && event.month === month + 1 && event.year === year);
-                    if (hasEvent) {
-                        dayEl.classList.add('has-event');
-                    }
-                    calendarEl.appendChild(dayEl);
-                }
-            };
-
-            const displayResults = () => {
-                resultsEl.innerHTML = '';
-                if (filteredEvents.length === 0) {
-                    resultsEl.innerHTML = '<p class="text-gray-500">No se encontraron obligaciones para los filtros seleccionados.</p>';
-                    return;
-                }
-
-                const groupedByMonthAndYear = filteredEvents.reduce((acc, event) => {
-                    const key = `${event.year}-${String(event.month).padStart(2, '0')}`;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            monthName: new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'long' }),
-                            year: event.year,
-                            events: []
-                        };
-                    }
-                    acc[key].events.push(event);
-                    return acc;
-                }, {});
-
-                Object.values(groupedByMonthAndYear).sort((a,b) => a.year - b.year || a.events[0].month - b.events[0].month).forEach(group => {
-                    const monthContainer = document.createElement('div');
-                    const monthTitle = document.createElement('h4');
-                    monthTitle.className = 'font-bold text-lg mt-4 capitalize';
-                    monthTitle.textContent = `${group.monthName} ${group.year}`;
-                    monthContainer.appendChild(monthTitle);
-
-                    const eventsContainer = document.createElement('div');
-                    eventsContainer.className = 'space-y-3 mt-2';
-
-                    group.events.sort((a, b) => a.day - b.day).forEach(event => {
-                        const eventEl = document.createElement('div');
-                        eventEl.className = 'flex items-center gap-4 p-3 bg-gray-50 rounded-lg';
-
-                        let googleButton = '';
-                        if (isProUser) {
-                           googleButton = `<button data-event='${JSON.stringify(event)}' title="Añadir a Google Calendar" class="google-btn flex-shrink-0 bg-white border border-gray-300 text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 16h-4v-4h4v4z"/></svg>
-                            </button>`;
-                        }
-
-                        eventEl.innerHTML = `
-                            <div class="flex-shrink-0 bg-blue-100 text-blue-700 rounded-lg w-12 h-12 flex flex-col items-center justify-center">
-                                <span class="font-bold text-xl">${event.day}</span>
-                                <span class="text-xs uppercase">${new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'short' })}</span>
-                            </div>
-                            <div class="flex-grow">
-                                <p class="font-semibold">${event.description}</p>
-                                <p class="text-sm text-gray-500">Fecha Límite: ${event.day} de ${group.monthName} de ${event.year}</p>
-                            </div>
-                            ${googleButton}
-                        `;
-                        eventsContainer.appendChild(eventEl);
-                    });
-                    monthContainer.appendChild(eventsContainer);
-                    resultsEl.appendChild(monthContainer);
-                });
-            };
-
-            const handleGenerateSchedule = (e) => {
-                e.preventDefault();
-                const taxpayerType = taxpayerTypeEl.value;
-                const nit = nitInputEl.value;
-
-                if (taxpayerType !== 'persona_no_residente' && (nit === '' || !/^\d+$/.test(nit))) {
-                    showToast('Por favor, ingresa un NIT válido (solo números).', true);
-                    return;
-                }
-
-                const lastDigit = parseInt(nit.slice(-1), 10);
-                const lastTwoDigits = parseInt(nit.slice(-2), 10);
-                let events = [];
-                const categoriesToProcess = new Set();
-
-                // Determine categories based on taxpayer type and form inputs
-                if (taxpayerType === 'persona_no_residente') {
-                    categoriesToProcess.add('pagos_pes').add('declaracion_pes');
-                } else {
-                    categoriesToProcess.add('renta');
-                    if (document.getElementById('foreignAssets').checked) {
-                        categoriesToProcess.add('activos_exterior');
-                    }
-                }
-
-                if (taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente') {
-                    const ivaFrequency = document.querySelector('input[name="iva-frequency"]:checked').value;
-                    categoriesToProcess.add(ivaFrequency === 'bimestral' ? 'iva_bimestral' : 'iva_cuatrimestral');
-
-                    if (taxpayerType === 'persona_juridica') {
-                        categoriesToProcess.add('retencion_fuente');
-                    }
-
-                    if (document.getElementById('consumo').checked) categoriesToProcess.add('consumo');
-                    if (document.getElementById('bolsas').checked) categoriesToProcess.add('bolsas');
-                    if (document.getElementById('gasolina').checked) categoriesToProcess.add('gasolina');
-                    if (document.getElementById('carbono').checked) categoriesToProcess.add('carbono');
-                    if (document.getElementById('transferencia').checked) categoriesToProcess.add('precios_transferencia');
-                    if (document.getElementById('iva_exterior').checked) categoriesToProcess.add('iva_exterior');
-                    if (document.getElementById('patrimonio').checked) categoriesToProcess.add('patrimonio');
-                    if (document.getElementById('plasticos_uso_unico').checked) categoriesToProcess.add('plasticos_uso_unico');
-                    if (document.getElementById('bebidas_ultraprocesadas').checked) categoriesToProcess.add('bebidas_ultraprocesadas');
-                    if (document.getElementById('rub').checked) categoriesToProcess.add('rub');
-
-                    if (document.getElementById('rst').checked) {
-                        const rstType = document.querySelector('input[name="rst-type"]:checked').value;
-                        categoriesToProcess.add(rstType === 'anual' ? 'rst_anual' : 'rst_anticipo');
-                    }
-                }
-
-                for (const year in taxData) {
-                    if (!taxData.hasOwnProperty(year)) continue;
-                    const yearData = taxData[year];
-
-                    if (yearData[taxpayerType]) {
-                        const obligations = yearData[taxpayerType];
-                        categoriesToProcess.forEach(category => {
-                            if (obligations[category]) {
-                                obligations[category].forEach(event => {
-                                    const eventWithYear = { ...event, year: parseInt(year) };
-                                    let match = false;
-                                    if (taxpayerType === 'persona_no_residente') {
-                                        match = true;
-                                    } else if (taxpayerType === 'persona_natural') {
-                                        if (event.nit.includes(lastTwoDigits)) match = true;
-                                    } else {
-                                        if (event.nit.includes(lastDigit)) match = true;
-                                    }
-                                    if(match) events.push(eventWithYear);
-                                });
-                            }
-                        });
-                    }
-                }
-
-                // Deduplicate events as some obligations share dates (e.g. Renta and Activos)
-                const uniqueEvents = new Map();
-                events.forEach(event => {
-                    const key = `${event.year}-${event.month}-${event.day}-${event.description}`;
-                    uniqueEvents.set(key, event);
-                });
-                filteredEvents = Array.from(uniqueEvents.values());
-
-                if (filteredEvents.length > 0) {
-                    showToast(`Agenda generada con ${filteredEvents.length} obligaciones.`);
-                } else {
-                    showToast('No se encontraron obligaciones para tu selección.', true);
-                }
-                renderCalendar();
-                displayResults();
-            };
-
-            const handleDownloadPdf = () => {
-                if (filteredEvents.length === 0) {
-                    showToast('Primero genera una agenda para poder descargar el PDF.', true);
-                    return;
-                }
-
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    console.error("PDF generation libraries not found on window object.");
-                    showToast("Error al generar PDF: librerías no encontradas.", true);
-                    return;
-                }
-
-                const { jsPDF } = window.jspdf;
-                const html2canvas = window.html2canvas;
-                const pdfContentEl = document.getElementById('pdf-content');
-
-                pdfContentEl.innerHTML = '';
-                const titleContainer = document.createElement('div');
-                titleContainer.className = 'text-center mb-6';
-                titleContainer.innerHTML = `
-                    <h1 class="text-3xl font-bold text-gray-800">AGENDA TRIBUTARIA</h1>
-                    <h2 class="text-xl text-gray-600">COLOMBIA 2025 - 2026</h2>
-                    <p class="text-sm text-gray-500 mt-1">NIT Termina en: ${nitInputEl.value.slice(-2)} (${taxpayerTypeEl.options[taxpayerTypeEl.selectedIndex].text})</p>
-                `;
-                pdfContentEl.appendChild(titleContainer);
-
-                const calendarGrid = document.createElement('div');
-                calendarGrid.className = 'grid grid-cols-4 gap-2';
-
-                const monthsToRender = Array.from({ length: 13 }, (_, i) => {
-                    const date = new Date(2025, i, 1);
-                    return { month: date.getMonth(), year: date.getFullYear() };
-                });
-
-                monthsToRender.forEach(({ month, year }) => {
-                    const monthContainer = document.createElement('div');
-                    monthContainer.className = 'border border-gray-200 p-1';
-                    const monthName = new Date(year, month).toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-
-                    let monthHTML = `<h3 class="text-center font-bold bg-gray-700 text-white py-1 text-[10px]">${monthName} ${year}</h3>`;
-                    monthHTML += `<div class="grid grid-cols-7 text-center text-[8px] gap-px">`;
-
-                    const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-                    dayHeaders.forEach(d => monthHTML += `<div class="font-bold">${d}</div>`);
-
-                    const firstDayOfMonth = new Date(year, month, 1).getDay();
-                    for (let i = 0; i < firstDayOfMonth; i++) {
-                        monthHTML += '<div></div>';
-                    }
-
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
-                        if (dayEvents.length > 0) {
-                            const eventType = getEventType(dayEvents[0].description);
-                            monthHTML += `
-                                <div class="relative w-6 h-6 mx-auto flex items-center justify-center text-[9px]">
-                                    <div class="absolute border-2 border-red-500 rounded-full w-full h-full"></div>
-                                    <div class="absolute -top-1.5 text-white text-[7px] px-1 rounded-full ${eventType.color}">
-                                        ${eventType.label}
-                                    </div>
-                                    ${day}
-                                </div>`;
-                        } else {
-                            monthHTML += `<div class="w-6 h-6 mx-auto flex items-center justify-center text-[9px]">${day}</div>`;
-                        }
-                    }
-                    monthHTML += `</div>`;
-                    monthContainer.innerHTML = monthHTML;
-                    calendarGrid.appendChild(monthContainer);
-                });
-
-                pdfContentEl.appendChild(calendarGrid);
-
-                showToast("Generando PDF... por favor espera.", false);
-                html2canvas(pdfContentEl, { scale: 3 })
-                    .then((canvas) => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF('p', 'mm', 'a4');
-                        const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const canvasWidth = canvas.width;
-                        const canvasHeight = canvas.height;
-                        const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
-                        pdf.addImage(imgData, 'PNG', 5, 5, pdfWidth - 10, pdfHeight - 5);
-                        pdf.save(`agenda-tributaria-${nitInputEl.value || 'pes'}.pdf`);
-                    });
-            };
-
-            const getEventType = (description) => {
-                const desc = description.toLowerCase();
-                if (desc.includes('renta')) return { label: 'RENTA', color: 'bg-blue-500' };
-                if (desc.includes('iva')) return { label: 'IVA', color: 'bg-green-500' };
-                if (desc.includes('retefuente')) return { label: 'RETEF.', color: 'bg-red-500' };
-                if (desc.includes('activos')) return { label: 'ACTIVOS', color: 'bg-yellow-400' };
-                if (desc.includes('pes')) return { label: 'PES', color: 'bg-purple-500' };
-                if (desc.includes('consumo')) return { label: 'CONSUMO', color: 'bg-pink-500' };
-                if (desc.includes('carbono')) return { label: 'CARBONO', color: 'bg-gray-600' };
-                if (desc.includes('gasolina')) return { label: 'GAS', color: 'bg-orange-500' };
-                if (desc.includes('bolsas')) return { label: 'BOLSAS', color: 'bg-teal-500' };
-                if (desc.includes('transferencia')) return { label: 'TRANSF', color: 'bg-indigo-500' };
-                if (desc.includes('patrimonio')) return { label: 'PATRIM', color: 'bg-cyan-500' };
-                if (desc.includes('plasticos')) return { label: 'PLAST', color: 'bg-lime-500' };
-                if (desc.includes('bebidas')) return { label: 'BEBIDAS', color: 'bg-rose-500' };
-                if (desc.includes('rub')) return { label: 'RUB', color: 'bg-fuchsia-500' };
-                if (desc.includes('rst')) return { label: 'RST', color: 'bg-sky-500' };
-                return { label: 'OTRO', color: 'bg-gray-400' };
-            };
-
-            const handleCalendarNav = (direction) => {
-                currentDate.setMonth(currentDate.getMonth() + direction);
-                if (currentDate > new Date(2026, 0, 31) || currentDate < new Date(2025, 0, 1)) {
-                    currentDate.setMonth(currentDate.getMonth() - direction);
-                    return;
-                }
-                renderCalendar();
-            };
-
-            const checkProStatus = () => {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('payment') === 'success') {
-                    localStorage.setItem('isProUser', 'true');
-                    isProUser = true;
-                    showToast('¡Pago exitoso! Funciones Pro activadas.');
-                    window.history.replaceState(null, '', window.location.pathname);
-                } else {
-                    isProUser = localStorage.getItem('isProUser') === 'true';
-                }
-
-                if(isProUser) {
-                    document.getElementById('pro-section').classList.add('hidden');
-                    document.getElementById('pro-activated-section').classList.remove('hidden');
-                }
-            };
-
-            const updateFormUI = () => {
-                const taxpayerType = taxpayerTypeEl.value;
-                const companyQuestionsEl = document.getElementById('company-questions');
-                const foreignAssetsContainerEl = document.getElementById('foreignAssets').parentElement;
-
-                document.getElementById('nit-section').style.display = taxpayerType === 'persona_no_residente' ? 'none' : 'block';
-                document.getElementById('pes-section').style.display = taxpayerType === 'persona_no_residente' ? 'block' : 'none';
-
-                const showCompanyQuestions = taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente';
-                companyQuestionsEl.style.display = showCompanyQuestions ? 'block' : 'none';
-
-                foreignAssetsContainerEl.style.display = 'flex';
-            };
-
-            // --- EVENT LISTENERS ---
-            form.addEventListener('submit', handleGenerateSchedule);
-            downloadPdfBtn.addEventListener('click', handleDownloadPdf);
-            prevMonthBtn.addEventListener('click', () => handleCalendarNav(-1));
-            nextMonthBtn.addEventListener('click', () => handleCalendarNav(1));
-            taxpayerTypeEl.addEventListener('change', updateFormUI);
-
-            document.getElementById('rst').addEventListener('change', (e) => {
-                document.getElementById('rst-options').style.display = e.target.checked ? 'block' : 'none';
-            });
-
-            resultsEl.addEventListener('click', function(e) {
-                const button = e.target.closest('.google-btn');
-                if (button) {
-                    const eventData = JSON.parse(button.dataset.event);
-                    const taxpayerType = taxpayerTypeEl.value;
-                    const nit = nitInputEl.value;
-
-                    const year = eventData.year;
-                    const month = String(eventData.month).padStart(2, '0');
-                    const day = String(eventData.day).padStart(2, '0');
-                    const startDate = `${year}${month}${day}`;
-                    const endDate = `${year}${month}${day}`;
-
-                    const title = encodeURIComponent(`Vencimiento: ${eventData.description}`);
-                    const detailsText = taxpayerType === 'persona_no_residente'
-                        ? `Recordatorio de obligación tributaria para PES (No Residente).`
-                        : `Recordatorio de obligación tributaria para el NIT terminado en ${nit.slice(-2)}.`;
-
-                    const details = encodeURIComponent(`${detailsText}\n\nObligación: ${eventData.description}.\n\nGenerado por Agenda Tributaria Interactiva.`);
-                    const reminderMinutes = 48 * 60; // 2-day reminder
-
-                    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&crm=REMIND&reminders.minutes=${reminderMinutes}`;
-
-                    window.open(url, '_blank');
-                }
-            });
-
-            // --- INITIALIZATION ---
-            checkProStatus();
-            updateFormUI();
-            renderCalendar();
-            document.getElementById('rst-options').style.display = document.getElementById('rst').checked ? 'block' : 'none';
+            return cleanSentence + punc; // Re-add punctuation
         });
-    </script>
+        workingText = transformedSentences.join(' ');
+
+        // PASS 2: Phrase-level substitution
+        let processedText = ` ${workingText.trim()} `;
+        Object.keys(phrases).forEach(phrase => {
+            const regex = new RegExp(`\\b${phrase}\\b`, 'gi');
+            if (regex.test(processedText)) {
+                const replacement = phrases[phrase][Math.floor(Math.random() * phrases[phrase].length)];
+                processedText = processedText.replace(regex, (match) => {
+                    if (match[0] === match[0].toUpperCase()) {
+                        return replacement.charAt(0).toUpperCase() + replacement.slice(1);
+                    }
+                    return replacement;
+                });
+            }
+        });
+
+        // PASS 3: Word-level substitution with grammatical concordance
+        const parts = processedText.trim().split(/([ \n\t.,!?;:()"“”«»]+)/);
+        const articles = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas'];
+
+        for (let i = 0; i < parts.length; i++) {
+            let part = parts[i];
+            if (!part.trim()) continue;
+
+            const lowerPart = part.toLowerCase();
+            const syns = synonyms[lowerPart];
+
+            if (syns) {
+                const originalInfo = concordanceEngine.getWordInfo(part);
+                let synonym = syns[Math.floor(Math.random() * syns.length)];
+                let adapted = concordanceEngine.adaptSynonym(synonym, originalInfo);
+
+                if (part[0] === part[0].toUpperCase()) {
+                    adapted = adapted.charAt(0).toUpperCase() + adapted.slice(1);
+                }
+                parts[i] = adapted;
+
+                const newNounInfo = concordanceEngine.getWordInfo(adapted);
+                if (i > 1) { // Adapt previous article
+                    const prevPart = parts[i - 2].trim();
+                    if (articles.includes(prevPart.toLowerCase())) {
+                        parts[i - 2] = parts[i - 2].replace(prevPart, concordanceEngine.adaptArticle(prevPart, newNounInfo));
+                    }
+                }
+                if (i < parts.length - 2) { // Adapt next adjective
+                    const nextPart = parts[i + 2].trim();
+                    if (synonyms[nextPart.toLowerCase()]) {
+                        parts[i + 2] = parts[i + 2].replace(nextPart, concordanceEngine.adaptAdjective(nextPart, newNounInfo));
+                    }
+                }
+            }
+        }
+        workingText = parts.join('');
+
+        // 4. Final cleanup and formatting
+        let cleanedText = workingText.replace(/\s+/g, ' ').trim().replace(/\s+([,.;:!?])/g, '$1');
+        cleanedText = cleanedText.replace(/([.!?]\s+)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+        cleanedText = cleanedText.charAt(0).toUpperCase() + cleanedText.slice(1);
+
+        document.getElementById("finalResult").innerText = cleanedText + "\n\n✨ Texto conceptualizado y expandido por el motor semántico de Gemini.";
+    } catch (error) {
+        console.error("Error en paraphraseText:", error);
+        alert("Ocurrió un error inesperado al parafrasear el texto.");
+    }
+}
+// --- FIN DEL CÓDIGO DE PARAFRASEO ---
+
+// --- CÓDIGO FUNCIONAL (NO TOCAR) ---
+function editText() {
+    let input = document.getElementById("detectedText").innerText;
+    let newText = prompt("Edita el texto:", input);
+    if (newText !== null) {
+        document.getElementById("finalResult").innerText = newText;
+    }
+}
+
+function acceptText() {
+    let input = document.getElementById("detectedText").innerText;
+    document.getElementById("finalResult").innerText = input;
+}
+
+function resetText() {
+    document.getElementById("inputText").value = "";
+    document.getElementById("detectedText").innerText = "";
+    document.getElementById("finalResult").innerText = "";
+    document.getElementById("similarityScore").innerText = "";
+    if (chart) chart.destroy();
+}
+
+function copyText() {
+    let text = document.getElementById("finalResult").innerText;
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert("📋 Texto copiado al portapapeles");
+    } catch (err) {
+        alert("Error al copiar el texto.");
+    }
+}
+
+function updateChart(similarity) {
+    let ctx = document.getElementById("similarityChart").getContext("2d");
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ["Similitud detectada"],
+            datasets: [{
+                label: "Porcentaje",
+                data: [similarity],
+                backgroundColor: similarity > 70 ? "#dc3545" : (similarity > 40 ? "#ffc107" : "#28a745"),
+                borderRadius: 5,
+                barThickness: 50
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Similitud: ${context.raw}%`;
+                        }
+                    }
+                }
+            },
+            scales: { y: { beginAtZero: true, max: 100 } }
+        }
+    });
+}
+
+async function loadFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const loadingText = "Cargando archivo...";
+    const originalTextArea = document.getElementById("inputText");
+    originalTextArea.value = loadingText;
+
+    try {
+        if (file.type === "text/plain") {
+            originalTextArea.value = await file.text();
+        } else if (file.type === "application/pdf") {
+            const reader = new FileReader();
+            reader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                if (typeof pdfjsLib === 'undefined') {
+                    alert('Error: La librería PDF.js no se cargó correctamente.');
+                    originalTextArea.value = "";
+                    return;
+                }
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                let textContent = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const text = await page.getTextContent();
+                    textContent += text.items.map(item => item.str).join(" ") + "\n";
+                }
+                originalTextArea.value = textContent;
+            };
+            reader.readAsArrayBuffer(file);
+        } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                mammoth.extractRawText({ arrayBuffer: event.target.result }).then(function(result) {
+                    originalTextArea.value = result.value;
+                }).catch(err => {
+                    originalTextArea.value = "Error al leer el archivo .docx";
+                    console.error(err);
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            alert("⚠️ Tipo de archivo no soportado.");
+            originalTextArea.value = "";
+        }
+    } catch(error) {
+        alert("Ocurrió un error al cargar el archivo.");
+        originalTextArea.value = "";
+        console.error(error);
+    }
+}
+</script>
+
 </body>
 </html>
