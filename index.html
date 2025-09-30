@@ -187,57 +187,36 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. *** FINAL ATTEMPT: Extract Name ***
+        // 3. *** FINAL, DIRECT NAME EXTRACTION ***
         const lines = text.split('\n').map(line => line.trim());
         let foundName = '';
-        let lineIndexToRemove = -1;
-        let nextLineIndexToRemove = -1;
 
-        // Scan the first 3 lines for a likely name
-        for (let i = 0; i < Math.min(lines.length, 3); i++) {
+        // Find the first non-empty line that looks like a name.
+        for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             if (!line) continue;
-            const words = line.split(' ').filter(w => w.length > 0);
 
-            // A name is likely 2 to 4 words.
-            if (words.length < 2 || words.length > 4) {
-                continue;
+            // Exclusion list for common non-name headers or contact info
+            const exclusionKeywords = [
+                'curriculum', 'vitae', 'hoja de vida', 'resume', 'profile', 'perfil',
+                'teléfono', 'celular', 'dirección', 'email', 'linkedin',
+                'asistente', 'coordinador', 'especialista', 'ingeniero', 'desarrollador',
+                '@', 'www.'
+            ];
+
+            const hasExclusionKeyword = exclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
+            if (hasExclusionKeyword || /\d/.test(line)) {
+                continue; // Skip this line if it's likely not a name
             }
 
-            // It should not contain numbers, emails, or job title separators
-            if (/\d|@|\|/.test(line)) {
-                continue;
-            }
-
-            // It should be either ALL CAPS or Title Case
-            const isAllCaps = /^[A-ZÁÉÍÓÚÑ\s]+$/.test(line);
-            const isTitleCase = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
-
-            if (isAllCaps || isTitleCase) {
-                // Exclude common non-name headers
-                const hasExclusionKeyword = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'profile', 'perfil'].some(keyword => line.toLowerCase().includes(keyword));
-                if(hasExclusionKeyword) continue;
-
-                // This is a strong candidate.
-                foundName = line;
-                lineIndexToRemove = i;
-
-                // Check if the next line is a job title to be extra sure, and mark it for removal
-                const nextLine = lines[i + 1] || '';
-                if (/\||asistente|coordinador|especialista|ingeniero|desarrollador/i.test(nextLine)) {
-                    nextLineIndexToRemove = i + 1;
-                }
-                break; // Found it, stop searching.
-            }
+            // If we've passed the checks, this is our best guess for the name.
+            foundName = line;
+            break; // Stop after finding the first valid candidate.
         }
 
         if (foundName) {
             document.getElementById('fullName').value = foundName;
-
-            // Rebuild remainingText more safely by filtering out the found lines from the original text
-            const textLines = text.split('\n');
-            const originalIndices = [lineIndexToRemove, nextLineIndexToRemove].filter(i => i !== -1);
-            remainingText = textLines.filter((_, index) => !originalIndices.includes(index)).join('\n');
+            remainingText = remainingText.replace(foundName, '');
         }
 
         // 4. *** MEJORADO: Extract Address ***
