@@ -42,7 +42,7 @@
             <div class="text-sm text-gray-600 mt-3">
                 <p class="font-semibold">Nota sobre el autollenado:</p>
                 <ul class="list-disc list-inside ml-2 mt-1 space-y-1">
-                    <li>El autollenado solo intentará encontrar tu <strong>Email</strong> y <strong>Teléfono</strong>.</li>
+                    <li>Se intentará autocompletar tu <strong>Nombre, Email, Teléfono y Dirección</strong>.</li>
                     <li><strong>Todo el texto restante</strong> se pegará en el campo "Resumen Profesional".</li>
                     <li>Deberás <strong>revisar y mover manualmente</strong> la información a los campos correctos.</li>
                 </ul>
@@ -164,30 +164,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Attempts to find email and phone number in the text and populates the form.
+     * Attempts to find and fill Name, Email, Phone, and Address from the text.
      * The remaining text is placed in the professional summary.
      * @param {string} text - The raw text from the resume.
      */
     function autofillForm(text) {
-        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-        const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-
-        const emailMatch = text.match(emailRegex);
-        const phoneMatch = text.match(phoneRegex);
-
         let remainingText = text;
 
+        // 1. Extract Email
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+        const emailMatch = remainingText.match(emailRegex);
         if (emailMatch) {
             document.getElementById('email').value = emailMatch[0];
             remainingText = remainingText.replace(emailMatch[0], '');
         }
+
+        // 2. Extract Phone
+        const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+        const phoneMatch = remainingText.match(phoneRegex);
         if (phoneMatch) {
             document.getElementById('phone').value = phoneMatch[0];
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
+        // 3. Extract Name (heuristic: often the first non-empty line)
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        if (lines.length > 0) {
+            const nameGuess = lines[0].trim();
+            // A simple check: if it contains 2-4 words and no email/phone.
+            if (nameGuess.split(' ').length >= 2 && nameGuess.split(' ').length <= 4 && !emailRegex.test(nameGuess) && !phoneRegex.test(nameGuess)) {
+                document.getElementById('fullName').value = nameGuess;
+                remainingText = remainingText.replace(nameGuess, '');
+            }
+        }
+
+        // 4. Extract Address (heuristic: look for keywords like Street, Ave, City, etc. and a postal code or country)
+        const addressRegex = /((?:[\d-]+\s)?(?:[A-Z][a-z]+\s)+)(?:Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Plaza|Plz|Square|Sq|Cr|Cll|Calle|Carrera)\.?,?\s(?:[A-Z][a-z]+\s?)+,?\s[A-Z]{2,},?\s\d{5,}|(?:[A-Z][a-z]+,\s[A-Z][a-z]+)/i;
+        const addressMatch = remainingText.match(addressRegex);
+        if (addressMatch) {
+            document.getElementById('address').value = addressMatch[0].trim();
+            remainingText = remainingText.replace(addressMatch[0], '');
+        }
+
+        // 5. Populate summary with the rest
         document.getElementById('professionalSummary').value = remainingText.trim();
-        alert("Hemos intentado autocompletar tu email y teléfono. Por favor, revisa la información y mueve el texto del resumen a las secciones correctas.");
+        alert("Hemos intentado autocompletar tu nombre, email, teléfono y dirección. Por favor, revisa que la información sea correcta.");
     }
 
     /**
