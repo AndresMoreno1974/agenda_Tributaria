@@ -187,44 +187,57 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. *** MEJORADO: Extract Name ***
-        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 4);
-        const nameExclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'email', 'teléfono', 'celular', 'dirección', 'linkedin', 'profile', 'perfil'];
+        // 3. *** FINAL ATTEMPT: Extract Name ***
+        const lines = text.split('\n').map(line => line.trim());
         let foundName = '';
+        let lineIndexToRemove = -1;
+        let nextLineIndexToRemove = -1;
 
-        for (const line of lines.slice(0, 5)) { // Check the first 5 potential lines
+        // Scan the first 3 lines for a likely name
+        for (let i = 0; i < Math.min(lines.length, 3); i++) {
+            const line = lines[i];
+            if (!line) continue;
             const words = line.split(' ').filter(w => w.length > 0);
 
-            // Heuristic 1: Word count (2 to 5 words)
-            if (words.length < 2 || words.length > 5) {
+            // A name is likely 2 to 4 words.
+            if (words.length < 2 || words.length > 4) {
                 continue;
             }
 
-            // Heuristic 2: All words must start with a capital letter
-            const allWordsCapitalized = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
-            if (!allWordsCapitalized) {
+            // It should not contain numbers, emails, or job title separators
+            if (/\d|@|\|/.test(line)) {
                 continue;
             }
 
-            // Heuristic 3: Line should not contain numbers or email symbol
-            if (/\d|@/.test(line)) {
-                continue;
-            }
+            // It should be either ALL CAPS or Title Case
+            const isAllCaps = /^[A-ZÁÉÍÓÚÑ\s]+$/.test(line);
+            const isTitleCase = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
 
-            // Heuristic 4: Line should not contain exclusion keywords
-            const hasExclusionKeyword = nameExclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
-            if (hasExclusionKeyword) {
-                continue;
-            }
+            if (isAllCaps || isTitleCase) {
+                // Exclude common non-name headers
+                const hasExclusionKeyword = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'profile', 'perfil'].some(keyword => line.toLowerCase().includes(keyword));
+                if(hasExclusionKeyword) continue;
 
-            // If all checks pass, we've found our name.
-            foundName = line;
-            break;
+                // This is a strong candidate.
+                foundName = line;
+                lineIndexToRemove = i;
+
+                // Check if the next line is a job title to be extra sure, and mark it for removal
+                const nextLine = lines[i + 1] || '';
+                if (/\||asistente|coordinador|especialista|ingeniero|desarrollador/i.test(nextLine)) {
+                    nextLineIndexToRemove = i + 1;
+                }
+                break; // Found it, stop searching.
+            }
         }
 
         if (foundName) {
             document.getElementById('fullName').value = foundName;
-            remainingText = remainingText.replace(foundName, '');
+
+            // Rebuild remainingText more safely by filtering out the found lines from the original text
+            const textLines = text.split('\n');
+            const originalIndices = [lineIndexToRemove, nextLineIndexToRemove].filter(i => i !== -1);
+            remainingText = textLines.filter((_, index) => !originalIndices.includes(index)).join('\n');
         }
 
         // 4. *** MEJORADO: Extract Address ***
