@@ -6,6 +6,7 @@
     <title>Generador de Hoja de Vida ATS-Friendly</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Librerías desde CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.18/mammoth.browser.min.js"></script>
@@ -163,27 +164,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * *** FUNCIÓN MODIFICADA PARA MEJORAR LA EXTRACCIÓN DE NOMBRE Y DIRECCIÓN ***
+     * *** FINAL, SIMPLIFIED AUTOFILL FUNCTION ***
      * Attempts to find and fill Name, Email, Phone, and Address from the text.
-     * The remaining text is placed in the professional summary.
      * @param {string} text - The raw text from the resume.
      */
     function autofillForm(text) {
         let remainingText = text;
         const originalLines = text.split('\n');
-        const trimmedLines = originalLines.map(line => line.trim());
 
         // --- 1. Find and Extract Name (High Priority) ---
         let foundName = '';
         let nameLineIndex = -1;
 
         // Scan the first few lines for a likely name
-        for (let i = 0; i < Math.min(trimmedLines.length, 5); i++) {
-            const line = trimmedLines[i];
-            if (!line || line.length < 4 || line.length > 50) continue;
+        for (let i = 0; i < Math.min(originalLines.length, 5); i++) {
+            const line = originalLines[i].trim();
+            if (!line || line.length < 5 || line.length > 50) continue;
 
             const exclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'perfil', 'resumen', 'teléfono', 'email', 'linkedin', 'dirección', 'asistente', 'coordinador', 'especialista', 'ingeniero', 'developer', '|', '@', 'www.', 'tel:', 'cel:', 'calle', 'carrera'];
-            if (exclusionKeywords.some(kw => line.toLowerCase().includes(kw)) || /\d{5,}/.test(line)) {
+            if (exclusionKeywords.some(kw => line.toLowerCase().includes(kw)) || /\d{4,}/.test(line)) {
                 continue;
             }
 
@@ -191,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (words.length >= 2 && words.length <= 5) {
                 const isAllCaps = line === line.toUpperCase() && !/[a-záéíóúñ]/.test(line);
                 const isTitleCase = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word[0]));
-
                 if (isAllCaps || isTitleCase) {
                     foundName = line;
                     nameLineIndex = i;
@@ -202,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (foundName) {
             document.getElementById('fullName').value = foundName;
-            // Safely remove the name line to create remainingText
             remainingText = originalLines.filter((_, index) => index !== nameLineIndex).join('\n');
         }
 
@@ -214,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(emailMatch[0], '');
         }
 
-        // 2. Extract Phone
         const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
         const phoneMatch = remainingText.match(phoneRegex);
         if (phoneMatch) {
@@ -222,65 +218,21 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. *** MEJORADO: Extract Name ***
-        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 4);
-        const nameExclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'email', 'teléfono', 'celular', 'dirección', 'linkedin', 'profile', 'perfil'];
-        let foundName = '';
-
-        for (const line of lines.slice(0, 5)) { // Check the first 5 potential lines
-            const words = line.split(' ').filter(w => w.length > 0);
-
-            // Heuristic 1: Word count (2 to 5 words)
-            if (words.length < 2 || words.length > 5) {
-                continue;
-            }
-
-            // Heuristic 2: All words must start with a capital letter
-            const allWordsCapitalized = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
-            if (!allWordsCapitalized) {
-                continue;
-            }
-
-            // Heuristic 3: Line should not contain numbers or email symbol
-            if (/\d|@/.test(line)) {
-                continue;
-            }
-
-            // Heuristic 4: Line should not contain exclusion keywords
-            const hasExclusionKeyword = nameExclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
-            if (hasExclusionKeyword) {
-                continue;
-            }
-
-            // If all checks pass, we've found our name.
-            foundName = line;
-            break;
-        }
-
-        if (foundName) {
-            document.getElementById('fullName').value = foundName;
-            remainingText = remainingText.replace(foundName, '');
-        }
-
-        // 4. *** MEJORADO: Extract Address ***
-        const addressKeywords = ['calle', 'cll', 'carrera', 'cra', 'karrera', 'avenida', 'av', 'transversal', 'trv', 'diagonal', 'dg', 'dirección', 'ciudad', 'barrio', 'apto', 'apartamento'];
+        const addressKeywords = ['calle', 'cll', 'carrera', 'cra', 'avenida', 'av', 'dirección'];
         const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-,.]+)`, 'i');
         const addressMatch = remainingText.match(addressRegex);
 
         if (addressMatch) {
-            const fullAddressLine = text.split('\n').find(line => line.toLowerCase().includes(addressMatch[0].toLowerCase().trim()));
-            if (fullAddressLine && fullAddressLine.length < 100) {
-                document.getElementById('address').value = fullAddressLine.trim();
-                remainingText = remainingText.replace(fullAddressLine, '');
-            } else {
-                document.getElementById('address').value = addressMatch[0].trim();
-                remainingText = remainingText.replace(addressMatch[0], '');
-            }
+            let extractedAddress = addressMatch[0].replace(/📍|☎|📧/g, '').trim();
+             if(phoneMatch) extractedAddress = extractedAddress.replace(phoneMatch[0], '');
+             if(emailMatch) extractedAddress = extractedAddress.replace(emailMatch[0], '');
+            document.getElementById('address').value = extractedAddress.trim();
+            remainingText = remainingText.replace(addressMatch[0], '');
         }
 
-        // 5. Populate summary with the rest
+        // --- 3. Final Cleanup ---
         document.getElementById('professionalSummary').value = remainingText.trim();
-        alert("Hemos intentado autocompletar tu información. Por favor, revisa que los campos sean correctos y organiza el texto del 'Resumen Profesional'.");
+        alert("Hemos intentado autocompletar tu información. Por favor, revisa que los campos sean correctos.");
     }
 
     /**
