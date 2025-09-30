@@ -170,58 +170,81 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function autofillForm(text) {
         let remainingText = text;
-
-        // 1. Extract Email
+        const lines = text.split('\n').map(line => line.trim());
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-        const emailMatch = remainingText.match(emailRegex);
-        if (emailMatch) {
-            document.getElementById('email').value = emailMatch[0];
-            remainingText = remainingText.replace(emailMatch[0], '');
+
+        // --- Tier 1: Find the special contact line with emojis ---
+        const contactLineRegex = /(?:📍\s*)?(.*?)\s*(?:☎\s*|Teléfono:)(.*?)\s*(?:📧\s*|Email:)(.*)/;
+        const contactLine = lines.find(l => l.includes('☎') || l.includes('📧') || l.toLowerCase().includes('teléfono') || l.toLowerCase().includes('email'));
+
+        if (contactLine) {
+            const matches = contactLine.match(contactLineRegex);
+            if (matches) {
+                const address = (matches[1] || '').trim().replace(/,$/, '').trim();
+                const phone = (matches[2] || '').trim().replace(/,$/, '').trim();
+                const email = (matches[3] || '').trim();
+
+                if (address) document.getElementById('address').value = address;
+                if (phone) document.getElementById('phone').value = phone;
+                if (email) document.getElementById('email').value = email;
+
+                remainingText = remainingText.replace(contactLine, '');
+            }
         }
 
-        // 2. Extract Phone
-        const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-        const phoneMatch = remainingText.match(phoneRegex);
-        if (phoneMatch) {
-            document.getElementById('phone').value = phoneMatch[0];
-            remainingText = remainingText.replace(phoneMatch[0], '');
+        // --- Fallback for Email & Phone if not on the special line ---
+        if (!document.getElementById('email').value) {
+            const emailMatch = remainingText.match(emailRegex);
+            if (emailMatch) {
+                document.getElementById('email').value = emailMatch[0];
+                remainingText = remainingText.replace(emailMatch[0], '');
+            }
+        }
+        if (!document.getElementById('phone').value) {
+            const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+            const phoneMatch = remainingText.match(phoneRegex);
+            if (phoneMatch) {
+                document.getElementById('phone').value = phoneMatch[0];
+                remainingText = remainingText.replace(phoneMatch[0], '');
+            }
         }
 
-        // 3. Extract Name (More Robust Heuristic)
-        const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-        let nameFound = false;
-        for (let i = 0; i < Math.min(lines.length, 5); i++) { // Check first 5 lines
-            const nameGuess = lines[i];
+        // --- Name Extraction (more robust) ---
+        const cleanedLines = remainingText.split('\n').map(line => line.trim()).filter(line => line);
+        for (let i = 0; i < Math.min(cleanedLines.length, 3); i++) {
+            const nameGuess = cleanedLines[i];
             const words = nameGuess.split(' ');
-            // A name is likely 2-4 words, starts with a capital, and doesn't contain special chars.
             const isLikelyName = words.length >= 2 && words.length <= 4 &&
-                                  /^[A-ZÁÉÍÓÚÑ]/.test(nameGuess) &&
+                                  /^[A-ZÁÉÍÓÚÑ\s]+$/.test(nameGuess) && // Check if it's all caps and spaces
                                   !/[@\d]/.test(nameGuess) &&
-                                  !nameGuess.toLowerCase().includes('curriculum');
+                                  !/\|/.test(nameGuess); // Exclude lines with job titles
 
             if (isLikelyName) {
                 document.getElementById('fullName').value = nameGuess;
                 remainingText = remainingText.replace(nameGuess, '');
-                nameFound = true;
-                break; // Stop after finding the first likely name
+                // Also remove the next line if it looks like a job title
+                if (cleanedLines.length > (i + 1) && /\|/.test(cleanedLines[i+1])) {
+                    remainingText = remainingText.replace(cleanedLines[i+1], '');
+                }
+                break;
             }
         }
 
-        // 4. Extract Address (More Precise Regex)
-        const addressKeywords = ['calle', 'cll', 'cra', 'carrera', 'avenida', 'av', 'street', 'st', 'road', 'rd', 'dirección', 'address'];
-        const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-.,]+?)(?=\\s*(?:Bogotá|Cali|Medellín|Barranquilla|Cartagena|Bucaramanga)|\\n|$)`, 'i');
-        const addressMatch = remainingText.match(addressRegex);
-
-        if (addressMatch && addressMatch[0]) {
-            let extractedAddress = addressMatch[0].trim();
-            extractedAddress = extractedAddress.replace(/,$/, '').trim(); // Clean trailing comma
-            document.getElementById('address').value = extractedAddress;
-            remainingText = remainingText.replace(extractedAddress, '');
+        // --- Fallback for Address ---
+        if (!document.getElementById('address').value) {
+            const addressKeywords = ['calle', 'cll', 'cra', 'carrera', 'avenida', 'av', 'street', 'st', 'dirección', 'address'];
+            const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-.,]+?)(?=\\s*(?:Bogotá|Cali|Medellín)|\\n|$)`, 'i');
+            const addressMatch = remainingText.match(addressRegex);
+            if (addressMatch && addressMatch[0]) {
+                let extractedAddress = addressMatch[0].trim().replace(/,$/, '').trim();
+                document.getElementById('address').value = extractedAddress;
+                remainingText = remainingText.replace(extractedAddress, '');
+            }
         }
 
-        // 5. Populate summary with the rest
+        // --- Final Cleanup ---
         document.getElementById('professionalSummary').value = remainingText.trim();
-        alert("Hemos intentado autocompletar tu nombre, email, teléfono y dirección. Por favor, revisa que la información sea correcta.");
+        alert("Hemos intentado autocompletar la información de tu hoja de vida. Por favor, revisa que todo sea correcto.");
     }
 
     /**
