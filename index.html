@@ -6,7 +6,6 @@
     <title>Generador de Hoja de Vida ATS-Friendly</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Librerías desde CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.18/mammoth.browser.min.js"></script>
@@ -164,87 +163,89 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * *** FUNCIÓN MODIFICADA PARA MEJORAR LA EXTRACCIÓN DE NOMBRE Y DIRECCIÓN ***
      * Attempts to find and fill Name, Email, Phone, and Address from the text.
      * The remaining text is placed in the professional summary.
      * @param {string} text - The raw text from the resume.
      */
     function autofillForm(text) {
         let remainingText = text;
-        const lines = text.split('\n').map(line => line.trim());
+
+        // 1. Extract Email
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+        const emailMatch = remainingText.match(emailRegex);
+        if (emailMatch) {
+            document.getElementById('email').value = emailMatch[0];
+            remainingText = remainingText.replace(emailMatch[0], '');
+        }
 
-        // --- Tier 1: Find the special contact line with emojis ---
-        const contactLineRegex = /(?:📍\s*)?(.*?)\s*(?:☎\s*|Teléfono:)(.*?)\s*(?:📧\s*|Email:)(.*)/;
-        const contactLine = lines.find(l => l.includes('☎') || l.includes('📧') || l.toLowerCase().includes('teléfono') || l.toLowerCase().includes('email'));
+        // 2. Extract Phone
+        const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+        const phoneMatch = remainingText.match(phoneRegex);
+        if (phoneMatch) {
+            document.getElementById('phone').value = phoneMatch[0];
+            remainingText = remainingText.replace(phoneMatch[0], '');
+        }
 
-        if (contactLine) {
-            const matches = contactLine.match(contactLineRegex);
-            if (matches) {
-                const address = (matches[1] || '').trim().replace(/,$/, '').trim();
-                const phone = (matches[2] || '').trim().replace(/,$/, '').trim();
-                const email = (matches[3] || '').trim();
+        // 3. *** MEJORADO: Extract Name ***
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 4);
+        const nameExclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'email', 'teléfono', 'celular', 'dirección', 'linkedin', 'profile', 'perfil'];
+        let foundName = '';
 
-                if (address) document.getElementById('address').value = address;
-                if (phone) document.getElementById('phone').value = phone;
-                if (email) document.getElementById('email').value = email;
+        for (const line of lines.slice(0, 5)) { // Check the first 5 potential lines
+            const words = line.split(' ').filter(w => w.length > 0);
 
-                remainingText = remainingText.replace(contactLine, '');
+            // Heuristic 1: Word count (2 to 5 words)
+            if (words.length < 2 || words.length > 5) {
+                continue;
+            }
+
+            // Heuristic 2: All words must start with a capital letter
+            const allWordsCapitalized = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
+            if (!allWordsCapitalized) {
+                continue;
+            }
+
+            // Heuristic 3: Line should not contain numbers or email symbol
+            if (/\d|@/.test(line)) {
+                continue;
+            }
+
+            // Heuristic 4: Line should not contain exclusion keywords
+            const hasExclusionKeyword = nameExclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
+            if (hasExclusionKeyword) {
+                continue;
+            }
+
+            // If all checks pass, we've found our name.
+            foundName = line;
+            break;
+        }
+
+        if (foundName) {
+            document.getElementById('fullName').value = foundName;
+            remainingText = remainingText.replace(foundName, '');
+        }
+
+        // 4. *** MEJORADO: Extract Address ***
+        const addressKeywords = ['calle', 'cll', 'carrera', 'cra', 'karrera', 'avenida', 'av', 'transversal', 'trv', 'diagonal', 'dg', 'dirección', 'ciudad', 'barrio', 'apto', 'apartamento'];
+        const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-,.]+)`, 'i');
+        const addressMatch = remainingText.match(addressRegex);
+
+        if (addressMatch) {
+            const fullAddressLine = text.split('\n').find(line => line.toLowerCase().includes(addressMatch[0].toLowerCase().trim()));
+            if (fullAddressLine && fullAddressLine.length < 100) {
+                document.getElementById('address').value = fullAddressLine.trim();
+                remainingText = remainingText.replace(fullAddressLine, '');
+            } else {
+                document.getElementById('address').value = addressMatch[0].trim();
+                remainingText = remainingText.replace(addressMatch[0], '');
             }
         }
 
-        // --- Fallback for Email & Phone if not on the special line ---
-        if (!document.getElementById('email').value) {
-            const emailMatch = remainingText.match(emailRegex);
-            if (emailMatch) {
-                document.getElementById('email').value = emailMatch[0];
-                remainingText = remainingText.replace(emailMatch[0], '');
-            }
-        }
-        if (!document.getElementById('phone').value) {
-            const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-            const phoneMatch = remainingText.match(phoneRegex);
-            if (phoneMatch) {
-                document.getElementById('phone').value = phoneMatch[0];
-                remainingText = remainingText.replace(phoneMatch[0], '');
-            }
-        }
-
-        // --- Name Extraction (more robust) ---
-        const cleanedLines = remainingText.split('\n').map(line => line.trim()).filter(line => line);
-        for (let i = 0; i < Math.min(cleanedLines.length, 3); i++) {
-            const nameGuess = cleanedLines[i];
-            const words = nameGuess.split(' ');
-            const isLikelyName = words.length >= 2 && words.length <= 4 &&
-                                  /^[A-ZÁÉÍÓÚÑ\s]+$/.test(nameGuess) && // Check if it's all caps and spaces
-                                  !/[@\d]/.test(nameGuess) &&
-                                  !/\|/.test(nameGuess); // Exclude lines with job titles
-
-            if (isLikelyName) {
-                document.getElementById('fullName').value = nameGuess;
-                remainingText = remainingText.replace(nameGuess, '');
-                // Also remove the next line if it looks like a job title
-                if (cleanedLines.length > (i + 1) && /\|/.test(cleanedLines[i+1])) {
-                    remainingText = remainingText.replace(cleanedLines[i+1], '');
-                }
-                break;
-            }
-        }
-
-        // --- Fallback for Address ---
-        if (!document.getElementById('address').value) {
-            const addressKeywords = ['calle', 'cll', 'cra', 'carrera', 'avenida', 'av', 'street', 'st', 'dirección', 'address'];
-            const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-.,]+?)(?=\\s*(?:Bogotá|Cali|Medellín)|\\n|$)`, 'i');
-            const addressMatch = remainingText.match(addressRegex);
-            if (addressMatch && addressMatch[0]) {
-                let extractedAddress = addressMatch[0].trim().replace(/,$/, '').trim();
-                document.getElementById('address').value = extractedAddress;
-                remainingText = remainingText.replace(extractedAddress, '');
-            }
-        }
-
-        // --- Final Cleanup ---
+        // 5. Populate summary with the rest
         document.getElementById('professionalSummary').value = remainingText.trim();
-        alert("Hemos intentado autocompletar la información de tu hoja de vida. Por favor, revisa que todo sea correcto.");
+        alert("Hemos intentado autocompletar tu información. Por favor, revisa que los campos sean correctos y organiza el texto del 'Resumen Profesional'.");
     }
 
     /**
@@ -282,15 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="input-group"><label>Fecha de Inicio</label><input type="month" name="eduStartDate" class="w-full"></div>
                 <div class="input-group"><label>Fecha de Fin</label><input type="month" name="eduEndDate" class="w-full"></div>
             </div>
-             <button type="button" class="remove-button absolute top-2 right-2" onclick="this.parentElement.remove()">X</button>
+                <button type="button" class="remove-button absolute top-2 right-2" onclick="this.parentElement.remove()">X</button>
         `;
         educationEntries.appendChild(newEntry);
     }
 
     /**
      * Extracts potential keywords/skills from a job description.
-     * @param {string} text - The job description text.
-     * @returns {string[]} An array of potential keywords.
      */
     function extractKeywords(text) {
         if (!text) return [];
@@ -302,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Generates the PDF, displays the preview modal, and sets the download link.
-     * @param {object} data - The form data.
      */
     function generateAndPreviewPDF(data) {
         const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -310,36 +308,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const addSection = (title, content, isList = false) => {
             if (y > 750) { doc.addPage(); y = 40; }
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text(title, 40, y);
-            doc.setLineWidth(1);
-            doc.line(40, y + 5, 555, y + 5);
-            y += 25;
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
+            doc.setFontSize(14); doc.setFont(undefined, 'bold'); doc.text(title, 40, y);
+            doc.setLineWidth(1); doc.line(40, y + 5, 555, y + 5); y += 25;
+            doc.setFontSize(10); doc.setFont(undefined, 'normal');
             if (isList) {
                 const listItems = doc.splitTextToSize(content.join(', '), 515);
-                doc.text(listItems, 40, y);
-                y += listItems.length * 12 + 10;
+                doc.text(listItems, 40, y); y += listItems.length * 12 + 10;
             } else {
                 const lines = doc.splitTextToSize(content, 515);
-                doc.text(lines, 40, y);
-                y += lines.length * 12 + 10;
+                doc.text(lines, 40, y); y += lines.length * 12 + 10;
             }
         };
 
-        // --- PDF Content ---
-        doc.setFontSize(22);
-        doc.setFont(undefined, 'bold');
-        doc.text(data.fullName, 40, y);
-        y += 25;
-
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.setFontSize(22); doc.setFont(undefined, 'bold'); doc.text(data.fullName, 40, y); y += 25;
+        doc.setFontSize(10); doc.setFont(undefined, 'normal');
         const contactInfo = [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | ');
-        doc.text(contactInfo, 40, y);
-        y += 30;
+        doc.text(contactInfo, 40, y); y += 30;
 
         addSection('Resumen Profesional', data.professionalSummary);
 
@@ -347,42 +331,27 @@ document.addEventListener('DOMContentLoaded', () => {
             addSection('Experiencia Laboral', '');
             data.experience.forEach(exp => {
                 if (y > 720) { doc.addPage(); y = 40; }
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'bold');
-                doc.text(`${exp.jobTitle} | ${exp.company}`, 40, y);
-                y += 15;
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'italic');
-                doc.text(`${exp.startDate} - ${exp.endDate}`, 40, y);
-                y += 15;
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
+                doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text(`${exp.jobTitle} | ${exp.company}`, 40, y); y += 15;
+                doc.setFontSize(9); doc.setFont(undefined, 'italic'); doc.text(`${exp.startDate} - ${exp.endDate}`, 40, y); y += 15;
+                doc.setFontSize(10); doc.setFont(undefined, 'normal');
                 const descLines = doc.splitTextToSize(exp.jobDescription, 495);
-                doc.text(descLines, 60, y);
-                y += descLines.length * 12 + 10;
+                doc.text(descLines, 60, y); y += descLines.length * 12 + 10;
             });
         }
 
         if (data.education.length > 0 && data.education[0].degree) {
-             addSection('Educación', '');
-             data.education.forEach(edu => {
-                if (y > 740) { doc.addPage(); y = 40; }
-                doc.setFontSize(11);
-                doc.setFont(undefined, 'bold');
-                doc.text(`${edu.degree} - ${edu.institution}`, 40, y);
-                y += 15;
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'italic');
-                doc.text(`${edu.eduStartDate} - ${edu.eduEndDate}`, 40, y);
-                y += 20;
-             });
+                addSection('Educación', '');
+                    data.education.forEach(edu => {
+                    if (y > 740) { doc.addPage(); y = 40; }
+                    doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.text(`${edu.degree} - ${edu.institution}`, 40, y); y += 15;
+                    doc.setFontSize(9); doc.setFont(undefined, 'italic'); doc.text(`${edu.eduStartDate} - ${edu.eduEndDate}`, 40, y); y += 20;
+                    });
         }
 
         if(data.skills.length > 0) {
             addSection('Habilidades', data.skills, true);
         }
 
-        // --- Preview & Download ---
         const pdfOutput = doc.output('datauristring');
         pdfFrame.src = pdfOutput;
         downloadPdfLink.href = pdfOutput;
@@ -391,22 +360,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Prepares the DOCX file for download.
-     * @param {object} data - The form data.
      */
     async function prepareDocxDownload(data) {
         const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
         const sections = [
-            new Paragraph({
-                children: [new TextRun({ text: data.fullName, bold: true, size: 44 })],
-            }),
-            new Paragraph({
-                children: [new TextRun({
-                    text: [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | '),
-                    size: 20
-                })],
-                spacing: { after: 200 }
-            }),
+            new Paragraph({ children: [new TextRun({ text: data.fullName, bold: true, size: 44 })] }),
+            new Paragraph({ children: [new TextRun({ text: [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | '), size: 20 })], spacing: { after: 200 } }),
             new Paragraph({ text: "Resumen Profesional", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }),
             new Paragraph(data.professionalSummary),
         ];
@@ -414,25 +374,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.experience.length > 0 && data.experience[0].jobTitle) {
             sections.push(new Paragraph({ text: "Experiencia Laboral", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
             data.experience.forEach(exp => {
-                sections.push(new Paragraph({ children: [
-                    new TextRun({ text: `${exp.jobTitle} | ${exp.company}`, bold: true, size: 24 }),
-                ]}));
-                sections.push(new Paragraph({ children: [
-                    new TextRun({ text: `${exp.startDate} - ${exp.endDate}`, italics: true, size: 18 }),
-                ]}));
+                sections.push(new Paragraph({ children: [ new TextRun({ text: `${exp.jobTitle} | ${exp.company}`, bold: true, size: 24 })]}));
+                sections.push(new Paragraph({ children: [ new TextRun({ text: `${exp.startDate} - ${exp.endDate}`, italics: true, size: 18 })]}));
                 sections.push(new Paragraph({ text: exp.jobDescription, spacing: { after: 150 } }));
             });
         }
 
         if (data.education.length > 0 && data.education[0].degree) {
             sections.push(new Paragraph({ text: "Educación", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
-             data.education.forEach(edu => {
-                sections.push(new Paragraph({ children: [
-                    new TextRun({ text: `${edu.degree} - ${edu.institution}`, bold: true, size: 24 }),
-                ]}));
-                sections.push(new Paragraph({ children: [
-                    new TextRun({ text: `${edu.eduStartDate} - ${edu.eduEndDate}`, italics: true, size: 18 }),
-                ], spacing: { after: 150 }}));
+                data.education.forEach(edu => {
+                sections.push(new Paragraph({ children: [ new TextRun({ text: `${edu.degree} - ${edu.institution}`, bold: true, size: 24 })]}));
+                sections.push(new Paragraph({ children: [ new TextRun({ text: `${edu.eduStartDate} - ${edu.eduEndDate}`, italics: true, size: 18 })], spacing: { after: 150 }}));
             });
         }
 
@@ -442,15 +394,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const doc = new Document({ sections: [{ children: sections }] });
-
         const blob = await Packer.toBlob(doc);
         const url = URL.createObjectURL(blob);
         downloadDocxLink.href = url;
     }
 
-    /**
-     * Hides the PDF preview modal.
-     */
     function closeModal() {
         pdfPreviewModal.classList.add('hidden');
         pdfFrame.src = 'about:blank'; // Clear the iframe
@@ -495,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.experience-entry').forEach(entryDiv => {
                     const currentJob = entryDiv.querySelector('[name="currentJob"]').checked;
                     const jobTitle = entryDiv.querySelector('[name="jobTitle"]').value;
-                    if(jobTitle) { // Only add if there is a job title
+                    if(jobTitle) {
                         formData.experience.push({
                             jobTitle: jobTitle,
                             company: entryDiv.querySelector('[name="company"]').value,
@@ -507,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 document.querySelectorAll('.education-entry').forEach(entryDiv => {
                     const degree = entryDiv.querySelector('[name="degree"]').value;
-                    if(degree) { // Only add if there is a degree
+                    if(degree) {
                         formData.education.push({
                             degree: degree, institution: entryDiv.querySelector('[name="institution"]').value,
                             eduStartDate: entryDiv.querySelector('[name="eduStartDate"]').value, eduEndDate: entryDiv.querySelector('[name="eduEndDate"]').value
