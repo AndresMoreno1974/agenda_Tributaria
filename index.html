@@ -187,23 +187,34 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. Extract Name (heuristic: often the first non-empty line)
-        const lines = text.split('\n').filter(line => line.trim() !== '');
+        // 3. Extract Name (heuristic: find the first line with 2-4 words that looks like a name)
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+        let nameFound = false;
         if (lines.length > 0) {
+            // A name is likely 2-4 words, starts with a capital letter, and doesn't contain special characters or numbers.
             const nameGuess = lines[0].trim();
-            // A simple check: if it contains 2-4 words and no email/phone.
-            if (nameGuess.split(' ').length >= 2 && nameGuess.split(' ').length <= 4 && !emailRegex.test(nameGuess) && !phoneRegex.test(nameGuess)) {
+            const words = nameGuess.split(' ');
+            if (words.length >= 2 && words.length <= 4 && /^[A-Z]/.test(nameGuess) && !/[@\d]/.test(nameGuess)) {
                 document.getElementById('fullName').value = nameGuess;
                 remainingText = remainingText.replace(nameGuess, '');
+                nameFound = true;
             }
         }
 
-        // 4. Extract Address (heuristic: look for keywords like Street, Ave, City, etc. and a postal code or country)
-        const addressRegex = /((?:[\d-]+\s)?(?:[A-Z][a-z]+\s)+)(?:Street|St|Avenue|Ave|Road|Rd|Lane|Ln|Drive|Dr|Court|Ct|Plaza|Plz|Square|Sq|Cr|Cll|Calle|Carrera)\.?,?\s(?:[A-Z][a-z]+\s?)+,?\s[A-Z]{2,},?\s\d{5,}|(?:[A-Z][a-z]+,\s[A-Z][a-z]+)/i;
+        // 4. Extract Address (more flexible regex)
+        const addressKeywords = ['calle', 'cll', 'carrera', 'cra', 'karrera', 'avenida', 'av', 'street', 'st', 'road', 'rd', 'lane', 'ln', 'drive', 'dr', 'address', 'direccion'];
+        const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-,.]+)`, 'i');
         const addressMatch = remainingText.match(addressRegex);
         if (addressMatch) {
-            document.getElementById('address').value = addressMatch[0].trim();
-            remainingText = remainingText.replace(addressMatch[0], '');
+            // Try to grab a slightly longer, more complete address line.
+            const addressLine = text.split('\n').find(line => line.toLowerCase().includes(addressMatch[0].toLowerCase()));
+            if(addressLine) {
+                document.getElementById('address').value = addressLine.trim();
+                remainingText = remainingText.replace(addressLine, '');
+            } else {
+                document.getElementById('address').value = addressMatch[1].trim();
+                remainingText = remainingText.replace(addressMatch[0], '');
+            }
         }
 
         // 5. Populate summary with the rest
