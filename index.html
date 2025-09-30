@@ -187,34 +187,36 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. Extract Name (heuristic: find the first line with 2-4 words that looks like a name)
+        // 3. Extract Name (More Robust Heuristic)
         const lines = text.split('\n').map(line => line.trim()).filter(line => line);
         let nameFound = false;
-        if (lines.length > 0) {
-            // A name is likely 2-4 words, starts with a capital letter, and doesn't contain special characters or numbers.
-            const nameGuess = lines[0].trim();
+        for (let i = 0; i < Math.min(lines.length, 5); i++) { // Check first 5 lines
+            const nameGuess = lines[i];
             const words = nameGuess.split(' ');
-            if (words.length >= 2 && words.length <= 4 && /^[A-Z]/.test(nameGuess) && !/[@\d]/.test(nameGuess)) {
+            // A name is likely 2-4 words, starts with a capital, and doesn't contain special chars.
+            const isLikelyName = words.length >= 2 && words.length <= 4 &&
+                                  /^[A-ZÁÉÍÓÚÑ]/.test(nameGuess) &&
+                                  !/[@\d]/.test(nameGuess) &&
+                                  !nameGuess.toLowerCase().includes('curriculum');
+
+            if (isLikelyName) {
                 document.getElementById('fullName').value = nameGuess;
                 remainingText = remainingText.replace(nameGuess, '');
                 nameFound = true;
+                break; // Stop after finding the first likely name
             }
         }
 
-        // 4. Extract Address (more flexible regex)
-        const addressKeywords = ['calle', 'cll', 'carrera', 'cra', 'karrera', 'avenida', 'av', 'street', 'st', 'road', 'rd', 'lane', 'ln', 'drive', 'dr', 'address', 'direccion'];
-        const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-,.]+)`, 'i');
+        // 4. Extract Address (More Precise Regex)
+        const addressKeywords = ['calle', 'cll', 'cra', 'carrera', 'avenida', 'av', 'street', 'st', 'road', 'rd', 'dirección', 'address'];
+        const addressRegex = new RegExp(`(?:${addressKeywords.join('|')})[\\s:.]*([\\w\\s#\\-.,]+?)(?=\\s*(?:Bogotá|Cali|Medellín|Barranquilla|Cartagena|Bucaramanga)|\\n|$)`, 'i');
         const addressMatch = remainingText.match(addressRegex);
-        if (addressMatch) {
-            // Try to grab a slightly longer, more complete address line.
-            const addressLine = text.split('\n').find(line => line.toLowerCase().includes(addressMatch[0].toLowerCase()));
-            if(addressLine) {
-                document.getElementById('address').value = addressLine.trim();
-                remainingText = remainingText.replace(addressLine, '');
-            } else {
-                document.getElementById('address').value = addressMatch[1].trim();
-                remainingText = remainingText.replace(addressMatch[0], '');
-            }
+
+        if (addressMatch && addressMatch[0]) {
+            let extractedAddress = addressMatch[0].trim();
+            extractedAddress = extractedAddress.replace(/,$/, '').trim(); // Clean trailing comma
+            document.getElementById('address').value = extractedAddress;
+            remainingText = remainingText.replace(extractedAddress, '');
         }
 
         // 5. Populate summary with the rest
