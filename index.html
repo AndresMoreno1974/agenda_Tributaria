@@ -170,8 +170,43 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function autofillForm(text) {
         let remainingText = text;
+        const originalLines = text.split('\n');
+        const trimmedLines = originalLines.map(line => line.trim());
 
-        // 1. Extract Email
+        // --- 1. Find and Extract Name (High Priority) ---
+        let foundName = '';
+        let nameLineIndex = -1;
+
+        // Scan the first few lines for a likely name
+        for (let i = 0; i < Math.min(trimmedLines.length, 5); i++) {
+            const line = trimmedLines[i];
+            if (!line || line.length < 4 || line.length > 50) continue;
+
+            const exclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'perfil', 'resumen', 'teléfono', 'email', 'linkedin', 'dirección', 'asistente', 'coordinador', 'especialista', 'ingeniero', 'developer', '|', '@', 'www.', 'tel:', 'cel:', 'calle', 'carrera'];
+            if (exclusionKeywords.some(kw => line.toLowerCase().includes(kw)) || /\d{5,}/.test(line)) {
+                continue;
+            }
+
+            const words = line.split(' ').filter(w => w.length > 1);
+            if (words.length >= 2 && words.length <= 5) {
+                const isAllCaps = line === line.toUpperCase() && !/[a-záéíóúñ]/.test(line);
+                const isTitleCase = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word[0]));
+
+                if (isAllCaps || isTitleCase) {
+                    foundName = line;
+                    nameLineIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (foundName) {
+            document.getElementById('fullName').value = foundName;
+            // Safely remove the name line to create remainingText
+            remainingText = originalLines.filter((_, index) => index !== nameLineIndex).join('\n');
+        }
+
+        // --- 2. Extract Contact Info from the REMAINING text ---
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
         const emailMatch = remainingText.match(emailRegex);
         if (emailMatch) {
