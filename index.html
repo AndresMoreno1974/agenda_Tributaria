@@ -144,10 +144,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let fullText = '';
+
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+
+            let lastY = -1;
+            let textLine = '';
+            // Reconstruct lines based on vertical position of text items.
+            // This is more reliable than the default text extraction.
+            for (const item of textContent.items) {
+                // A new line is detected when the vertical position (y) changes significantly.
+                if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 5) {
+                    fullText += textLine.trim() + '\n';
+                    textLine = '';
+                }
+                textLine += item.str + ' ';
+                lastY = item.transform[5];
+            }
+            // Append the last line of the page.
+            fullText += textLine.trim() + '\n';
         }
         return fullText;
     }
