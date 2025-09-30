@@ -187,39 +187,33 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. *** MEJORADO: Extract Name ***
-        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 4);
-        const nameExclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'email', 'teléfono', 'celular', 'dirección', 'linkedin', 'profile', 'perfil'];
+        // 3. *** REFINADO: Extract Name ***
         let foundName = '';
+        const nameLabelRegex = /nombre completo[:\s]*((?:[A-ZÁÉÍÓÚÑ]+\s?){2,})/i;
+        const nameMatch = text.match(nameLabelRegex);
 
-        for (const line of lines.slice(0, 5)) { // Check the first 5 potential lines
-            const words = line.split(' ').filter(w => w.length > 0);
+        if (nameMatch && nameMatch[1]) {
+            foundName = nameMatch[1].trim();
+        } else {
+            // Fallback to the original heuristic if the label is not found
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 4);
+            const nameExclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'resume', 'email', 'teléfono', 'celular', 'dirección', 'linkedin', 'profile', 'perfil'];
 
-            // Heuristic 1: Word count (2 to 5 words)
-            if (words.length < 2 || words.length > 5) {
-                continue;
+            for (const line of lines.slice(0, 5)) {
+                const words = line.split(' ').filter(w => w.length > 0);
+                if (words.length < 2 || words.length > 5) continue;
+
+                const isCapitalized = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
+                if (!isCapitalized) continue;
+
+                if (/\d|@/.test(line)) continue;
+
+                const hasExclusionKeyword = nameExclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
+                if (hasExclusionKeyword) continue;
+
+                foundName = line;
+                break;
             }
-
-            // Heuristic 2: All words must start with a capital letter
-            const allWordsCapitalized = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
-            if (!allWordsCapitalized) {
-                continue;
-            }
-
-            // Heuristic 3: Line should not contain numbers or email symbol
-            if (/\d|@/.test(line)) {
-                continue;
-            }
-
-            // Heuristic 4: Line should not contain exclusion keywords
-            const hasExclusionKeyword = nameExclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
-            if (hasExclusionKeyword) {
-                continue;
-            }
-
-            // If all checks pass, we've found our name.
-            foundName = line;
-            break;
         }
 
         if (foundName) {
