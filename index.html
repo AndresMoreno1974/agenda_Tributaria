@@ -6,38 +6,13 @@
     <title>Generador de Hoja de Vida ATS-Friendly</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <script>
-        // --- Contenido de jspdf.umd.min.js ---
-        !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).jspdf={})}(this,(function(e){"use strict";
-        // ... (El contenido completo de la librería jspdf está aquí. Es muy largo y ha sido omitido para brevedad en esta vista) ...
-        var t="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e};
-        // ... (mucho más código) ...
-        e.jsPDF=a,Object.defineProperty(e,"__esModule",{value:!0})}));
-    </script>
-    <script>
-        // --- Contenido de pdf.min.js ---
-        // ... (El contenido completo de la librería pdf.js está aquí. Es muy largo y ha sido omitido para brevedad en esta vista) ...
-        (function(global, factory) { typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) : typeof define === 'function' && define.amd ? define('pdfjs-dist/build/pdf', ['exports'], factory) : (global = global || self, factory(global.pdfjsLib = {})); }(this, (function (exports) { 'use strict';
-        // ... (mucho más código) ...
-        })));
-    </script>
-    <script>
-        // --- Contenido de mammoth.browser.min.js ---
-        // ... (El contenido completo de la librería mammoth.js está aquí. Es muy largo y ha sido omitido para brevedad en esta vista) ...
-        !function(e){var t={};function n(r){if(t[r])return t[r].exports;
-        // ... (mucho más código) ...
-        "object"==typeof module&&module.exports?module.exports=r:window.mammoth=r}(e)
-    </script>
-    <script>
-        // --- Contenido de index.js (docx.js) ---
-        // ... (El contenido completo de la librería docx.js está aquí. Es muy largo y ha sido omitido para brevedad en esta vista) ...
-        !function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t():"function"==typeof define&&define.amd?define([],t):"object"==typeof exports?exports.docx=t():e.docx=t()}(self,(function(){
-        // ... (mucho más código) ...
-        return t})());
-    </script>
+    <!-- Librerías desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.18/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/docx@7.3.0/build/index.js"></script>
 
     <style>
-        /* Mismos estilos de antes */
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 2rem 0; }
         .container { max-width: 900px; width: 100%; background-color: #ffffff; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); padding: 2.5rem; margin: 2rem auto; }
         .section-header { font-weight: bold; font-size: 1.5rem; margin-bottom: 1rem; color: #374151; }
@@ -132,383 +107,363 @@
             </div>
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- 1. DOM Elements & Globals ---
-            const { jsPDF } = window.jspdf;
-            const { docx, mammoth, pdfjsLib } = window;
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 1. DOM Elements & Globals ---
+    const { jsPDF } = window.jspdf;
+    const { docx, mammoth, pdfjsLib } = window;
 
-            // *** CORRECCIÓN FINAL: Incrustar el PDF Worker ---
-            try {
-                // 1. El código del worker como un string gigante. (Omitido por brevedad, pero está aquí)
-                const pdfWorkerCode = `/* Copyright 2024 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+    // Configure PDF.js worker from CDN
+    if (pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+    } else {
+        console.error("pdf.js library not loaded.");
+        alert("Error: La librería PDF.js no se cargó correctamente. El autollenado de PDF no funcionará.");
+    }
 
-!function(e){"use strict";if("undefined"==typeof window){importScripts("../build/pdf.js");var t=pdfjsLib.PPM,}else var t=window.pdfjsLib.PPM;var r,n,o,i,a,s,c,u,l,d,f,p,h,g,b,m,v,y,w,k,C,S,P,D,_,T,E,x,R,O,I,A,M,U,F,B,N,L,W,q,V,G,H,K,J,z,Y,X,Z,$,Q,ee,te,re,ne,oe,ie,ae,se,ce,ue,le,de,fe,pe,he,ge,be,me,ve,ye,we,ke,Ce,Se,Pe,De,_e,Te,Ee,xe,Re,Oe,Ie,Ae,Me,Ue,Fe,Be,Ne,Le,We,qe,Ve,Ge,He,Ke,Je,ze,Ye,Xe,Ze,$e,Qe,et,tt,rt,nt,ot,it,at,st,ct,ut,lt,dt,ft,pt,ht,gt,bt,mt,vt,yt,wt,kt,Ct,St,Pt,Dt,_t,Tt,Et,xt,Rt,Ot,It,At,Mt,Ut,Ft,Bt,Nt,Lt,Wt,qt,Vt,Gt,Ht,Kt,Jt,zt,Yt,Xt,Zt,$t,Qt,er,tr,rr,nr,or,ir,ar,sr,cr,ur,lr,dr,fr,pr,hr,gr,br,mr,vr,yr,wr,kr,Cr,Sr,Pr,Dr,_r,Tr,Er,xr,Rr,Or,Ir,Ar,Mr,Ur,Fr,Br,Nr,Lr,Wr,qr,Vr,Gr,Hr,Kr,Jr,zr,Yr,Xr,Zr,$r,Qr,en,tn,rn,nn,on,an,sn,cn,un,ln,dn,fn,pn,hn,gn,bn,mn,vn,yn,wn,kn,Cn,Sn,Pn,Dn,_n,Tn,En,xn,Rn,On,In,An,Mn,Un,Fn,Bn,Nn,Ln,Wn,qn,Vn,Gn,Hn,Kn,Jn,zn,Yn,Xn,Zn,$n,Qn,eo,to,ro,no,oo,io,ao,so,co,uo,lo,fo,po,ho,go,bo,mo,vo,yo,wo,ko,Co,So,Po,Do,_o,To,Eo,xo,Ro,Oo,Io,Ao,Mo,Uo,Fo,Bo,No,Lo,Wo,qo,Vo,Go,Ho,Ko,Jo,zo,Yo,Xo,Zo,$o,Qo,ei,ti,ri,ni,oi,ii,ai,si,ci,ui,li,di,fi,pi,hi,gi,bi,mi,vi,yi,wi,ki,Ci,Si,Pi,Di,_i,Ti,Ei,xi,Ri,Oi,Ii,Ai,Mi,Ui,Fi,Bi,Ni,Li,Wi,qi,Vi,Gi,Hi,Ki,Ji,zi,Yi,Xi,Zi,$i,Qi,ea,ta,ra,na,oa,ia,aa,sa,ca,ua,la,da,fa,pa,ha,ga,ba,ma,va,ya,wa,ka,Ca,Sa,Pa,Da,_a,Ta,Ea,xa,Ra,Oa,Ia,Aa,Ma,Ua,Fa,Ba,Na,La,Wa,qa,Va,Ga,Ha,Ka,Ja,za,Ya,Xa,Za,$a,Qa,es,ts,rs,ns,os,is,as,ss,cs,us,ls,ds,fs,ps,hs,gs,bs,ms,vs,ys,ws,ks,Cs,Ss,Ps,Ds,_s,Ts,Es,xs,Rs,Os,Is,As,Ms,Us,Fs,Bs,Ns,Ls,Ws,qs,Vs,Gs,Hs,Ks,Js,zs,Ys,Xs,Zs,$s,Qs,ec,tc,rc,nc,oc,ic,ac,sc,cc,uc,lc,dc,fc,pc,hc,gc,bc,mc,vc,yc,wc,kc,Cc,Sc,Pc,Dc,_c,Tc,Ec,xc,Rc,Oc,Ic,Ac,Mc,Uc,Fc,Bc,Nc,Lc,Wc,qc,Vc,Gc,Hc,Kc,Jc,zc,Yc,Xc,Zc,$c,Qc,eu,tu,ru,nu,ou,iu,au,su,cu,uu,lu,du,fu,pu,hu,gu,bu,mu,vu,yu,wu,ku,Cu,Su,Pu,Du,_u,Tu,Eu,xu,Ru,Ou,Iu,Au,Mu,Uu,Fu,Bu,Nu,Lu,Wu,qu,Vu,Gu,Hu,Ku,Ju,zu,Yu,Xu,Zu,$u,Qu,el,tl,rl,nl,ol,il,al,sl,cl,ul,ll,dl,fl,pl,hl,gl,bl,ml,vl,yl,wl,kl,Cl,Sl,Pl,Dl,_l,Tl,El,xl,Rl,Ol,Il,Al,Ml,Ul,Fl,Bl,Nl,Ll,Wl,ql,Vl,Gl,Hl,Kl,Jl,zl,Yl,Xl,Zl,$l,Ql,ed,td,rd,nd,od,id,ad,sd,cd,ud,ld,dd,fd,pd,hd,gd,bd,md,vd,yd,wd,kd,Cd,Sd,Pd,Dd,_d,Td,Ed,xd,Rd,Od,Id,Ad,Md,Ud,Fd,Bd,Nd,Ld,Wd,qd,Vd,Gd,Hd,Kd,Jd,zd,Yd,Xd,Zd,$d,Qd;self.onmessage=function(e){var p=e.data;switch(p.action){case"configure":r=p.data.imageLayer;break;case"render":n=p.data,o=new Uint8Array(n.annotationStorage),i=p.send,a=n.pageIndex,s=n.canvas,c=n.params,u=n.params.commonObjs,l=n.params.objs,d=n.params.evaluatorOptions,f=n.params.fontExtraProperties,h=n.params.textLayer;var g=function(){var e={};for(var r in u.map)t.isNum(r)&&(e[r]=u.get(r));return e}();b=new t.OpList(l,u),m=new t.Evaluator(g,d),v=new t.FontLoader(u),y=c.builtInCMapCache,w=c.standardFontDataCache,k=c.systemFontCache,C=v.getReferencedFonts(b,f),S=m.getOperatorList(b,c.task,c.renderingIntent,c.cacheKey),P=function(e){var n;try{n=S.fnArray[S.fnId](S.args)}catch(e){if(e instanceof t.MissingDataException)throw e;t.warn("render: Ignoring "+e)}return n}(),D=function(e,r){var n,o={fonts:[],textOffset:0},i={beginAnnotations:function(e){var r;try{r=t.Annotation.fromValues(e)}catch(e){t.warn("beginAnnotations: "+e)}return r},endAnnotations:function(e){},transform:function(e){s.getContext("2d").transform.apply(s.getContext("2d"),e)},beginText:function(){s.getContext("2d").beginPath()},endText:function(){},setCharSpacing:function(e){},setWordSpacing:function(e){},setHScale:function(e){},setLeading:function(e){},setFont:function(e){var r=e[0],n=e[1],a=o.fonts[r]||v.get(r);o.activeFont=a,a.isType3Font||s.getContext("2d").font=n},setTextRenderingMode:function(e){},setTextMatrix:function(e){o.textMatrix=e,o.textOffset=0},setTextRise:function(e){},moveText:function(e){var t=s.getContext("2d").getTransform();t.e+=e[0],t.f+=e[1]},setLeadingMoveText:function(e){},setTextLineMatrix:function(e){o.lineMatrix=e},nextLine:function(){o.lineMatrix=o.textMatrix},showText:function(e){var t=o.activeFont,r=m.getSpans(e,t);t.isType3Font?i.showType3Text(r):i.showSpans(r)},showSpans:function(e){var r=o.textMatrix,n=s.getContext("2d");n.save(),n.transform(r[0],r[1],r[2],r[3],r[4],r[5]);for(var a=0,c=e.length;a<c;++a){var u=e[a];n.save(),n.transform(u.transform[0],u.transform[1],u.transform[2],u.transform[3],u.transform[4],u.transform[5]),n.fillText(u.c,0,0),n.restore()}n.restore()},showType3Text:function(e){for(var r=o.activeFont,n=r.charProc,a=o.textMatrix,c=0,u=e.length;c<u;++c){var l=e[c].c,d=n[l];if(void 0===d)continue;s.getContext("2d").save();var f=s.getContext("2d").getTransform();s.getContext("2d").transform(a[0],a[1],a[2],a[3],a[4],a[5]),r.setFillAndStroke&&r.setCharProcPaint(l,s.getContext("2d"),i);var p=m.getOperatorList(d,c.task,c.renderingIntent);P.execute(p)}s.getContext("2d").restore()},nextCharShowText:function(e){},nextSetShowText:function(e){},setStrokingColorSpace:function(e){},setFillingColorSpace:function(e){},setStrokingColor:function(e){var t=s.getContext("2d").strokeStyle;c.ctx.strokeStyle=e,c.ctx.strokeStyle!==t&&(s.getContext("2d").strokeStyle=t)},setFillingColor:function(e){var t=s.getContext("2d").fillStyle;c.ctx.fillStyle=e,c.ctx.fillStyle!==t&&(s.getContext("2d").fillStyle=t)},setStrokingGray:function(e){},setFillingGray:function(e){},setStrokingRGBColor:function(e){},setFillingRGBColor:function(e){},setStrokingCMYKColor:function(e){},setFillingCMYKColor:function(e){},shadingFill:function(e){var r=t.Pattern.parseShading(e,u,c.ctx),n=c.task.renderShading(r,s.getContext("2d"));return c.task.promise.then((function(){s.getContext("2d").save(),c.ctx.clip(),s.getContext("2d").fillStyle=n,s.getContext("2d").fill(),s.getContext("2d").restore()}))},beginInlineImage:function(){},beginImageData:function(){},endInlineImage:function(e,t){},endImageData:function(e){},paintXObject:function(e){var r=u.get(e);if(void 0===r)throw new t.FormatError("XObject "+e+" is not defined.");var n=r.stream;if(void 0===r.stream)throw new t.FormatError("XObject "+e+" is not a stream.");var o=r.dict,a=o.get("Subtype");if("Form"!==a)throw new t.FormatError("Invalid XObject subtype: "+a);var l=o.get("BBox"),d=o.get("Matrix"),f=new t.OpList(n,o);s.getContext("2d").save();var p=s.getContext("2d").getTransform();return d&&d.length&&s.getContext("2d").transform(d[0],d[1],d[2],d[3],d[4],d[5]),l&&l.length&&c.ctx.clip(new Path2D("M "+l[0]+" "+l[1]+" L "+l[2]+" "+l[1]+" L "+l[2]+" "+l[3]+" L "+l[0]+" "+l[3]+" Z")),P.execute(f).then((function(){s.getContext("2d").restore()}))},markPoint:function(e){},markPointProps:function(e,t){},beginMarkedContent:function(e){},beginMarkedContentProps:function(e,t){},endMarkedContent:function(){},beginCompat:function(){},endCompat:function(){},paintFormXObjectBegin:function(e,t){},paintFormXObjectEnd:function(){},beginGroup:function(e){s.getContext("2d").save();var r=e.dict,n=r.get("Group"),o=n.get("CS"),i=n.get("I"),a=n.get("K");if(c.ctx.beginGroup(e),o&&u.get(o)&&(c.ctx.pushColorSpace(o),o=m.getColorSpace(o,u)),e.isIsolated)c.ctx.pushStrokeColor(),c.ctx.pushFillColor();e.isKnockout&&c.ctx.beginKnockout()},endGroup:function(e){var t=e.dict.get("Group"),r=t.get("CS");if(c.ctx.endGroup(e),r)for(var n=c.ctx.popColorSpace(),o=0,i=n.length;o<i;o++)m.parseDestruction(n[o]);e.isIsolated&&(c.ctx.popStrokeColor(),c.ctx.popFillColor());s.getContext("2d").restore()},beginAnnotationsGroup:function(){},endAnnotationsGroup:function(){},beginTilingPattern:function(e){},endTilingPattern:function(){},paintShading:function(e){var r=t.Pattern.parseShading(e,u,c.ctx),n=c.task.renderShading(r,s.getContext("2d"));return c.task.promise.then((function(){s.getContext("2d").save(),c.ctx.clip(),s.getContext("2d").fillStyle=n,s.getContext("2d").fill(),s.getContext("2d").restore()}))},paintImageMaskXObject:function(e){var t=e.stream,r=e.dict,n=r.get("Width")||t.dict.get("Width"),o=r.get("Height")||t.dict.get("Height"),i=r.get("Interpolate"),a=r.get("Decode");s.getContext("2d").save(),c.ctx.clip();var l=c.ctx.fillColor;if(l.isPattern){var d=c.ctx.currentPattern,f=c.ctx.getPattern(d,l.name,l.properties);return void(t.dict.get("ImageMask")?(l=t.colorSpace.getRgb(l.color,0),s.getContext("2d").fillStyle=t.ColorSpace.getRgbHex(l[0],l[1],l[2]),c.task.paintImageMaskXObject(e).then((function(){s.getContext("2d").restore()}))):(c.task.alignImageMask(f.getPattern(e),e,t.colorSpace).then((function(e){s.getContext("2d").fillStyle=e,s.getContext("2d").fill(),s.getContext("2d").restore()}))),s.getContext("2d").restore())}return t.dict.get("ImageMask")?(l=t.colorSpace.getRgb(l.color,0),s.getContext("2d").fillStyle=t.ColorSpace.getRgbHex(l[0],l[1],l[2])):s.getContext("2d").fillStyle=l,c.task.paintImageMaskXObject(e).then((function(){s.getContext("2d").restore()}))},paintImageXObject:function(e){var r=u.get(e);if(!r.stream)throw new t.FormatError("Image XObject has no stream.");var n=r.dict,o=n.get("Width"),i=n.get("Height"),a=n.get("Interpolate");s.getContext("2d").save(),c.ctx.clip(),s.getContext("2d").transform(1,0,0,-1,0,i),c.task.paintImageXObject({data:r.stream.getBytes(),width:o,height:i,interpolate:a},s.getContext("2d")).then((function(){s.getContext("2d").restore()}))},paintInlineImageXObject:function(e){var t=e.stream,r=t.dict,n=r.get("Width"),o=r.get("Height"),i=r.get("Interpolate");s.getContext("2d").save(),c.ctx.clip(),s.getContext("2d").transform(1,0,0,-1,0,o),c.task.paintImageXObject({data:e.stream.getBytes(),width:n,height:o,interpolate:i},s.getContext("2d")).then((function(){s.getContext("2d").restore()}))},paintImageXObjectRepeat:function(e){var r=u.get(e);if(!r.stream)throw new t.FormatError("Image XObject has no stream.");var n=r.dict,o=n.get("Width"),i=n.get("Height"),a=n.get("Interpolate"),l=c.ctx.currentPatternMatrix;s.getContext("2d").save(),c.ctx.clip(),c.task.paintImageXObject({data:r.stream.getBytes(),width:o,height:i,interpolate:a,matrix:l},s.getContext("2d")).then((function(e){s.getContext("2d").fillStyle=e,s.getContext("2d").fill(),s.getContext("2d").restore()}))},paintInlineImageXObjectRepeat:function(e){var t=e.stream,r=t.dict,n=r.get("Width"),o=r.get("Height"),i=r.get("Interpolate"),a=c.ctx.currentPatternMatrix;s.getContext("2d").save(),c.ctx.clip(),c.task.paintImageXObject({data:e.stream.getBytes(),width:n,height:o,interpolate:i,matrix:a},s.getContext("2d")).then((function(e){s.getContext("2d").fillStyle=e,s.getContext("2d").fill(),s.getContext("2d").restore()}))},paintSolidColorImageMask:function(){return s.getContext("2d").save(),c.ctx.clip(),s.getContext("2d").fill(),s.getContext("2d").restore(),Promise.resolve()},constructPath:function(e,t){for(var r=c.ctx,n=0,o=e.length;n<o;n++){var a=e[n];switch(r.push(a),a){case"moveTo":case"lineTo":case"bezierCurveTo":case"quadraticCurveTo":case"rect":n+=t[n].length}}r.constructPath()}};for(n in e)i[n]||(i[n]=s.getContext("2d")[n].bind(s.getContext("2d")));return i}(s,v),P.execute(S,D),h&&(n.textDivs=[],n.textContentItemsStr=[],n.textContentStream=i(new t.ReadableStream),_={},T=[],P.extractText(S,h)),function(){var e=t.Annotation.getQuadPoints(o,n.rotation),i=t.Annotation.getPartialAnnotations(o),s=new Map,u=new Map,l=new Set,d=i.map((function(i){var d=i.data,f={data:d,type:d.subtype,rect:t.Util.normalizeRect(d.rect)},p=d.annotationFlags;if(p&&p.has(t.AnnotationFlag.HIDDEN)&&!r){if(!p.has(t.AnnotationFlag.PRINT))return null;var h=c.intent;"print"===h?i.data.mustPrint=!0:"display"===h&&!i.data.mustPrint||(l.add(i.id),f.data.hidden=!0)}if(i.data.mustPrint){var g=new t.OpList;g.fnArray=S.fnArray,g.fnId=t.OPS.paintImageXObject,g.argsArray=S.argsArray,g.args=[i.data.ref.toString()];var b=m.getOperatorList(g,c.task,c.renderingIntent);P.execute(b)}switch(d.subtype){case"Link":f.url=d.url,f.unsafeUrl=d.unsafeUrl,f.dest=d.dest;break;case"Text":f.title=d.title,f.contents=d.contents;var v=d.color;f.color=v&&0===v.length?null:v,f.hasBgColor=!!d.backgroundColor,f.hasOwnCanvas=r;break;case"Widget":if("Tx"===d.fieldType)break;var y,w=t.Util.createSpecialAnnotation(d.id,a,d.rect,d.fieldType,d.fieldValue,d.alternativeText,d.fieldFlags,d.borderStyle,d.color,d.backgroundColor,d.hasAppearance,d.id);if(!w)return null;y=w.data,f.title=y.title,f.contents=y.contents,f.hasBgColor=!!d.backgroundColor,f.hasOwnCanvas=r;var k=d.color;f.color=k&&0===k.length?null:k;var C=y.fieldValue;C&&Array.isArray(C)?f.value=C.slice():f.value=C,f.hasAppearance=d.hasAppearance;break;case"Line":f.lineCoordinates=t.Util.normalizeRect(d.lineCoordinates);break;case"Square":case"Circle":f.hasBgColor=!!d.backgroundColor;break;case"PolyLine":f.vertices=d.vertices.slice();break;case"Polygon":f.vertices=d.vertices.slice(),f.hasBgColor=!!d.backgroundColor;break;case"Caret":f.hasBgColor=!!d.backgroundColor;break;case"Ink":f.inkLists=d.inkLists.slice(),f.hasBgColor=!!d.backgroundColor;break;case"Highlight":case"Underline":case"Squiggly":case"StrikeOut":f.quadPoints=e[d.id]||null;break;case"Stamp":f.hasBgColor=!!d.backgroundColor;break;case"FileAttachment":f.file=d.file;break;case"Movie":f.movie=d.movie;break;case"Screen":f.screen=d.screen;break;case"3D":f.threeD=d.threeD}var S=d.ap;if(S){var D=S.n,T=c.renderingIntent;if(D){var E=T+"_"+i.id;if(c.annots.has(E))return null;c.annots.add(E)}var x=D;if("Widget"===d.subtype){var R=d.fieldValue,O=!1;x=t.Annotation.getAppearanceStream(d,R,s),x||(x=D,O=!0)}if(x){var I,A=x.dict,M=A.get("Subtype");if("Form"===M){var U=A.get("BBox"),F=A.get("Matrix"),B=F?t.Util.transform(F,U):U,N=c.viewport.clone({dontFlip:!0}),L=N.convertToPdfPoint(d.rect[0],d.rect[1]),W=N.convertToPdfPoint(d.rect[2],d.rect[3]);d.rect=t.Util.normalizeRect(d.rect);var q=new t.OpList;if(q.fnArray=S.fnArray,q.fnId=t.OPS.paintXObject,q.argsArray=S.argsArray,q.args=[x.name],void 0===(I=m.getOperatorList(q,c.task,c.renderingIntent)).args[0])I.args[0]=x.name;var V=t.Util.getAxialAlignedBoundingBox(d.rect,F);V[0]===1/0&&(V=[d.rect[0],d.rect[1],d.rect[2],d.rect[3]]),c.pendingBackground=!0,P.execute(I).then((function(){c.pendingBackground=!1})).catch((function(e){c.pendingBackground=!1,"string"==typeof e&&-1!==e.indexOf("XObject")&&t.warn(e)}))}else t.warn("Unsupported appearance stream subtype: "+M)}}return f}));i=d.filter((function(e){return!!e})),n.annotations=i}()}}()}});
-//# sourceMappingURL=pdf.worker.js.map
-`;
-                // 2. Crear un Blob y una URL local para el worker.
-                const pdfWorkerBlob = new Blob([pdfWorkerCode], { type: "application/javascript" });
-                const pdfWorkerUrl = URL.createObjectURL(pdfWorkerBlob);
+    const resumeForm = document.getElementById('resumeForm');
+    const addExperienceButton = document.getElementById('addExperience');
+    const addEducationButton = document.getElementById('addEducation');
+    const experienceEntries = document.getElementById('experienceEntries');
+    const educationEntries = document.getElementById('educationEntries');
+    const cvUploader = document.getElementById('cvUploader');
+    const pdfPreviewModal = document.getElementById('pdfPreviewModal');
+    const closePreviewButton = document.getElementById('closePreviewButton');
+    const pdfFrame = document.getElementById('pdfFrame');
+    const downloadPdfLink = document.getElementById('downloadPdfLink');
+    const downloadDocxLink = document.getElementById('downloadDocxLink');
 
-                // 3. Asignar la URL local al worker de pdf.js
-                window.pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-                console.log("Worker de PDF.js configurado localmente desde un Blob.");
+    // --- 2. Core Functions ---
 
-            } catch (e) {
-                console.error("Error crítico al inicializar las librerías:", e);
-                alert("Ocurrió un error fatal al cargar las librerías. El autollenado puede fallar.");
+    /**
+     * Extracts raw text from an uploaded PDF file.
+     * @param {File} file - The PDF file from the input.
+     * @returns {Promise<string>} A promise that resolves with the extracted text.
+     */
+    async function extractTextFromPDF(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+        }
+        return fullText;
+    }
+
+    /**
+     * Extracts raw text from an uploaded DOCX file.
+     * @param {File} file - The DOCX file from the input.
+     * @returns {Promise<string>} A promise that resolves with the extracted text.
+     */
+    async function extractTextFromDOCX(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result.value;
+    }
+
+    /**
+     * Attempts to find email and phone number in the text and populates the form.
+     * The remaining text is placed in the professional summary.
+     * @param {string} text - The raw text from the resume.
+     */
+    function autofillForm(text) {
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+        const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+
+        const emailMatch = text.match(emailRegex);
+        const phoneMatch = text.match(phoneRegex);
+
+        let remainingText = text;
+
+        if (emailMatch) {
+            document.getElementById('email').value = emailMatch[0];
+            remainingText = remainingText.replace(emailMatch[0], '');
+        }
+        if (phoneMatch) {
+            document.getElementById('phone').value = phoneMatch[0];
+            remainingText = remainingText.replace(phoneMatch[0], '');
+        }
+
+        document.getElementById('professionalSummary').value = remainingText.trim();
+        alert("Hemos intentado autocompletar tu email y teléfono. Por favor, revisa la información y mueve el texto del resumen a las secciones correctas.");
+    }
+
+    /**
+     * Dynamically adds a new experience entry to the form.
+     */
+    function addExperienceEntry() {
+        const entryId = `exp-entry-${Date.now()}`;
+        const newEntry = document.createElement('div');
+        newEntry.className = 'experience-entry border border-gray-200 p-4 rounded-md relative';
+        newEntry.id = entryId;
+        newEntry.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group"><label>Cargo</label><input type="text" name="jobTitle" class="w-full" placeholder="Ej: Desarrollador Full-Stack"></div>
+                <div class="input-group"><label>Empresa</label><input type="text" name="company" class="w-full" placeholder="Ej: Soluciones Tech"></div>
+                <div class="input-group"><label>Fecha de Inicio</label><input type="month" name="startDate" class="w-full"></div>
+                <div class="input-group"><label>Fecha de Fin</label><input type="month" name="endDate" class="w-full"></div>
+                <div class="input-group md:col-span-2"><label>Descripción del Cargo</label><textarea name="jobDescription" rows="4" class="w-full" placeholder="Describe tus responsabilidades y logros..."></textarea></div>
+                <div class="input-group flex items-center gap-2"><input type="checkbox" name="currentJob" onchange="document.querySelector('#${entryId} [name=endDate]').disabled = this.checked;"><label>Trabajo Actual</label></div>
+            </div>
+            <button type="button" class="remove-button absolute top-2 right-2" onclick="this.parentElement.remove()">X</button>
+        `;
+        experienceEntries.appendChild(newEntry);
+    }
+
+    /**
+     * Dynamically adds a new education entry to the form.
+     */
+    function addEducationEntry() {
+        const newEntry = document.createElement('div');
+        newEntry.className = 'education-entry border border-gray-200 p-4 rounded-md relative';
+        newEntry.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group"><label>Título Obtenido</label><input type="text" name="degree" class="w-full" placeholder="Ej: Ingeniería de Software"></div>
+                <div class="input-group"><label>Institución</label><input type="text" name="institution" class="w-full" placeholder="Ej: Universidad de la Tecnología"></div>
+                <div class="input-group"><label>Fecha de Inicio</label><input type="month" name="eduStartDate" class="w-full"></div>
+                <div class="input-group"><label>Fecha de Fin</label><input type="month" name="eduEndDate" class="w-full"></div>
+            </div>
+             <button type="button" class="remove-button absolute top-2 right-2" onclick="this.parentElement.remove()">X</button>
+        `;
+        educationEntries.appendChild(newEntry);
+    }
+
+    /**
+     * Extracts potential keywords/skills from a job description.
+     * @param {string} text - The job description text.
+     * @returns {string[]} An array of potential keywords.
+     */
+    function extractKeywords(text) {
+        if (!text) return [];
+        const commonWords = new Set(['y', 'de', 'la', 'el', 'en', 'un', 'una', 'con', 'para', 'por', 'a', 'o', 'e', 'del', 'al', 'se', 'como', 'más', 'su', 'que', 'es', 'si', 'los', 'las', 'con', 'experiencia']);
+        const words = text.toLowerCase().replace(/[.,;()"']/g, ' ').split(/\s+/);
+        const keywords = words.filter(word => word.length > 2 && !commonWords.has(word) && isNaN(word));
+        return [...new Set(keywords)].map(s => s.charAt(0).toUpperCase() + s.slice(1));
+    }
+
+    /**
+     * Generates the PDF, displays the preview modal, and sets the download link.
+     * @param {object} data - The form data.
+     */
+    function generateAndPreviewPDF(data) {
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        let y = 40;
+
+        const addSection = (title, content, isList = false) => {
+            if (y > 750) { doc.addPage(); y = 40; }
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text(title, 40, y);
+            doc.setLineWidth(1);
+            doc.line(40, y + 5, 555, y + 5);
+            y += 25;
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            if (isList) {
+                const listItems = doc.splitTextToSize(content.join(', '), 515);
+                doc.text(listItems, 40, y);
+                y += listItems.length * 12 + 10;
+            } else {
+                const lines = doc.splitTextToSize(content, 515);
+                doc.text(lines, 40, y);
+                y += lines.length * 12 + 10;
             }
+        };
 
-            const resumeForm = document.getElementById('resumeForm');
-            const addExperienceButton = document.getElementById('addExperience');
-            const addEducationButton = document.getElementById('addEducation');
-            const experienceEntries = document.getElementById('experienceEntries');
-            const educationEntries = document.getElementById('educationEntries');
-            const cvUploader = document.getElementById('cvUploader');
-            const pdfPreviewModal = document.getElementById('pdfPreviewModal');
-            const closePreviewButton = document.getElementById('closePreviewButton');
-            const pdfFrame = document.getElementById('pdfFrame');
-            const downloadPdfLink = document.getElementById('downloadPdfLink');
-            const downloadDocxLink = document.getElementById('downloadDocxLink');
+        // --- PDF Content ---
+        doc.setFontSize(22);
+        doc.setFont(undefined, 'bold');
+        doc.text(data.fullName, 40, y);
+        y += 25;
 
-            // --- 2. Core Functions ---
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const contactInfo = [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | ');
+        doc.text(contactInfo, 40, y);
+        y += 30;
 
-            /**
-             * Extracts raw text from an uploaded PDF file.
-             * @param {File} file - The PDF file from the input.
-             * @returns {Promise<string>} A promise that resolves with the extracted text.
-             */
-            async function extractTextFromPDF(file) {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
-                }
-                return fullText;
-            }
+        addSection('Resumen Profesional', data.professionalSummary);
 
-            /**
-             * Extracts raw text from an uploaded DOCX file.
-             * @param {File} file - The DOCX file from the input.
-             * @returns {Promise<string>} A promise that resolves with the extracted text.
-             */
-            async function extractTextFromDOCX(file) {
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({ arrayBuffer });
-                return result.value;
-            }
-
-            /**
-             * Attempts to find email and phone number in the text and populates the form.
-             * The remaining text is placed in the professional summary.
-             * @param {string} text - The raw text from the resume.
-             */
-            function autofillForm(text) {
-                const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-                const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-
-                const emailMatch = text.match(emailRegex);
-                const phoneMatch = text.match(phoneRegex);
-
-                let remainingText = text;
-
-                if (emailMatch) {
-                    document.getElementById('email').value = emailMatch[0];
-                    remainingText = remainingText.replace(emailMatch[0], '');
-                }
-                if (phoneMatch) {
-                    document.getElementById('phone').value = phoneMatch[0];
-                    remainingText = remainingText.replace(phoneMatch[0], '');
-                }
-
-                document.getElementById('professionalSummary').value = remainingText.trim();
-                alert("Hemos intentado autocompletar tu email y teléfono. Por favor, revisa la información y mueve el texto del resumen a las secciones correctas.");
-            }
-
-            /**
-             * Dynamically adds a new experience entry to the form.
-             */
-            function addExperienceEntry() {
-                const entryId = `exp-entry-${Date.now()}`;
-                const newEntry = document.createElement('div');
-                newEntry.className = 'experience-entry border border-gray-200 p-4 rounded-md relative';
-                newEntry.id = entryId;
-                newEntry.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="input-group"><label>Cargo</label><input type="text" name="jobTitle" class="w-full" placeholder="Ej: Desarrollador Full-Stack"></div>
-                        <div class="input-group"><label>Empresa</label><input type="text" name="company" class="w-full" placeholder="Ej: Soluciones Tech"></div>
-                        <div class="input-group"><label>Fecha de Inicio</label><input type="month" name="startDate" class="w-full"></div>
-                        <div class="input-group"><label>Fecha de Fin</label><input type="month" name="endDate" class="w-full"></div>
-                        <div class="input-group md:col-span-2"><label>Descripción del Cargo</label><textarea name="jobDescription" rows="4" class="w-full" placeholder="Describe tus responsabilidades y logros..."></textarea></div>
-                        <div class="input-group flex items-center gap-2"><input type="checkbox" name="currentJob" onchange="document.querySelector('#${entryId} [name=endDate]').disabled = this.checked;"><label>Trabajo Actual</label></div>
-                    </div>
-                    <button type="button" class="remove-button absolute top-2 right-2" onclick="this.parentElement.remove()">X</button>
-                `;
-                experienceEntries.appendChild(newEntry);
-            }
-
-            /**
-             * Dynamically adds a new education entry to the form.
-             */
-            function addEducationEntry() {
-                const newEntry = document.createElement('div');
-                newEntry.className = 'education-entry border border-gray-200 p-4 rounded-md relative';
-                newEntry.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="input-group"><label>Título Obtenido</label><input type="text" name="degree" class="w-full" placeholder="Ej: Ingeniería de Software"></div>
-                        <div class="input-group"><label>Institución</label><input type="text" name="institution" class="w-full" placeholder="Ej: Universidad de la Tecnología"></div>
-                        <div class="input-group"><label>Fecha de Inicio</label><input type="month" name="eduStartDate" class="w-full"></div>
-                        <div class="input-group"><label>Fecha de Fin</label><input type="month" name="eduEndDate" class="w-full"></div>
-                    </div>
-                     <button type="button" class="remove-button absolute top-2 right-2" onclick="this.parentElement.remove()">X</button>
-                `;
-                educationEntries.appendChild(newEntry);
-            }
-
-            /**
-             * Extracts potential keywords/skills from a job description.
-             * @param {string} text - The job description text.
-             * @returns {string[]} An array of potential keywords.
-             */
-            function extractKeywords(text) {
-                if (!text) return [];
-                const commonWords = new Set(['y', 'de', 'la', 'el', 'en', 'un', 'una', 'con', 'para', 'por', 'a', 'o', 'e', 'del', 'al', 'se', 'como', 'más', 'su', 'que', 'es', 'si', 'los', 'las', 'con', 'experiencia']);
-                const words = text.toLowerCase().replace(/[.,;()"']/g, ' ').split(/\s+/);
-                const keywords = words.filter(word => word.length > 2 && !commonWords.has(word) && isNaN(word));
-                return [...new Set(keywords)].map(s => s.charAt(0).toUpperCase() + s.slice(1));
-            }
-
-            /**
-             * Generates the PDF, displays the preview modal, and sets the download link.
-             * @param {object} data - The form data.
-             */
-            function generateAndPreviewPDF(data) {
-                const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-                let y = 40;
-
-                const addSection = (title, content, isList = false) => {
-                    if (y > 750) { doc.addPage(); y = 40; }
-                    doc.setFontSize(14);
-                    doc.setFont(undefined, 'bold');
-                    doc.text(title, 40, y);
-                    doc.setLineWidth(1);
-                    doc.line(40, y + 5, 555, y + 5);
-                    y += 25;
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-                    if (isList) {
-                        const listItems = doc.splitTextToSize(content.join(', '), 515);
-                        doc.text(listItems, 40, y);
-                        y += listItems.length * 12 + 10;
-                    } else {
-                        const lines = doc.splitTextToSize(content, 515);
-                        doc.text(lines, 40, y);
-                        y += lines.length * 12 + 10;
-                    }
-                };
-
-                // --- PDF Content ---
-                doc.setFontSize(22);
+        if (data.experience.length > 0 && data.experience[0].jobTitle) {
+            addSection('Experiencia Laboral', '');
+            data.experience.forEach(exp => {
+                if (y > 720) { doc.addPage(); y = 40; }
+                doc.setFontSize(11);
                 doc.setFont(undefined, 'bold');
-                doc.text(data.fullName, 40, y);
-                y += 25;
-
+                doc.text(`${exp.jobTitle} | ${exp.company}`, 40, y);
+                y += 15;
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'italic');
+                doc.text(`${exp.startDate} - ${exp.endDate}`, 40, y);
+                y += 15;
                 doc.setFontSize(10);
                 doc.setFont(undefined, 'normal');
-                const contactInfo = [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | ');
-                doc.text(contactInfo, 40, y);
-                y += 30;
+                const descLines = doc.splitTextToSize(exp.jobDescription, 495);
+                doc.text(descLines, 60, y);
+                y += descLines.length * 12 + 10;
+            });
+        }
 
-                addSection('Resumen Profesional', data.professionalSummary);
+        if (data.education.length > 0 && data.education[0].degree) {
+             addSection('Educación', '');
+             data.education.forEach(edu => {
+                if (y > 740) { doc.addPage(); y = 40; }
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text(`${edu.degree} - ${edu.institution}`, 40, y);
+                y += 15;
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'italic');
+                doc.text(`${edu.eduStartDate} - ${edu.eduEndDate}`, 40, y);
+                y += 20;
+             });
+        }
 
-                if (data.experience.length > 0) {
-                    addSection('Experiencia Laboral', '');
-                    data.experience.forEach(exp => {
-                        if (y > 720) { doc.addPage(); y = 40; }
-                        doc.setFontSize(11);
-                        doc.setFont(undefined, 'bold');
-                        doc.text(`${exp.jobTitle} | ${exp.company}`, 40, y);
-                        y += 15;
-                        doc.setFontSize(9);
-                        doc.setFont(undefined, 'italic');
-                        doc.text(`${exp.startDate} - ${exp.endDate}`, 40, y);
-                        y += 15;
-                        doc.setFontSize(10);
-                        doc.setFont(undefined, 'normal');
-                        const descLines = doc.splitTextToSize(exp.jobDescription, 495);
-                        doc.text(descLines, 60, y);
-                        y += descLines.length * 12 + 10;
-                    });
-                }
+        if(data.skills.length > 0) {
+            addSection('Habilidades', data.skills, true);
+        }
 
-                if (data.education.length > 0) {
-                     addSection('Educación', '');
-                     data.education.forEach(edu => {
-                        if (y > 740) { doc.addPage(); y = 40; }
-                        doc.setFontSize(11);
-                        doc.setFont(undefined, 'bold');
-                        doc.text(`${edu.degree} - ${edu.institution}`, 40, y);
-                        y += 15;
-                        doc.setFontSize(9);
-                        doc.setFont(undefined, 'italic');
-                        doc.text(`${edu.eduStartDate} - ${edu.eduEndDate}`, 40, y);
-                        y += 20;
-                     });
-                }
+        // --- Preview & Download ---
+        const pdfOutput = doc.output('datauristring');
+        pdfFrame.src = pdfOutput;
+        downloadPdfLink.href = pdfOutput;
+        pdfPreviewModal.classList.remove('hidden');
+    }
 
-                if(data.skills.length > 0) {
-                    addSection('Habilidades', data.skills, true);
-                }
+    /**
+     * Prepares the DOCX file for download.
+     * @param {object} data - The form data.
+     */
+    async function prepareDocxDownload(data) {
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
 
-                // --- Preview & Download ---
-                const pdfOutput = doc.output('datauristring');
-                pdfFrame.src = pdfOutput;
-                downloadPdfLink.href = pdfOutput;
-                pdfPreviewModal.classList.remove('hidden');
-            }
+        const sections = [
+            new Paragraph({
+                children: [new TextRun({ text: data.fullName, bold: true, size: 44 })],
+            }),
+            new Paragraph({
+                children: [new TextRun({
+                    text: [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | '),
+                    size: 20
+                })],
+                spacing: { after: 200 }
+            }),
+            new Paragraph({ text: "Resumen Profesional", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }),
+            new Paragraph(data.professionalSummary),
+        ];
 
-            /**
-             * Prepares the DOCX file for download.
-             * @param {object} data - The form data.
-             */
-            async function prepareDocxDownload(data) {
-                const { Document, Packer, Paragraph, TextRun, HeadingLevel } = docx;
+        if (data.experience.length > 0 && data.experience[0].jobTitle) {
+            sections.push(new Paragraph({ text: "Experiencia Laboral", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
+            data.experience.forEach(exp => {
+                sections.push(new Paragraph({ children: [
+                    new TextRun({ text: `${exp.jobTitle} | ${exp.company}`, bold: true, size: 24 }),
+                ]}));
+                sections.push(new Paragraph({ children: [
+                    new TextRun({ text: `${exp.startDate} - ${exp.endDate}`, italics: true, size: 18 }),
+                ]}));
+                sections.push(new Paragraph({ text: exp.jobDescription, spacing: { after: 150 } }));
+            });
+        }
 
-                const sections = [
-                    new Paragraph({
-                        children: [new TextRun({ text: data.fullName, bold: true, size: 44 })],
-                    }),
-                    new Paragraph({
-                        children: [new TextRun({
-                            text: [data.email, data.phone, data.linkedin, data.address].filter(Boolean).join(' | '),
-                            size: 20
-                        })],
-                        spacing: { after: 200 }
-                    }),
-                    new Paragraph({ text: "Resumen Profesional", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }),
-                    new Paragraph(data.professionalSummary),
-                ];
+        if (data.education.length > 0 && data.education[0].degree) {
+            sections.push(new Paragraph({ text: "Educación", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
+             data.education.forEach(edu => {
+                sections.push(new Paragraph({ children: [
+                    new TextRun({ text: `${edu.degree} - ${edu.institution}`, bold: true, size: 24 }),
+                ]}));
+                sections.push(new Paragraph({ children: [
+                    new TextRun({ text: `${edu.eduStartDate} - ${edu.eduEndDate}`, italics: true, size: 18 }),
+                ], spacing: { after: 150 }}));
+            });
+        }
 
-                if (data.experience.length > 0) {
-                    sections.push(new Paragraph({ text: "Experiencia Laboral", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
-                    data.experience.forEach(exp => {
-                        sections.push(new Paragraph({ children: [
-                            new TextRun({ text: `${exp.jobTitle} | ${exp.company}`, bold: true, size: 24 }),
-                        ]}));
-                        sections.push(new Paragraph({ children: [
-                            new TextRun({ text: `${exp.startDate} - ${exp.endDate}`, italics: true, size: 18 }),
-                        ]}));
-                        sections.push(new Paragraph({ text: exp.jobDescription, spacing: { after: 150 } }));
-                    });
-                }
+        if (data.skills.length > 0) {
+            sections.push(new Paragraph({ text: "Habilidades", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
+            sections.push(new Paragraph(data.skills.join(', ')));
+        }
 
-                if (data.education.length > 0) {
-                    sections.push(new Paragraph({ text: "Educación", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
-                     data.education.forEach(edu => {
-                        sections.push(new Paragraph({ children: [
-                            new TextRun({ text: `${edu.degree} - ${edu.institution}`, bold: true, size: 24 }),
-                        ]}));
-                        sections.push(new Paragraph({ children: [
-                            new TextRun({ text: `${edu.eduStartDate} - ${edu.eduEndDate}`, italics: true, size: 18 }),
-                        ], spacing: { after: 150 }}));
-                    });
-                }
+        const doc = new Document({ sections: [{ children: sections }] });
 
-                if (data.skills.length > 0) {
-                    sections.push(new Paragraph({ text: "Habilidades", heading: HeadingLevel.HEADING_1, border: { bottom: { color: "auto", space: 1, value: "single", size: 6 } } }));
-                    sections.push(new Paragraph(data.skills.join(', ')));
-                }
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        downloadDocxLink.href = url;
+    }
 
-                const doc = new Document({ sections: [{ children: sections }] });
+    /**
+     * Hides the PDF preview modal.
+     */
+    function closeModal() {
+        pdfPreviewModal.classList.add('hidden');
+        pdfFrame.src = 'about:blank'; // Clear the iframe
+    }
 
-                const blob = await Packer.toBlob(doc);
-                const url = URL.createObjectURL(blob);
-                downloadDocxLink.href = url;
-            }
+    // --- 3. App Initialization ---
+    try {
+        addExperienceButton.addEventListener('click', addExperienceEntry);
+        addEducationButton.addEventListener('click', addEducationEntry);
+        addExperienceEntry();
+        addEducationEntry();
+        closePreviewButton.addEventListener('click', closeModal);
+        pdfPreviewModal.addEventListener('click', (e) => { if (e.target === pdfPreviewModal) closeModal(); });
 
-            /**
-             * Hides the PDF preview modal.
-             */
-            function closeModal() {
-                pdfPreviewModal.classList.add('hidden');
-                pdfFrame.src = 'about:blank'; // Clear the iframe
-            }
-
-            // --- 3. App Initialization ---
+        cvUploader.addEventListener('change', async (e) => {
+            const file = e.target.files[0]; if (!file) return;
             try {
-                addExperienceButton.addEventListener('click', addExperienceEntry);
-                addEducationButton.addEventListener('click', addEducationEntry);
-                addExperienceEntry();
-                addEducationEntry();
-                closePreviewButton.addEventListener('click', closeModal);
-                pdfPreviewModal.addEventListener('click', (e) => { if (e.target === pdfPreviewModal) closeModal(); });
+                let text = '';
+                if (file.type === "application/pdf") {
+                    text = await extractTextFromPDF(file);
+                } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+                    text = await extractTextFromDOCX(file);
+                } else { alert("Formato de archivo no soportado."); return; }
+                autofillForm(text);
+            } catch (error) {
+                console.error("Error detallado al leer el archivo:", error);
+                alert(`No se pudo leer el archivo. Revisa la consola (F12).\n\nError: ${error.message}`);
+            }
+        });
 
-                cvUploader.addEventListener('change', async (e) => {
-                    const file = e.target.files[0]; if (!file) return;
-                    try {
-                        let text = '';
-                        if (file.type === "application/pdf") {
-                            text = await extractTextFromPDF(file);
-                        } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-                            text = await extractTextFromDOCX(file);
-                        } else { alert("Formato de archivo no soportado."); return; }
-                        autofillForm(text);
-                    } catch (error) {
-                        console.error("Error detallado al leer el archivo:", error);
-                        alert(`No se pudo leer el archivo. Revisa la consola (F12).\n\nError: ${error.message}`);
+        resumeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const manualSkills = (document.getElementById('skills').value || "").split(',').map(s => s.trim()).filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1));
+                const jobKeywords = extractKeywords(document.getElementById('jobDescriptionInput').value);
+                const allSkills = [...new Set([...manualSkills, ...jobKeywords])];
+                const formData = {
+                    fullName: document.getElementById('fullName').value, email: document.getElementById('email').value, phone: document.getElementById('phone').value,
+                    linkedin: document.getElementById('linkedin').value, address: document.getElementById('address').value, professionalSummary: document.getElementById('professionalSummary').value,
+                    skills: allSkills, experience: [], education: []
+                };
+                document.querySelectorAll('.experience-entry').forEach(entryDiv => {
+                    const currentJob = entryDiv.querySelector('[name="currentJob"]').checked;
+                    const jobTitle = entryDiv.querySelector('[name="jobTitle"]').value;
+                    if(jobTitle) { // Only add if there is a job title
+                        formData.experience.push({
+                            jobTitle: jobTitle,
+                            company: entryDiv.querySelector('[name="company"]').value,
+                            startDate: entryDiv.querySelector('[name="startDate"]').value,
+                            endDate: currentJob ? 'Actual' : entryDiv.querySelector('[name="endDate"]').value,
+                            jobDescription: entryDiv.querySelector('[name="jobDescription"]').value
+                        });
                     }
                 });
-
-                resumeForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    try {
-                        const manualSkills = (document.getElementById('skills').value || "").split(',').map(s => s.trim()).filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1));
-                        const jobKeywords = extractKeywords(document.getElementById('jobDescriptionInput').value);
-                        const allSkills = [...new Set([...manualSkills, ...jobKeywords])];
-                        const formData = {
-                            fullName: document.getElementById('fullName').value, email: document.getElementById('email').value, phone: document.getElementById('phone').value,
-                            linkedin: document.getElementById('linkedin').value, address: document.getElementById('address').value, professionalSummary: document.getElementById('professionalSummary').value,
-                            skills: allSkills, experience: [], education: []
-                        };
-                        document.querySelectorAll('.experience-entry').forEach(entryDiv => {
-                            const currentJob = entryDiv.querySelector('[name="currentJob"]').checked;
-                            formData.experience.push({
-                                jobTitle: entryDiv.querySelector('[name="jobTitle"]').value,
-                                company: entryDiv.querySelector('[name="company"]').value,
-                                startDate: entryDiv.querySelector('[name="startDate"]').value,
-                                endDate: currentJob ? 'Actual' : entryDiv.querySelector('[name="endDate"]').value,
-                                jobDescription: entryDiv.querySelector('[name="jobDescription"]').value
-                            });
+                document.querySelectorAll('.education-entry').forEach(entryDiv => {
+                    const degree = entryDiv.querySelector('[name="degree"]').value;
+                    if(degree) { // Only add if there is a degree
+                        formData.education.push({
+                            degree: degree, institution: entryDiv.querySelector('[name="institution"]').value,
+                            eduStartDate: entryDiv.querySelector('[name="eduStartDate"]').value, eduEndDate: entryDiv.querySelector('[name="eduEndDate"]').value
                         });
-                        document.querySelectorAll('.education-entry').forEach(entryDiv => {
-                            formData.education.push({
-                                degree: entryDiv.querySelector('[name="degree"]').value, institution: entryDiv.querySelector('[name="institution"]').value,
-                                eduStartDate: entryDiv.querySelector('[name="eduStartDate"]').value, eduEndDate: entryDiv.querySelector('[name="eduEndDate"]').value
-                            });
-                        });
-                        generateAndPreviewPDF(formData);
-                        await prepareDocxDownload(formData);
-                    } catch (error) { console.error("Error al generar los documentos:", error); alert("Error al generar el documento. Revisa que todos los campos estén completos."); }
+                    }
                 });
-                console.log("Aplicación inicializada y listeners conectados.");
-            } catch (e) { console.error("Error fatal durante la inicialización:", e); alert("Ocurrió un error fatal al cargar la página."); }
+                generateAndPreviewPDF(formData);
+                await prepareDocxDownload(formData);
+            } catch (error) { console.error("Error al generar los documentos:", error); alert("Error al generar el documento. Revisa que todos los campos estén completos."); }
         });
-    </script>
+        console.log("Aplicación inicializada y listeners conectados.");
+    } catch (e) { console.error("Error fatal durante la inicialización:", e); alert("Ocurrió un error fatal al cargar la página."); }
+});
+</script>
 </body>
 </html>
