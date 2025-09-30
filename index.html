@@ -187,36 +187,50 @@ document.addEventListener('DOMContentLoaded', () => {
             remainingText = remainingText.replace(phoneMatch[0], '');
         }
 
-        // 3. *** FINAL, DIRECT NAME EXTRACTION ***
+        // 3. *** FINAL, MULTI-HEURISTIC NAME EXTRACTION ***
         const lines = text.split('\n').map(line => line.trim());
         let foundName = '';
+        let lineIndexToRemove = -1;
 
-        // Find the first non-empty line that looks like a name.
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (!line) continue;
+        // Heuristic 1: Look for "Nombre completo" label
+        const nameLabelRegex = /nombre completo[:\s]*((?:[A-ZÁÉÍÓÚÑa-záéíóúñ]+\s?){2,4})/i;
+        const nameMatch = text.match(nameLabelRegex);
 
-            // Exclusion list for common non-name headers or contact info
-            const exclusionKeywords = [
-                'curriculum', 'vitae', 'hoja de vida', 'resume', 'profile', 'perfil',
-                'teléfono', 'celular', 'dirección', 'email', 'linkedin',
-                'asistente', 'coordinador', 'especialista', 'ingeniero', 'desarrollador',
-                '@', 'www.'
-            ];
+        if (nameMatch && nameMatch[1]) {
+            foundName = nameMatch[1].trim();
+        } else {
+            // Heuristic 2: Scan top lines for a likely name
+            for (let i = 0; i < Math.min(lines.length, 4); i++) {
+                const line = lines[i];
+                if (!line) continue;
 
-            const hasExclusionKeyword = exclusionKeywords.some(keyword => line.toLowerCase().includes(keyword));
-            if (hasExclusionKeyword || /\d/.test(line)) {
-                continue; // Skip this line if it's likely not a name
+                const words = line.split(' ').filter(w => w.length > 1);
+                if (words.length < 2 || words.length > 4) continue;
+
+                const isAllCaps = /^[A-ZÁÉÍÓÚÑ\s]+$/.test(line);
+                const isTitleCase = words.every(word => /^[A-ZÁÉÍÓÚÑ]/.test(word));
+                if (!isAllCaps && !isTitleCase) continue;
+
+                const exclusionKeywords = ['curriculum', 'vitae', 'hoja de vida', 'perfil', 'resumen', 'email', 'teléfono', 'linkedin', 'dirección', 'asistente', 'coordinador', 'especialista', 'ingeniero'];
+                if (exclusionKeywords.some(kw => line.toLowerCase().includes(kw)) || /@|\d/.test(line)) {
+                    continue;
+                }
+
+                foundName = line;
+                lineIndexToRemove = i;
+                break;
             }
-
-            // If we've passed the checks, this is our best guess for the name.
-            foundName = line;
-            break; // Stop after finding the first valid candidate.
         }
 
         if (foundName) {
             document.getElementById('fullName').value = foundName;
-            remainingText = remainingText.replace(foundName, '');
+            if (lineIndexToRemove !== -1) {
+                 const textLines = text.split('\n');
+                 textLines.splice(lineIndexToRemove, 1);
+                 remainingText = textLines.join('\n');
+            } else {
+                 remainingText = remainingText.replace(foundName, '');
+            }
         }
 
         // 4. *** MEJORADO: Extract Address ***
