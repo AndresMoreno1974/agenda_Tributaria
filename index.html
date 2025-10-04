@@ -149,18 +149,30 @@
             const currentCvText = cvPaste.value;
             if (!selectedTile) { alert('Por favor seleccione una plantilla.'); return; }
             if (!currentCvText.trim()) { alert('Por favor suba un archivo de CV o pegue el texto en el área designada.'); return; }
+
             const tid = selectedTile.dataset.tid;
             let foundTemplate;
-            for (const key in PLANTILLAS) { foundTemplate = (PLANTILLAS[key] || []).find(p => p.id === tid); if (foundTemplate) break; }
+            for (const key in PLANTILLAS) {
+                foundTemplate = (PLANTILLAS[key] || []).find(p => p.id === tid);
+                if (foundTemplate) break;
+            }
+
             if (foundTemplate) {
                 const userName = extractName(currentCvText);
                 const formattedDate = generateFormattedDate();
-                const header = `[A quien va dirigida]\n[coloca por favor la direccion]\n[Coloca el cargo si lo sabes]\n\n`;
+
+                const header = `[A quien va dirigida]\n[Coloca por favor la dirección]\n[Coloca el cargo si lo sabes]\n\n`;
                 const dateLine = `${formattedDate}\n\n`;
                 const body = foundTemplate.body;
                 const closing = `\n\nAtentamente,\n\n${userName}`;
+
+                // Construcción correcta de la carta
                 const fullLetter = header + dateLine + body + closing;
+
+                // Separador y CV de referencia
                 const separator = `\n\n========================================\nCOPIA DE TU CV PARA REFERENCIA:\n========================================\n\n`;
+
+                // Asignar el contenido final al área de vista previa
                 previewArea.innerText = fullLetter + separator + currentCvText;
             } else {
                 alert('Error: No se pudo encontrar la plantilla seleccionada.');
