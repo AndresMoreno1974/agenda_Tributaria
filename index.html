@@ -1,737 +1,215 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Tributaria Interactiva 2025-2026</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .calendar-day.has-event {
-            background-color: #fef08a;
-            color: #b45309;
-            font-weight: bold;
-            border-radius: 50%;
-            position: relative;
-        }
-        .calendar-day.has-event::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
-            background-color: #dc2626;
-            border-radius: 50%;
-        }
-        .toast {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.5s, transform 0.5s;
-            transform: translateY(20px);
-        }
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generador de Cartas de Presentación — Offline (Frontend)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <style>
+    body { background: #f7fafc }
+    .card { background: white; border-radius: .5rem; box-shadow: 0 6px 18px rgba(11,15,34,.06)}
+    .template-tile { cursor: pointer; padding: 8px; border: 1px solid #e5e7eb; border-radius: .5rem; }
+    .template-tile:hover { background: #f3f4f6 }
+    .template-tile.selected { border: 2px solid #4f46e5; background: #eef2ff; font-weight: 600; }
+    pre { white-space: pre-wrap; font-family: inherit; }
+  </style>
 </head>
-<body class="antialiased text-gray-800">
+<body class="p-6">
+  <div class="max-w-5xl mx-auto">
+    <header class="mb-6 text-center">
+      <h5 class="text-2xl font-bold">Generador de Cartas de Presentación (Solo Frontend)</h5>
+      <p class="text-sm text-gray-600">No guarda nada en servidor — todo se procesa en tu navegador. Sube .docx/.pdf o pega tu CV, elige categoría y plantilla y descarga la cover letter en .docx</p>
+    </header>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Agenda Tributaria Interactiva 2025-2026 🇨🇴</h1>
-            <p class="text-gray-600 mt-2">Consulta, exporta y descarga tus plazos de la DIAN.</p>
-        </header>
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section class="md:col-span-1 card p-4">
+        <h6 class="font-semibold">1) Elegir categoría</h6>
+        <label class="block text-sm">Categoría principal</label>
+        <select id="categoria" class="w-full border rounded p-2 mb-1">
+          <option value="" disabled selected>Por favor elija</option>
+          <option value="📌 Según la naturaleza de la postulación">📌 Según la naturaleza de la postulación</option>
+          <option value="👤 Según el contexto personal">👤 Según el contexto personal</option>
+          <option value="🎨 Según el estilo comunicativo">🎨 Según el estilo comunicativo</option>
+        </select>
+        <div id="categoriaDesc" class="text-xs text-gray-600 mb-3 h-4"></div>
+        <label class="block text-sm">Subcategoría</label>
+        <select id="subcategoria" class="w-full border rounded p-2 mb-3">
+          <option value="" disabled selected>Elija primero la Categoría Principal</option>
+        </select>
+        <label class="block text-sm">Industria (opcional)</label>
+        <select id="industry" class="w-full border rounded p-2 mb-3">
+          <option value="">-- Cualquiera --</option>
+          <option value="Tech">💻 Tecnología</option>
+          <option value="Salud">⚕️ Salud</option>
+          <option value="Finanzas">💰 Finanzas</option>
+          <option value="Negocios">📈 Negocios/Comercio</option>
+          <option value="Servicios">🛠️ Servicios</option>
+        </select>
+        <hr class="my-3" />
+        <h6 class="font-semibold">2) Subir o pegar CV</h6>
+        <input type="file" id="fileInput" accept=".docx,.pdf" class="mb-2" />
+        <button id="parseFileBtn" class="bg-indigo-600 text-white rounded px-3 py-1 mb-2 text-sm">⚙️ Procesar archivo</button>
+        <div class="text-center text-xs text-gray-500 mb-2">o</div>
+        <textarea id="cvPaste" placeholder="Pega aquí el texto de tu CV" class="w-full border rounded p-2 h-32 mb-2"></textarea>
+        <hr class="my-3" />
+        <h6 class="font-semibold">3) Elegir plantilla</h6>
+        <div id="templates" class="grid grid-cols-1 gap-2 mt-2"></div>
+        <hr class="my-3" />
+        <button id="generateBtn" class="bg-blue-700 text-white rounded px-3 py-2 w-full font-bold">✨ Generar carta y vista previa</button>
+      </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left Column -->
-            <div class="lg:col-span-1 space-y-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-xl font-bold mb-4 border-b pb-2">🔍 Filtros de Búsqueda</h2>
-                    <form id="taxForm" class="space-y-4">
-                        <div>
-                            <label for="taxpayerType" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Contribuyente</label>
-                            <select id="taxpayerType" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                                <option value="gran_contribuyente">Gran Contribuyente</option>
-                                <option value="persona_juridica">Persona Jurídica</option>
-                                <option value="persona_natural">Persona Natural</option>
-                                <option value="persona_no_residente">Personas no residentes (PES)</option>
-                            </select>
-                        </div>
-
-                        <div id="nit-section">
-                            <div>
-                                <label for="nitInput" class="block text-sm font-medium text-gray-700 mb-1">Tu NIT completo o los últimos dígitos</label>
-                                <input type="text" id="nitInput" placeholder="Ej: 900123456" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"/>
-                            </div>
-                            <div class="flex items-center mt-4">
-                                <input id="foreignAssets" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"/>
-                                <label for="foreignAssets" class="ml-2 block text-sm text-gray-900">¿Declara activos en el exterior?</label>
-                            </div>
-                        </div>
-
-                        <div id="pes-section" class="hidden text-sm text-gray-500 p-3 bg-blue-50 rounded-lg">
-                            Para contribuyentes con Presencia Económica Significativa (PES), las fechas son generales y no requieren NIT.
-                        </div>
-
-                        <div id="company-questions" class="space-y-4">
-                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Periodicidad del IVA</label>
-                                <div class="flex gap-4">
-                                    <div class="flex items-center">
-                                        <input id="iva-bimestral" name="iva-frequency" type="radio" value="bimestral" checked class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-bimestral" class="ml-2 block text-sm text-gray-900">Bimestral</label>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <input id="iva-cuatrimestral" name="iva-frequency" type="radio" value="cuatrimestral" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"/>
-                                        <label for="iva-cuatrimestral" class="ml-2 block text-sm text-gray-900">Cuatrimestral</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center"><input id="consumo" type="checkbox" class="h-4 w-4"/><label for="consumo" class="ml-2 text-sm">¿Declara Impuesto al Consumo?</label></div>
-                            <div class="flex items-center"><input id="bolsas" type="checkbox" class="h-4 w-4"/><label for="bolsas" class="ml-2 text-sm">¿Declara Impuesto a Bolsas Plásticas?</label></div>
-                            <div class="flex items-center"><input id="gasolina" type="checkbox" class="h-4 w-4"/><label for="gasolina" class="ml-2 text-sm">¿Declara Gasolina y ACPM?</label></div>
-                            <div class="flex items-center"><input id="carbono" type="checkbox" class="h-4 w-4"/><label for="carbono" class="ml-2 text-sm">¿Declara Impuesto al Carbono?</label></div>
-                            <div class="flex items-center"><input id="transferencia" type="checkbox" class="h-4 w-4"/><label for="transferencia" class="ml-2 text-sm">¿Declara Precios de Transferencia?</label></div>
-                            <div class="flex items-center"><input id="iva_exterior" type="checkbox" class="h-4 w-4"/><label for="iva_exterior" class="ml-2 text-sm">¿Declara IVA desde el exterior?</label></div>
-                            <div class="flex items-center"><input id="patrimonio" type="checkbox" class="h-4 w-4"/><label for="patrimonio" class="ml-2 text-sm">¿Declara Impuesto al Patrimonio?</label></div>
-                            <div class="flex items-center"><input id="plasticos_uso_unico" type="checkbox" class="h-4 w-4"/><label for="plasticos_uso_unico" class="ml-2 text-sm">¿Declara Plásticos de un solo uso?</label></div>
-                            <div class="flex items-center"><input id="bebidas_ultraprocesadas" type="checkbox" class="h-4 w-4"/><label for="bebidas_ultraprocesadas" class="ml-2 text-sm">¿Declara Bebidas Ultraprocesadas?</label></div>
-                            <div class="flex items-center"><input id="rub" type="checkbox" class="h-4 w-4"/><label for="rub" class="ml-2 text-sm">¿Necesita actualizar el RUB?</label></div>
-
-                            <div class="flex items-center">
-                                <input id="rst" type="checkbox" class="h-4 w-4"/>
-                                <label for="rst" class="ml-2 text-sm">¿Está en el Régimen Simple (RST)?</label>
-                            </div>
-                            <div id="rst-options" class="hidden pl-6 space-y-2">
-                                <div class="flex items-center">
-                                    <input id="rst-anual" name="rst-type" type="radio" value="anual" checked class="h-4 w-4"/>
-                                    <label for="rst-anual" class="ml-2 text-sm">Declaración Anual</label>
-                                </div>
-                                <div class="flex items-center">
-                                    <input id="rst-anticipo" name="rst-type" type="radio" value="anticipo" class="h-4 w-4"/>
-                                    <label for="rst-anticipo" class="ml-2 text-sm">Anticipo Bimestral</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform hover:scale-105">
-                            Generar Agenda
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-gray-300">
-                     <h2 class="text-xl font-bold mb-4 text-gray-700">📄 Funciones Gratuitas</h2>
-                     <p class="text-gray-600 mb-4">Genera un resumen de tu agenda en formato PDF para guardarlo o imprimirlo.</p>
-                     <button id="downloadPdf" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                        Descargar Resumen en PDF
-                     </button>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-amber-400">
-                     <h2 class="text-xl font-bold mb-4 text-amber-600">⭐ Funciones Pro</h2>
-                     <div id="pro-section">
-                        <p class="text-gray-600 mb-4">Activa la versión Pro para exportar tu agenda a Google Calendar y recibir notificaciones.</p>
-                        <a href="https://checkout.bold.co/payment/LNK_LDA07DPSM4" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
-                            Activar Funciones Pro
-                        </a>
-                     </div>
-                     <div id="pro-activated-section" class="hidden text-center">
-                        <p class="text-green-600 font-semibold">¡Funciones Pro activadas!</p>
-                        <p class="text-gray-600 mt-2">Ya puedes añadir tus vencimientos a Google Calendar desde la lista de resultados.</p>
-                     </div>
-                </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
-                <div id="calendar-container">
-                    <div class="flex items-center justify-between mb-4">
-                        <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <h2 id="monthYear" class="text-2xl font-bold"></h2>
-                        <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-200 transition">
-                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                    </div>
-                    <div id="calendar" class="grid grid-cols-7 gap-1 text-center"></div>
-                </div>
-                <div id="results-container" class="mt-8">
-                    <h3 class="text-xl font-bold mb-4 border-t pt-6">🗓️ Vencimientos para tu selección:</h3>
-                    <div id="results" class="space-y-3">
-                        <p class="text-gray-500">Por favor, completa los filtros y haz clic en "Generar Agenda" para ver tus obligaciones.</p>
-                    </div>
-                </div>
-            </div>
+      <section class="md:col-span-2 card p-4">
+        <h6 class="font-semibold">Vista previa editable</h6>
+        <p class="text-sm text-gray-500 mt-1 mb-2">Cambia los espacios que hacen falta, llénalos y personalízalos con tu información. Abajo, después de la carta, encontrarás tu CV para que copies y pegues los datos. Luego, borra lo que no necesites.</p>
+        <pre id="previewArea" class="border rounded p-4 h-96 overflow-auto bg-gray-50" contenteditable="true"></pre>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button id="downloadDocx" class="bg-indigo-600 text-white rounded px-3 py-2">📄 Descargar .docx</button>
+          <button id="copyTextBtn" class="bg-gray-700 text-white rounded px-3 py-2">📋 Copiar Texto</button>
+          <button id="copyHtmlBtn" class="bg-gray-700 text-white rounded px-3 py-2">💻 Copiar HTML</button>
+          <button id="resetBtn" class="bg-red-500 text-white rounded px-3 py-2">🔄 Reiniciar</button>
         </div>
-    </div>
+      </section>
+    </main>
+  </div>
 
-    <!-- Hidden content for PDF generation -->
-    <div id="pdf-content" style="position: absolute; left: -9999px; top: 0; width: 210mm;" class="bg-white p-8 font-sans"></div>
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.min.js"></script>
+  <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+  <script src="https://unpkg.com/docx@8.3.3/build/index.umd.js"></script>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50">
-        <p id="toast-message"></p>
-    </div>
+  <script>
+    // Se espera a que el DOM esté completamente cargado para asignar los eventos
+    document.addEventListener('DOMContentLoaded', () => {
+        const categoriaEl = document.getElementById('categoria');
+        const subcategoriaEl = document.getElementById('subcategoria');
+        const industryEl = document.getElementById('industry');
+        const categoriaDesc = document.getElementById('categoriaDesc');
+        const cvPaste = document.getElementById('cvPaste');
+        const previewArea = document.getElementById('previewArea');
+        const templatesEl = document.getElementById('templates');
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- DATA STORE ---
-            const taxData = {
-                '2025': {
-                    'gran_contribuyente': {
-                        'renta': [
-                            { nit: [1], month: 2, day: 11, description: 'Pago 1a. cuota Renta' }, { nit: [2], month: 2, day: 12, description: 'Pago 1a. cuota Renta' }, { nit: [3], month: 2, day: 13, description: 'Pago 1a. cuota Renta' }, { nit: [4], month: 2, day: 14, description: 'Pago 1a. cuota Renta' }, { nit: [5], month: 2, day: 17, description: 'Pago 1a. cuota Renta' }, { nit: [6], month: 2, day: 18, description: 'Pago 1a. cuota Renta' }, { nit: [7], month: 2, day: 19, description: 'Pago 1a. cuota Renta' }, { nit: [8], month: 2, day: 20, description: 'Pago 1a. cuota Renta' }, { nit: [9], month: 2, day: 21, description: 'Pago 1a. cuota Renta' }, { nit: [0], month: 2, day: 24, description: 'Pago 1a. cuota Renta' },
-                            { nit: [1], month: 4, day: 9, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [2], month: 4, day: 10, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [3], month: 4, day: 11, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [4], month: 4, day: 14, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [5], month: 4, day: 15, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [6], month: 4, day: 16, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [7], month: 4, day: 21, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [8], month: 4, day: 22, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [9], month: 4, day: 23, description: 'Declaración y pago 2a. cuota Renta' }, { nit: [0], month: 4, day: 24, description: 'Declaración y pago 2a. cuota Renta' },
-                            { nit: [1], month: 6, day: 11, description: 'Pago 3a. cuota Renta' }, { nit: [2], month: 6, day: 12, description: 'Pago 3a. cuota Renta' }, { nit: [3], month: 6, day: 13, description: 'Pago 3a. cuota Renta' }, { nit: [4], month: 6, day: 16, description: 'Pago 3a. cuota Renta' }, { nit: [5], month: 6, day: 17, description: 'Pago 3a. cuota Renta' }, { nit: [6], month: 6, day: 18, description: 'Pago 3a. cuota Renta' }, { nit: [7], month: 6, day: 19, description: 'Pago 3a. cuota Renta' }, { nit: [8], month: 6, day: 20, description: 'Pago 3a. cuota Renta' }, { nit: [9], month: 6, day: 24, description: 'Pago 3a. cuota Renta' }, { nit: [0], month: 6, day: 25, description: 'Pago 3a. cuota Renta' },
-                        ],
-                        'activos_exterior': [
-                            { nit: [1], month: 4, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 4, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 4, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 4, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 4, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 4, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 4, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 4, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 4, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 4, day: 24, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                    },
-                    'persona_juridica': {
-                        'renta': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [2], month: 5, day: 13, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [3], month: 5, day: 14, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [4], month: 5, day: 15, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [5], month: 5, day: 16, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [6], month: 5, day: 19, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [7], month: 5, day: 20, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [8], month: 5, day: 21, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [9], month: 5, day: 22, description: 'Declaración y pago 1a. cuota Renta' }, { nit: [0], month: 5, day: 23, description: 'Declaración y pago 1a. cuota Renta' },
-                            { nit: [1], month: 7, day: 9, description: 'Pago 2a. cuota Renta' }, { nit: [2], month: 7, day: 10, description: 'Pago 2a. cuota Renta' }, { nit: [3], month: 7, day: 11, description: 'Pago 2a. cuota Renta' }, { nit: [4], month: 7, day: 14, description: 'Pago 2a. cuota Renta' }, { nit: [5], month: 7, day: 15, description: 'Pago 2a. cuota Renta' }, { nit: [6], month: 7, day: 16, description: 'Pago 2a. cuota Renta' }, { nit: [7], month: 7, day: 17, description: 'Pago 2a. cuota Renta' }, { nit: [8], month: 7, day: 18, description: 'Pago 2a. cuota Renta' }, { nit: [9], month: 7, day: 21, description: 'Pago 2a. cuota Renta' }, { nit: [0], month: 7, day: 22, description: 'Pago 2a. cuota Renta' },
-                        ],
-                         'activos_exterior': [
-                            { nit: [1], month: 5, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [2], month: 5, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [3], month: 5, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [4], month: 5, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [5], month: 5, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [6], month: 5, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [7], month: 5, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [8], month: 5, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [9], month: 5, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [0], month: 5, day: 23, description: 'Declaración Activos en el Exterior' },
-                        ],
-                        'iva_bimestral': [
-                            { nit: [1], month: 3, day: 11, description: 'IVA Ene-Feb' }, { nit: [1], month: 5, day: 12, description: 'IVA Mar-Abr' }, { nit: [1], month: 7, day: 9, description: 'IVA May-Jun' }, { nit: [1], month: 9, day: 9, description: 'IVA Jul-Ago' }, { nit: [1], month: 11, day: 12, description: 'IVA Sep-Oct' },
-                            { nit: [2], month: 3, day: 12, description: 'IVA Ene-Feb' }, { nit: [2], month: 5, day: 13, description: 'IVA Mar-Abr' }, { nit: [2], month: 7, day: 10, description: 'IVA May-Jun' }, { nit: [2], month: 9, day: 10, description: 'IVA Jul-Ago' }, { nit: [2], month: 11, day: 13, description: 'IVA Sep-Oct' },
-                            { nit: [3], month: 3, day: 13, description: 'IVA Ene-Feb' }, { nit: [3], month: 5, day: 14, description: 'IVA Mar-Abr' }, { nit: [3], month: 7, day: 11, description: 'IVA May-Jun' }, { nit: [3], month: 9, day: 11, description: 'IVA Jul-Ago' }, { nit: [3], month: 11, day: 14, description: 'IVA Sep-Oct' },
-                            { nit: [4], month: 3, day: 14, description: 'IVA Ene-Feb' }, { nit: [4], month: 5, day: 15, description: 'IVA Mar-Abr' }, { nit: [4], month: 7, day: 14, description: 'IVA May-Jun' }, { nit: [4], month: 9, day: 12, description: 'IVA Jul-Ago' }, { nit: [4], month: 11, day: 18, description: 'IVA Sep-Oct' },
-                            { nit: [5], month: 3, day: 17, description: 'IVA Ene-Feb' }, { nit: [5], month: 5, day: 16, description: 'IVA Mar-Abr' }, { nit: [5], month: 7, day: 15, description: 'IVA May-Jun' }, { nit: [5], month: 9, day: 15, description: 'IVA Jul-Ago' }, { nit: [5], month: 11, day: 19, description: 'IVA Sep-Oct' },
-                            { nit: [6], month: 3, day: 18, description: 'IVA Ene-Feb' }, { nit: [6], month: 5, day: 19, description: 'IVA Mar-Abr' }, { nit: [6], month: 7, day: 16, description: 'IVA May-Jun' }, { nit: [6], month: 9, day: 16, description: 'IVA Jul-Ago' }, { nit: [6], month: 11, day: 20, description: 'IVA Sep-Oct' },
-                            { nit: [7], month: 3, day: 19, description: 'IVA Ene-Feb' }, { nit: [7], month: 5, day: 20, description: 'IVA Mar-Abr' }, { nit: [7], month: 7, day: 17, description: 'IVA May-Jun' }, { nit: [7], month: 9, day: 17, description: 'IVA Jul-Ago' }, { nit: [7], month: 11, day: 21, description: 'IVA Sep-Oct' },
-                            { nit: [8], month: 3, day: 20, description: 'IVA Ene-Feb' }, { nit: [8], month: 5, day: 21, description: 'IVA Mar-Abr' }, { nit: [8], month: 7, day: 18, description: 'IVA May-Jun' }, { nit: [8], month: 9, day: 18, description: 'IVA Jul-Ago' }, { nit: [8], month: 11, day: 24, description: 'IVA Sep-Oct' },
-                            { nit: [9], month: 3, day: 21, description: 'IVA Ene-Feb' }, { nit: [9], month: 5, day: 22, description: 'IVA Mar-Abr' }, { nit: [9], month: 7, day: 21, description: 'IVA May-Jun' }, { nit: [9], month: 9, day: 19, description: 'IVA Jul-Ago' }, { nit: [9], month: 11, day: 25, description: 'IVA Sep-Oct' },
-                            { nit: [0], month: 3, day: 25, description: 'IVA Ene-Feb' }, { nit: [0], month: 5, day: 23, description: 'IVA Mar-Abr' }, { nit: [0], month: 7, day: 22, description: 'IVA May-Jun' }, { nit: [0], month: 9, day: 22, description: 'IVA Jul-Ago' }, { nit: [0], month: 11, day: 26, description: 'IVA Sep-Oct' },
-                        ],
-                        'iva_cuatrimestral': [
-                            { nit: [1], month: 5, day: 12, description: 'IVA Ene-Abr' }, { nit: [1], month: 9, day: 9, description: 'IVA May-Ago' },
-                            { nit: [2], month: 5, day: 13, description: 'IVA Ene-Abr' }, { nit: [2], month: 9, day: 10, description: 'IVA May-Ago' },
-                            { nit: [3], month: 5, day: 14, description: 'IVA Ene-Abr' }, { nit: [3], month: 9, day: 11, description: 'IVA May-Ago' },
-                            { nit: [4], month: 5, day: 15, description: 'IVA Ene-Abr' }, { nit: [4], month: 9, day: 12, description: 'IVA May-Ago' },
-                            { nit: [5], month: 5, day: 16, description: 'IVA Ene-Abr' }, { nit: [5], month: 9, day: 15, description: 'IVA May-Ago' },
-                            { nit: [6], month: 5, day: 19, description: 'IVA Ene-Abr' }, { nit: [6], month: 9, day: 16, description: 'IVA May-Ago' },
-                            { nit: [7], month: 5, day: 20, description: 'IVA Ene-Abr' }, { nit: [7], month: 9, day: 17, description: 'IVA May-Ago' },
-                            { nit: [8], month: 5, day: 21, description: 'IVA Ene-Abr' }, { nit: [8], month: 9, day: 18, description: 'IVA May-Ago' },
-                            { nit: [9], month: 5, day: 22, description: 'IVA Ene-Abr' }, { nit: [9], month: 9, day: 19, description: 'IVA May-Ago' },
-                            { nit: [0], month: 5, day: 23, description: 'IVA Ene-Abr' }, { nit: [0], month: 9, day: 22, description: 'IVA May-Ago' },
-                        ],
-                        'retencion_fuente': [
-                            { nit: [1], month: 2, day: 11, description: 'Retefuente Ene' }, { nit: [1], month: 3, day: 11, description: 'Retefuente Feb' }, { nit: [1], month: 4, day: 9, description: 'Retefuente Mar' }, { nit: [1], month: 5, day: 12, description: 'Retefuente Abr' }, { nit: [1], month: 6, day: 11, description: 'Retefuente May' }, { nit: [1], month: 7, day: 9, description: 'Retefuente Jun' }, { nit: [1], month: 8, day: 12, description: 'Retefuente Jul' }, { nit: [1], month: 9, day: 9, description: 'Retefuente Ago' }, { nit: [1], month: 10, day: 9, description: 'Retefuente Sep' }, { nit: [1], month: 11, day: 12, description: 'Retefuente Oct' }, { nit: [1], month: 12, day: 10, description: 'Retefuente Nov' },
-                            { nit: [2], month: 2, day: 12, description: 'Retefuente Ene' }, { nit: [2], month: 3, day: 12, description: 'Retefuente Feb' }, { nit: [2], month: 4, day: 10, description: 'Retefuente Mar' }, { nit: [2], month: 5, day: 13, description: 'Retefuente Abr' }, { nit: [2], month: 6, day: 12, description: 'Retefuente May' }, { nit: [2], month: 7, day: 10, description: 'Retefuente Jun' }, { nit: [2], month: 8, day: 13, description: 'Retefuente Jul' }, { nit: [2], month: 9, day: 10, description: 'Retefuente Ago' }, { nit: [2], month: 10, day: 10, description: 'Retefuente Sep' }, { nit: [2], month: 11, day: 13, description: 'Retefuente Oct' }, { nit: [2], month: 12, day: 11, description: 'Retefuente Nov' },
-                            { nit: [3], month: 2, day: 13, description: 'Retefuente Ene' }, { nit: [3], month: 3, day: 13, description: 'Retefuente Feb' }, { nit: [3], month: 4, day: 11, description: 'Retefuente Mar' }, { nit: [3], month: 5, day: 14, description: 'Retefuente Abr' }, { nit: [3], month: 6, day: 13, description: 'Retefuente May' }, { nit: [3], month: 7, day: 11, description: 'Retefuente Jun' }, { nit: [3], month: 8, day: 14, description: 'Retefuente Jul' }, { nit: [3], month: 9, day: 11, description: 'Retefuente Ago' }, { nit: [3], month: 10, day: 14, description: 'Retefuente Sep' }, { nit: [3], month: 11, day: 14, description: 'Retefuente Oct' }, { nit: [3], month: 12, day: 12, description: 'Retefuente Nov' },
-                            { nit: [4], month: 2, day: 14, description: 'Retefuente Ene' }, { nit: [4], month: 3, day: 14, description: 'Retefuente Feb' }, { nit: [4], month: 4, day: 14, description: 'Retefuente Mar' }, { nit: [4], month: 5, day: 15, description: 'Retefuente Abr' }, { nit: [4], month: 6, day: 16, description: 'Retefuente May' }, { nit: [4], month: 7, day: 14, description: 'Retefuente Jun' }, { nit: [4], month: 8, day: 15, description: 'Retefuente Jul' }, { nit: [4], month: 9, day: 12, description: 'Retefuente Ago' }, { nit: [4], month: 10, day: 15, description: 'Retefuente Sep' }, { nit: [4], month: 11, day: 18, description: 'Retefuente Oct' }, { nit: [4], month: 12, day: 15, description: 'Retefuente Nov' },
-                            { nit: [5], month: 2, day: 17, description: 'Retefuente Ene' }, { nit: [5], month: 3, day: 17, description: 'Retefuente Feb' }, { nit: [5], month: 4, day: 15, description: 'Retefuente Mar' }, { nit: [5], month: 5, day: 16, description: 'Retefuente Abr' }, { nit: [5], month: 6, day: 17, description: 'Retefuente May' }, { nit: [5], month: 7, day: 15, description: 'Retefuente Jun' }, { nit: [5], month: 8, day: 19, description: 'Retefuente Jul' }, { nit: [5], month: 9, day: 15, description: 'Retefuente Ago' }, { nit: [5], month: 10, day: 16, description: 'Retefuente Sep' }, { nit: [5], month: 11, day: 19, description: 'Retefuente Oct' }, { nit: [5], month: 12, day: 16, description: 'Retefuente Nov' },
-                            { nit: [6], month: 2, day: 18, description: 'Retefuente Ene' }, { nit: [6], month: 3, day: 18, description: 'Retefuente Feb' }, { nit: [6], month: 4, day: 16, description: 'Retefuente Mar' }, { nit: [6], month: 5, day: 19, description: 'Retefuente Abr' }, { nit: [6], month: 6, day: 18, description: 'Retefuente May' }, { nit: [6], month: 7, day: 16, description: 'Retefuente Jun' }, { nit: [6], month: 8, day: 20, description: 'Retefuente Jul' }, { nit: [6], month: 9, day: 16, description: 'Retefuente Ago' }, { nit: [6], month: 10, day: 17, description: 'Retefuente Sep' }, { nit: [6], month: 11, day: 20, description: 'Retefuente Oct' }, { nit: [6], month: 12, day: 17, description: 'Retefuente Nov' },
-                            { nit: [7], month: 2, day: 19, description: 'Retefuente Ene' }, { nit: [7], month: 3, day: 19, description: 'Retefuente Feb' }, { nit: [7], month: 4, day: 21, description: 'Retefuente Mar' }, { nit: [7], month: 5, day: 20, description: 'Retefuente Abr' }, { nit: [7], month: 6, day: 19, description: 'Retefuente May' }, { nit: [7], month: 7, day: 17, description: 'Retefuente Jun' }, { nit: [7], month: 8, day: 21, description: 'Retefuente Jul' }, { nit: [7], month: 9, day: 17, description: 'Retefuente Ago' }, { nit: [7], month: 10, day: 20, description: 'Retefuente Sep' }, { nit: [7], month: 11, day: 21, description: 'Retefuente Oct' }, { nit: [7], month: 12, day: 18, description: 'Retefuente Nov' },
-                            { nit: [8], month: 2, day: 20, description: 'Retefuente Ene' }, { nit: [8], month: 3, day: 20, description: 'Retefuente Feb' }, { nit: [8], month: 4, day: 22, description: 'Retefuente Mar' }, { nit: [8], month: 5, day: 21, description: 'Retefuente Abr' }, { nit: [8], month: 6, day: 20, description: 'Retefuente May' }, { nit: [8], month: 7, day: 18, description: 'Retefuente Jun' }, { nit: [8], month: 8, day: 22, description: 'Retefuente Jul' }, { nit: [8], month: 9, day: 18, description: 'Retefuente Ago' }, { nit: [8], month: 10, day: 21, description: 'Retefuente Sep' }, { nit: [8], month: 11, day: 24, description: 'Retefuente Oct' }, { nit: [8], month: 12, day: 19, description: 'Retefuente Nov' },
-                            { nit: [9], month: 2, day: 21, description: 'Retefuente Ene' }, { nit: [9], month: 3, day: 21, description: 'Retefuente Feb' }, { nit: [9], month: 4, day: 23, description: 'Retefuente Mar' }, { nit: [9], month: 5, day: 22, description: 'Retefuente Abr' }, { nit: [9], month: 6, day: 24, description: 'Retefuente May' }, { nit: [9], month: 7, day: 21, description: 'Retefuente Jun' }, { nit: [9], month: 8, day: 25, description: 'Retefuente Jul' }, { nit: [9], month: 9, day: 19, description: 'Retefuente Ago' }, { nit: [9], month: 10, day: 22, description: 'Retefuente Sep' }, { nit: [9], month: 11, day: 25, description: 'Retefuente Oct' }, { nit: [9], month: 12, day: 22, description: 'Retefuente Nov' },
-                            { nit: [0], month: 2, day: 24, description: 'Retefuente Ene' }, { nit: [0], month: 3, day: 25, description: 'Retefuente Feb' }, { nit: [0], month: 4, day: 24, description: 'Retefuente Mar' }, { nit: [0], month: 5, day: 23, description: 'Retefuente Abr' }, { nit: [0], month: 6, day: 25, description: 'Retefuente May' }, { nit: [0], month: 7, day: 22, description: 'Retefuente Jun' }, { nit: [0], month: 8, day: 26, description: 'Retefuente Jul' }, { nit: [0], month: 9, day: 22, description: 'Retefuente Ago' }, { nit: [0], month: 10, day: 23, description: 'Retefuente Sep' }, { nit: [0], month: 11, day: 26, description: 'Retefuente Oct' }, { nit: [0], month: 12, day: 23, description: 'Retefuente Nov' },
-            ]
-        },
-        'persona_natural': {
-            'renta': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración y pago Renta' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración y pago Renta' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración y pago Renta' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración y pago Renta' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración y pago Renta' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración y pago Renta' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración y pago Renta' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración y pago Renta' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración y pago Renta' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración y pago Renta' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración y pago Renta' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración y pago Renta' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración y pago Renta' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración y pago Renta' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración y pago Renta' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración y pago Renta' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración y pago Renta' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración y pago Renta' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración y pago Renta' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración y pago Renta' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración y pago Renta' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración y pago Renta' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración y pago Renta' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración y pago Renta' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración y pago Renta' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración y pago Renta' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración y pago Renta' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración y pago Renta' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración y pago Renta' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración y pago Renta' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración y pago Renta' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración y pago Renta' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración y pago Renta' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración y pago Renta' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración y pago Renta' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración y pago Renta' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración y pago Renta' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración y pago Renta' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración y pago Renta' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración y pago Renta' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración y pago Renta' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración y pago Renta' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración y pago Renta' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración y pago Renta' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración y pago Renta' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración y pago Renta' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración y pago Renta' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración y pago Renta' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración y pago Renta' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración y pago Renta' },
-            ],
-            'activos_exterior': [
-                { nit: [1, 2], month: 8, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [3, 4], month: 8, day: 13, description: 'Declaración Activos en el Exterior' }, { nit: [5, 6], month: 8, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [7, 8], month: 8, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [9, 10], month: 8, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [11, 12], month: 8, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [13, 14], month: 8, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [15, 16], month: 8, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [17, 18], month: 8, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [19, 20], month: 8, day: 26, description: 'Declaración Activos en el Exterior' }, { nit: [21, 22], month: 8, day: 27, description: 'Declaración Activos en el Exterior' }, { nit: [23, 24], month: 8, day: 28, description: 'Declaración Activos en el Exterior' }, { nit: [25, 26], month: 8, day: 29, description: 'Declaración Activos en el Exterior' },
-                { nit: [27, 28], month: 9, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [29, 30], month: 9, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [31, 32], month: 9, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [33, 34], month: 9, day: 4, description: 'Declaración Activos en el Exterior' }, { nit: [35, 36], month: 9, day: 5, description: 'Declaración Activos en el Exterior' }, { nit: [37, 38], month: 9, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [39, 40], month: 9, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [41, 42], month: 9, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [43, 44], month: 9, day: 11, description: 'Declaración Activos en el Exterior' }, { nit: [45, 46], month: 9, day: 12, description: 'Declaración Activos en el Exterior' }, { nit: [47, 48], month: 9, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [49, 50], month: 9, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [51, 52], month: 9, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [53, 54], month: 9, day: 18, description: 'Declaración Activos en el Exterior' }, { nit: [55, 56], month: 9, day: 19, description: 'Declaración Activos en el Exterior' }, { nit: [57, 58], month: 9, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [59, 60], month: 9, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [61, 62], month: 9, day: 24, description: 'Declaración Activos en el Exterior' }, { nit: [63, 64], month: 9, day: 25, description: 'Declaración Activos en el Exterior' }, { nit: [65, 66], month: 9, day: 26, description: 'Declaración Activos en el Exterior' },
-                { nit: [67, 68], month: 10, day: 1, description: 'Declaración Activos en el Exterior' }, { nit: [69, 70], month: 10, day: 2, description: 'Declaración Activos en el Exterior' }, { nit: [71, 72], month: 10, day: 3, description: 'Declaración Activos en el Exterior' }, { nit: [73, 74], month: 10, day: 6, description: 'Declaración Activos en el Exterior' }, { nit: [75, 76], month: 10, day: 7, description: 'Declaración Activos en el Exterior' }, { nit: [77, 78], month: 10, day: 8, description: 'Declaración Activos en el Exterior' }, { nit: [79, 80], month: 10, day: 9, description: 'Declaración Activos en el Exterior' }, { nit: [81, 82], month: 10, day: 10, description: 'Declaración Activos en el Exterior' }, { nit: [83, 84], month: 10, day: 14, description: 'Declaración Activos en el Exterior' }, { nit: [85, 86], month: 10, day: 15, description: 'Declaración Activos en el Exterior' }, { nit: [87, 88], month: 10, day: 16, description: 'Declaración Activos en el Exterior' }, { nit: [89, 90], month: 10, day: 17, description: 'Declaración Activos en el Exterior' }, { nit: [91, 92], month: 10, day: 20, description: 'Declaración Activos en el Exterior' }, { nit: [93, 94], month: 10, day: 21, description: 'Declaración Activos en el Exterior' }, { nit: [95, 96], month: 10, day: 22, description: 'Declaración Activos en el Exterior' }, { nit: [97, 98], month: 10, day: 23, description: 'Declaración Activos en el Exterior' }, { nit: [99, 0], month: 10, day: 24, description: 'Declaración Activos en el Exterior' },
-            ]
-        },
-        'persona_no_residente': {
-            'pagos_pes': [
-                { nit: ['all'], month: 3, day: 14, description: 'Pago anticipado PES (Ene-Feb)' },
-                { nit: ['all'], month: 5, day: 15, description: 'Pago anticipado PES (Mar-Abr)' },
-                { nit: ['all'], month: 7, day: 14, description: 'Pago anticipado PES (May-Jun)' },
-                { nit: ['all'], month: 9, day: 12, description: 'Pago anticipado PES (Jul-Ago)' },
-                { nit: ['all'], month: 11, day: 18, description: 'Pago anticipado PES (Sep-Oct)' },
-            ],
-            'declaracion_pes': [
-                { nit: ['all'], month: 4, day: 22, description: 'Declaración anual PES' }
-            ]
+        // --- DATOS DE LA APLICACIÓN (SIN CAMBIOS) ---
+        const CATEGORIAS = { "📌 Según la naturaleza de la postulación": [{ value: "Carta tradicional o estándar", desc: "Se usa cuando hay una oferta publicada." },{ value: "Carta espontánea o prospectiva", desc: "Se envía sin oferta específica." },{ value: "Carta de autocandidatura", desc: "Variante más directa de la prospectiva." }], "👤 Según el contexto personal": [{ value: "Carta por recomendación", desc: "Se respalda en la referencia de alguien." },{ value: "Carta de transición de carrera", desc: "Cambio de sector, profesión o rol." },{ value: "Carta de recién graduado o sin experiencia", desc: "Orientada a recién graduados." }], "🎨 Según el estilo comunicativo": [{ value: "Carta creativa o diferencial", desc: "Áreas de innovación y creatividad." }] };
+        const PLANTILLAS = { "Carta tradicional o estándar": [{ id: "tplNat1", name: "Estándar Formal", body: "Con gran interés me dirijo a ustedes para presentar mi candidatura para la vacante de [Nombre del Puesto] publicada en [Dónde la viste].\n\nMi experiencia en [Tu área de experiencia principal] y mis habilidades en [Habilidad 1] y [Habilidad 2] se alinean perfectamente con los requisitos del puesto. Estoy convencido de que puedo aportar un valor significativo a su equipo.", recommendedForIndustry: ["Finanzas", "Salud", "Servicios"] },{ id: "tplNat1b", name: "Estándar Directa", body: "Les escribo para postularme al puesto de [Nombre del Puesto] que vi anunciado en [Dónde la viste].\n\nDespués de revisar la descripción del trabajo, estoy seguro de que mis [Número] años de experiencia en el sector y mis competencias en [Habilidad Clave] me convierten en un candidato ideal para esta oportunidad. Me entusiasma la posibilidad de contribuir a sus objetivos.", recommendedForIndustry: ["Tech", "Negocios"] },{ id: "tplNat1c", name: "Respuesta a Anuncio", body: "En respuesta a su anuncio publicado en [Medio de publicación], les presento mi candidatura para el puesto de [Nombre del Puesto].\n\nCuento con las cualificaciones y la experiencia requeridas, destacando mi capacidad en [Competencia específica del anuncio]. Adjunto mi currículum para su revisión y quedo a su disposición para una entrevista.", recommendedForIndustry: ["Negocios", "Servicios", "Tech", "Salud", "Finanzas"] }], "Carta espontánea o prospectiva": [{ id: "tplNat2", name: "Prospectiva General", body: "Me permito contactarles para expresar mi gran interés en su empresa y en posibles oportunidades laborales que puedan surgir en el área de [Tu Área de Interés].\n\nHe seguido de cerca su trayectoria y valoro enormemente su enfoque en [Algo que te guste de la empresa]. Adjunto mi CV para su consideración, con la esperanza de poder colaborar con ustedes en el futuro.", recommendedForIndustry: ["Tech", "Negocios"] },{ id: "tplNat2b", name: "Prospectiva Enfocada", body: "Aunque no he visto una vacante específica publicada, me gustaría presentar mi perfil para futuras oportunidades en el departamento de [Departamento Específico].\n\nMi experiencia en [Logro o proyecto relevante] creo que podría ser de gran utilidad para afrontar los desafíos de su sector. Estaría encantado de poder conversar sobre cómo mis habilidades podrían beneficiar a su equipo.", recommendedForIndustry: ["Tech", "Finanzas"] },{ id: "tplNat2c", name: "Espontánea (Alternativa)", body: "Movido por la admiración que siento por su trayectoria en el sector, me gustaría poner a su disposición mi perfil profesional.\n\nSoy un especialista en [Tu especialidad] con una fuerte motivación por la innovación y los resultados. Creo firmemente que mi incorporación a su equipo podría generar sinergias muy positivas. Quedo a su entera disposición para explorar posibles vías de colaboración.", recommendedForIndustry: ["Tech", "Negocios"] }], "Carta de autocandidatura": [{ id: "tplNat3", name: "Autocandidatura Directa", body: "Soy un profesional con [Número] años de experiencia en [Tu Sector] y les escribo para presentarles mi perfil, convencido de que mis capacidades en [Área de especialización] pueden aportar un gran valor a su equipo.\n\nMe gustaría tener la oportunidad de discutir cómo mi iniciativa y mis habilidades pueden contribuir al éxito de su empresa.", recommendedForIndustry: ["Negocios", "Servicios"] },{ id: "tplNat3b", name: "Para Consultora o Servicios", body: "Como profesional independiente especializado en [Tu área de consultoría], les escribo para ofrecerles mis servicios.\n\nMi enfoque se centra en optimizar [Área de optimización] y he ayudado a empresas como [Cliente anterior] a lograr [Logro cuantificable]. Me encantaría explorar cómo podría generar un impacto similar en su organización.", recommendedForIndustry: ["Negocios", "Servicios", "Finanzas"] }], "Carta por recomendación": [{ id: "tplCon1", name: "Recomendación Formal", body: "Me dirijo a usted por recomendación de [Nombre de quien te recomienda], [Cargo de quien te recomienda], quien consideró que mi perfil podría ser de su interés para la posición de [Nombre del Puesto] o futuras vacantes.\n\n[Nombre de quien te recomienda] y yo colaboramos en [Contexto de la colaboración], donde pude demostrar mis habilidades en [Habilidad demostrada]. Confío en que mi perfil se ajusta a las necesidades de su equipo.", recommendedForIndustry: ["Finanzas", "Salud", "Servicios", "Negocios", "Tech"] },{ id: "tplCon1b", name: "Referido (Más Directo)", body: "Le escribo por sugerencia de mi colega, [Nombre del referido], quien me informó sobre una posible necesidad en su equipo en el área de [Área].\n\nBasado en mi experiencia en [Experiencia relevante], [Nombre del referido] creyó que sería valioso que nos pusiéramos en contacto. Estaré encantado de conversar con usted cuando lo considere oportuno.", recommendedForIndustry: ["Tech", "Negocios"] }], "Carta de transición de carrera": [{ id: "tplCon2", name: "Transición de Carrera", body: "Tras una sólida trayectoria en el sector de [Tu Sector Anterior], he decidido reorientar mi carrera profesional hacia [Tu Nuevo Sector], un área que me apasiona y en la que deseo aplicar mis habilidades transferibles como [Habilidad Transferible 1] y [Habilidad Transferible 2].\n\nEstoy convencido de que mi capacidad de adaptación y mi experiencia pueden ser un activo valioso para su organización.", recommendedForIndustry: ["Tech", "Negocios", "Servicios"] }], "Carta de recién graduado o sin experiencia": [{ id: "tplCon3", name: "Recién Graduado Académico", body: "Como recién graduado en [Tu Carrera] por la [Tu Universidad], me dirijo a ustedes con gran entusiasmo para iniciar mi carrera profesional.\n\nDurante mi formación, destaqué en [Área académica o proyecto] y desarrollé una gran capacidad de aprendizaje y resolución de problemas. Estoy ansioso por aplicar mis conocimientos teóricos y mi motivación en un entorno práctico como el de su empresa.", recommendedForIndustry: ["Finanzas", "Salud"] },{ id: "tplCon3b", name: "Recién Graduado con Prácticas", body: "Recientemente finalicé mis estudios en [Tu Carrera] y busco activamente una oportunidad para aplicar las habilidades que adquirí durante mis prácticas en [Empresa de prácticas], donde fui responsable de [Tarea o logro relevante].\n\nEsta experiencia me proporcionó una base sólida en [Habilidad adquirida] y confirmó mi vocación por este sector. Estoy muy motivado para contribuir y seguir aprendiendo con su equipo.", recommendedForIndustry: ["Tech", "Negocios", "Servicios"] }], "Carta creativa o diferencial": [{ id: "tplEst1", name: "Creativa con Propuesta", body: "¿Buscan a alguien que piense fuera de la caja? Aquí estoy.\n\nMás que una carta formal, esto es una invitación a descubrir cómo mi pasión por [Tu Pasión] y mi habilidad para [Tu Habilidad Clave] pueden impulsar sus proyectos en el área de [Área de la Empresa]. De hecho, he pensado en una pequeña idea: [Menciona una idea breve]. Me encantaría hablar más al respecto.", recommendedForIndustry: ["Tech", "Negocios"] }] };
+
+        // --- LÓGICA DE LA INTERFAZ (SIN CAMBIOS) ---
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.7.107/pdf.worker.min.js`;
+        categoriaEl.addEventListener('change', () => { const grupo = categoriaEl.value; subcategoriaEl.innerHTML = '<option value="" disabled selected>Seleccione una subcategoría</option>'; categoriaDesc.textContent = ''; templatesEl.innerHTML = ''; if (CATEGORIAS[grupo]) { CATEGORIAS[grupo].forEach(item => { const opt = document.createElement('option'); opt.value = item.value; opt.textContent = item.value; subcategoriaEl.appendChild(opt); }); } });
+        const updateTemplates = () => { const sub = subcategoriaEl.value; const industry = industryEl.value; const found = Object.values(CATEGORIAS).flat().find(c => c.value === sub); categoriaDesc.textContent = found ? found.desc : ''; populateTemplates(sub, industry); }
+        subcategoriaEl.addEventListener('change', updateTemplates);
+        industryEl.addEventListener('change', updateTemplates);
+        function renderTemplateGroup(container, title, templates, isRecommended) { if (templates.length === 0) return; const heading = document.createElement('h6'); heading.className = 'font-semibold text-sm text-gray-800 mt-2 mb-1'; heading.textContent = title; container.appendChild(heading); templates.forEach(t => { const div = document.createElement('div'); div.className = 'template-tile'; div.innerHTML = isRecommended ? `⭐ ${t.name} <span class="text-xs font-normal text-green-700">(Recomendada)</span>` : t.name; div.dataset.tid = t.id; div.addEventListener('click', () => { document.querySelectorAll('.template-tile').forEach(x => x.classList.remove('selected')); div.classList.add('selected'); }); container.appendChild(div); }); }
+        function populateTemplates(sub, industry) { templatesEl.innerHTML = ''; if (!sub) return; const allTemplatesForSubcategory = PLANTILLAS[sub] || []; if (allTemplatesForSubcategory.length === 0) return; const recommended = []; const others = []; allTemplatesForSubcategory.forEach(tpl => { if (!industry || (tpl.recommendedForIndustry && tpl.recommendedForIndustry.includes(industry))) { recommended.push(tpl); } else { others.push(tpl); } }); renderTemplateGroup(templatesEl, 'Plantillas Recomendadas', recommended, true); renderTemplateGroup(templatesEl, 'Otras Opciones', others, false); }
+        function handleFileParse(file) { previewArea.innerText = "Procesando archivo, por favor espere..."; if (file.name.endsWith('.docx')) { const reader = new FileReader(); reader.onload = async (event) => { try { const arrayBuffer = event.target.result; const result = await window.mammoth.extractRawText({ arrayBuffer }); cvPaste.value = result.value; previewArea.innerText = "Archivo .docx procesado. El texto se ha cargado en el área correspondiente. Ya puede generar su carta."; } catch (e) { console.error(e); previewArea.innerText = "Error al procesar el archivo .docx."; } }; reader.readAsArrayBuffer(file); } else if (file.name.endsWith('.pdf')) { const reader = new FileReader(); reader.onload = async (event) => { try { const typedarray = new Uint8Array(event.target.result); const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise; let text = ''; for (let i = 1; i <= pdf.numPages; i++) { const page = await pdf.getPage(i); const content = await page.getTextContent(); text += content.items.map(it => it.str).join(' ') + '\n'; } cvPaste.value = text; previewArea.innerText = "Archivo .pdf procesado. El texto se ha cargado en el área correspondiente. Ya puede generar su carta."; } catch (e) { console.error(e); previewArea.innerText = "Error al procesar el archivo .pdf."; } }; reader.readAsArrayBuffer(file); } }
+
+        // --- SECCIÓN MODIFICADA: LÓGICA DE BOTONES Y GENERACIÓN ---
+        function extractName(cvText) {
+            if (!cvText) return '[Tu Nombre Completo]';
+            const lines = cvText.split('\n').map(l => l.trim());
+            const commonHeaders = ['curriculum vitae', 'cv', 'hoja de vida', 'resume', 'datos personales', 'información personal', 'perfil profesional'];
+
+            // 1. Búsqueda explícita de "Nombre:"
+            for (const line of lines) {
+                const lowerLine = line.toLowerCase();
+                if (lowerLine.startsWith('nombre:') || lowerLine.startsWith('name:')) {
+                    const potentialName = line.substring(line.indexOf(':') + 1).trim();
+                    if (potentialName) return potentialName;
+                }
+            }
+
+            // 2. Búsqueda inteligente en las primeras líneas
+            for (let i = 0; i < Math.min(lines.length, 5); i++) {
+                const line = lines[i];
+                const lowerLine = line.toLowerCase();
+
+                if (!line) continue; // Ignorar líneas vacías
+                if (commonHeaders.some(header => lowerLine.includes(header))) continue; // Ignorar cabeceras comunes
+                if (line.includes('@') || line.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)) continue; // Ignorar email o teléfono
+
+                // Asumir que una línea con 2 a 5 palabras es el nombre
+                const words = line.split(' ').filter(w => w);
+                if (words.length >= 2 && words.length <= 5) {
+                    return line;
+                }
+            }
+
+            // 3. Fallback a la primera línea no vacía si todo lo demás falla
+            const firstLine = lines.find(line => line);
+            if (firstLine) return firstLine;
+
+            return '[Tu Nombre Completo]'; // Valor por defecto final
         }
-    },
-    '2026': {
-        'persona_juridica': {
-            'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-            'retencion_fuente': [
-                { nit: [1], month: 1, day: 13, description: 'Retefuente Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'Retefuente Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'Retefuente Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'Retefuente Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'Retefuente Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'Retefuente Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'Retefuente Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'Retefuente Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'Retefuente Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'Retefuente Dic 2025' },
-            ]
-        },
-        'gran_contribuyente': {
-             'iva_bimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Nov-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Nov-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Nov-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Nov-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Nov-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Nov-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Nov-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Nov-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Nov-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Nov-Dic 2025' },
-            ],
-            'iva_cuatrimestral': [
-                { nit: [1], month: 1, day: 13, description: 'IVA Sep-Dic 2025' }, { nit: [2], month: 1, day: 14, description: 'IVA Sep-Dic 2025' }, { nit: [3], month: 1, day: 15, description: 'IVA Sep-Dic 2025' }, { nit: [4], month: 1, day: 16, description: 'IVA Sep-Dic 2025' }, { nit: [5], month: 1, day: 19, description: 'IVA Sep-Dic 2025' }, { nit: [6], month: 1, day: 20, description: 'IVA Sep-Dic 2025' }, { nit: [7], month: 1, day: 21, description: 'IVA Sep-Dic 2025' }, { nit: [8], month: 1, day: 22, description: 'IVA Sep-Dic 2025' }, { nit: [9], month: 1, day: 23, description: 'IVA Sep-Dic 2025' }, { nit: [0], month: 1, day: 26, description: 'IVA Sep-Dic 2025' },
-            ],
-        },
-        'persona_no_residente': {
-             'pagos_pes': [
-                { nit: ['all'], month: 1, day: 16, description: 'Pago anticipado PES (Nov-Dic 2025)' }
-            ]
-        }
-    }
-};
+        function generateFormattedDate() { const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]; const now = new Date(); const day = now.getDate(); const month = months[now.getMonth()]; const year = now.getFullYear(); return `[Coloca tu ciudad], ${day} de ${month} de ${year}`; }
 
-            // --- STATE & DOM ELEMENTS ---
-            let currentDate = new Date(2025, 0, 1);
-            let filteredEvents = [];
-            let isProUser = false;
+        document.getElementById('parseFileBtn').addEventListener('click', () => { const file = document.getElementById('fileInput').files[0]; if (file) { handleFileParse(file); } else { alert("Por favor, seleccione un archivo primero."); } });
+        document.getElementById('resetBtn').addEventListener('click', () => { location.reload(); });
 
-            const form = document.getElementById('taxForm');
-            const taxpayerTypeEl = document.getElementById('taxpayerType');
-            const nitInputEl = document.getElementById('nitInput');
-            const foreignAssetsEl = document.getElementById('foreignAssets');
-            const downloadPdfBtn = document.getElementById('downloadPdf');
-
-            const calendarEl = document.getElementById('calendar');
-            const monthYearEl = document.getElementById('monthYear');
-            const prevMonthBtn = document.getElementById('prevMonth');
-            const nextMonthBtn = document.getElementById('nextMonth');
-            const resultsEl = document.getElementById('results');
-
-            const toastEl = document.getElementById('toast');
-            const toastMessageEl = document.getElementById('toast-message');
-
-            // --- FUNCTIONS ---
-
-            const showToast = (message, isError = false) => {
-                toastMessageEl.textContent = message;
-                toastEl.className = `toast fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-600'} show`;
-                setTimeout(() => {
-                    toastEl.classList.remove('show');
-                }, 4000);
-            };
-
-            const renderCalendar = () => {
-                calendarEl.innerHTML = '';
-                const month = currentDate.getMonth();
-                const year = currentDate.getFullYear();
-
-                monthYearEl.textContent = new Date(year, month).toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
-
-                const firstDayOfMonth = new Date(year, month, 1).getDay();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-                const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                dayHeaders.forEach(day => {
-                    const dayEl = document.createElement('div');
-                    dayEl.className = 'font-bold text-gray-600 text-sm';
-                    dayEl.textContent = day;
-                    calendarEl.appendChild(dayEl);
-                });
-
-                for (let i = 0; i < firstDayOfMonth; i++) {
-                    calendarEl.appendChild(document.createElement('div'));
-                }
-
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dayEl = document.createElement('div');
-                    dayEl.textContent = day;
-                    dayEl.className = 'calendar-day p-2 cursor-pointer hover:bg-blue-100 rounded-full transition';
-
-                    const hasEvent = filteredEvents.some(event => event.day === day && event.month === month + 1 && event.year === year);
-                    if (hasEvent) {
-                        dayEl.classList.add('has-event');
-                    }
-                    calendarEl.appendChild(dayEl);
-                }
-            };
-
-            const displayResults = () => {
-                resultsEl.innerHTML = '';
-                if (filteredEvents.length === 0) {
-                    resultsEl.innerHTML = '<p class="text-gray-500">No se encontraron obligaciones para los filtros seleccionados.</p>';
-                    return;
-                }
-
-                const groupedByMonthAndYear = filteredEvents.reduce((acc, event) => {
-                    const key = `${event.year}-${String(event.month).padStart(2, '0')}`;
-                    if (!acc[key]) {
-                        acc[key] = {
-                            monthName: new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'long' }),
-                            year: event.year,
-                            events: []
-                        };
-                    }
-                    acc[key].events.push(event);
-                    return acc;
-                }, {});
-
-                Object.values(groupedByMonthAndYear).sort((a,b) => a.year - b.year || a.events[0].month - b.events[0].month).forEach(group => {
-                    const monthContainer = document.createElement('div');
-                    const monthTitle = document.createElement('h4');
-                    monthTitle.className = 'font-bold text-lg mt-4 capitalize';
-                    monthTitle.textContent = `${group.monthName} ${group.year}`;
-                    monthContainer.appendChild(monthTitle);
-
-                    const eventsContainer = document.createElement('div');
-                    eventsContainer.className = 'space-y-3 mt-2';
-
-                    group.events.sort((a, b) => a.day - b.day).forEach(event => {
-                        const eventEl = document.createElement('div');
-                        eventEl.className = 'flex items-center gap-4 p-3 bg-gray-50 rounded-lg';
-
-                        let googleButton = '';
-                        if (isProUser) {
-                           googleButton = `<button data-event='${JSON.stringify(event)}' title="Añadir a Google Calendar" class="google-btn flex-shrink-0 bg-white border border-gray-300 text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 16h-4v-4h4v4z"/></svg>
-                            </button>`;
-                        }
-
-                        eventEl.innerHTML = `
-                            <div class="flex-shrink-0 bg-blue-100 text-blue-700 rounded-lg w-12 h-12 flex flex-col items-center justify-center">
-                                <span class="font-bold text-xl">${event.day}</span>
-                                <span class="text-xs uppercase">${new Date(event.year, event.month - 1).toLocaleString('es-ES', { month: 'short' })}</span>
-                            </div>
-                            <div class="flex-grow">
-                                <p class="font-semibold">${event.description}</p>
-                                <p class="text-sm text-gray-500">Fecha Límite: ${event.day} de ${group.monthName} de ${event.year}</p>
-                            </div>
-                            ${googleButton}
-                        `;
-                        eventsContainer.appendChild(eventEl);
-                    });
-                    monthContainer.appendChild(eventsContainer);
-                    resultsEl.appendChild(monthContainer);
-                });
-            };
-
-            const handleGenerateSchedule = (e) => {
-                e.preventDefault();
-                const taxpayerType = taxpayerTypeEl.value;
-                const nit = nitInputEl.value;
-
-                if (taxpayerType !== 'persona_no_residente' && (nit === '' || !/^\d+$/.test(nit))) {
-                    showToast('Por favor, ingresa un NIT válido (solo números).', true);
-                    return;
-                }
-
-                const lastDigit = parseInt(nit.slice(-1), 10);
-                const lastTwoDigits = parseInt(nit.slice(-2), 10);
-                let events = [];
-                const categoriesToProcess = new Set();
-
-                // Determine categories based on taxpayer type and form inputs
-                if (taxpayerType === 'persona_no_residente') {
-                    categoriesToProcess.add('pagos_pes').add('declaracion_pes');
-                } else {
-                    categoriesToProcess.add('renta');
-                    if (document.getElementById('foreignAssets').checked) {
-                        categoriesToProcess.add('activos_exterior');
-                    }
-                }
-
-                if (taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente') {
-                    const ivaFrequency = document.querySelector('input[name="iva-frequency"]:checked').value;
-                    categoriesToProcess.add(ivaFrequency === 'bimestral' ? 'iva_bimestral' : 'iva_cuatrimestral');
-
-                    if (taxpayerType === 'persona_juridica') {
-                        categoriesToProcess.add('retencion_fuente');
-                    }
-
-                    if (document.getElementById('consumo').checked) categoriesToProcess.add('consumo');
-                    if (document.getElementById('bolsas').checked) categoriesToProcess.add('bolsas');
-                    if (document.getElementById('gasolina').checked) categoriesToProcess.add('gasolina');
-                    if (document.getElementById('carbono').checked) categoriesToProcess.add('carbono');
-                    if (document.getElementById('transferencia').checked) categoriesToProcess.add('precios_transferencia');
-                    if (document.getElementById('iva_exterior').checked) categoriesToProcess.add('iva_exterior');
-                    if (document.getElementById('patrimonio').checked) categoriesToProcess.add('patrimonio');
-                    if (document.getElementById('plasticos_uso_unico').checked) categoriesToProcess.add('plasticos_uso_unico');
-                    if (document.getElementById('bebidas_ultraprocesadas').checked) categoriesToProcess.add('bebidas_ultraprocesadas');
-                    if (document.getElementById('rub').checked) categoriesToProcess.add('rub');
-
-                    if (document.getElementById('rst').checked) {
-                        const rstType = document.querySelector('input[name="rst-type"]:checked').value;
-                        categoriesToProcess.add(rstType === 'anual' ? 'rst_anual' : 'rst_anticipo');
-                    }
-                }
-
-                for (const year in taxData) {
-                    if (!taxData.hasOwnProperty(year)) continue;
-                    const yearData = taxData[year];
-
-                    if (yearData[taxpayerType]) {
-                        const obligations = yearData[taxpayerType];
-                        categoriesToProcess.forEach(category => {
-                            if (obligations[category]) {
-                                obligations[category].forEach(event => {
-                                    const eventWithYear = { ...event, year: parseInt(year) };
-                                    let match = false;
-                                    if (taxpayerType === 'persona_no_residente') {
-                                        match = true;
-                                    } else if (taxpayerType === 'persona_natural') {
-                                        if (event.nit.includes(lastTwoDigits)) match = true;
-                                    } else {
-                                        if (event.nit.includes(lastDigit)) match = true;
-                                    }
-                                    if(match) events.push(eventWithYear);
-                                });
-                            }
-                        });
-                    }
-                }
-
-                // Deduplicate events as some obligations share dates (e.g. Renta and Activos)
-                const uniqueEvents = new Map();
-                events.forEach(event => {
-                    const key = `${event.year}-${event.month}-${event.day}-${event.description}`;
-                    uniqueEvents.set(key, event);
-                });
-                filteredEvents = Array.from(uniqueEvents.values());
-
-                if (filteredEvents.length > 0) {
-                    showToast(`Agenda generada con ${filteredEvents.length} obligaciones.`);
-                } else {
-                    showToast('No se encontraron obligaciones para tu selección.', true);
-                }
-                renderCalendar();
-                displayResults();
-            };
-
-            const handleDownloadPdf = () => {
-                if (filteredEvents.length === 0) {
-                    showToast('Primero genera una agenda para poder descargar el PDF.', true);
-                    return;
-                }
-
-                if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    console.error("PDF generation libraries not found on window object.");
-                    showToast("Error al generar PDF: librerías no encontradas.", true);
-                    return;
-                }
-
-                const { jsPDF } = window.jspdf;
-                const html2canvas = window.html2canvas;
-                const pdfContentEl = document.getElementById('pdf-content');
-
-                pdfContentEl.innerHTML = '';
-                const titleContainer = document.createElement('div');
-                titleContainer.className = 'text-center mb-6';
-                titleContainer.innerHTML = `
-                    <h1 class="text-3xl font-bold text-gray-800">AGENDA TRIBUTARIA</h1>
-                    <h2 class="text-xl text-gray-600">COLOMBIA 2025 - 2026</h2>
-                    <p class="text-sm text-gray-500 mt-1">NIT Termina en: ${nitInputEl.value.slice(-2)} (${taxpayerTypeEl.options[taxpayerTypeEl.selectedIndex].text})</p>
-                `;
-                pdfContentEl.appendChild(titleContainer);
-
-                const calendarGrid = document.createElement('div');
-                calendarGrid.className = 'grid grid-cols-4 gap-2';
-
-                const monthsToRender = Array.from({ length: 13 }, (_, i) => {
-                    const date = new Date(2025, i, 1);
-                    return { month: date.getMonth(), year: date.getFullYear() };
-                });
-
-                monthsToRender.forEach(({ month, year }) => {
-                    const monthContainer = document.createElement('div');
-                    monthContainer.className = 'border border-gray-200 p-1';
-                    const monthName = new Date(year, month).toLocaleString('es-ES', { month: 'long' }).toUpperCase();
-
-                    let monthHTML = `<h3 class="text-center font-bold bg-gray-700 text-white py-1 text-[10px]">${monthName} ${year}</h3>`;
-                    monthHTML += `<div class="grid grid-cols-7 text-center text-[8px] gap-px">`;
-
-                    const dayHeaders = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-                    dayHeaders.forEach(d => monthHTML += `<div class="font-bold">${d}</div>`);
-
-                    const firstDayOfMonth = new Date(year, month, 1).getDay();
-                    for (let i = 0; i < firstDayOfMonth; i++) {
-                        monthHTML += '<div></div>';
-                    }
-
-                    const daysInMonth = new Date(year, month + 1, 0).getDate();
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dayEvents = filteredEvents.filter(e => e.year === year && e.month === month + 1 && e.day === day);
-                        if (dayEvents.length > 0) {
-                            const eventType = getEventType(dayEvents[0].description);
-                            monthHTML += `
-                                <div class="relative w-6 h-6 mx-auto flex items-center justify-center text-[9px]">
-                                    <div class="absolute border-2 border-red-500 rounded-full w-full h-full"></div>
-                                    <div class="absolute -top-1.5 text-white text-[7px] px-1 rounded-full ${eventType.color}">
-                                        ${eventType.label}
-                                    </div>
-                                    ${day}
-                                </div>`;
-                        } else {
-                            monthHTML += `<div class="w-6 h-6 mx-auto flex items-center justify-center text-[9px]">${day}</div>`;
-                        }
-                    }
-                    monthHTML += `</div>`;
-                    monthContainer.innerHTML = monthHTML;
-                    calendarGrid.appendChild(monthContainer);
-                });
-
-                pdfContentEl.appendChild(calendarGrid);
-
-                showToast("Generando PDF... por favor espera.", false);
-                html2canvas(pdfContentEl, { scale: 3 })
-                    .then((canvas) => {
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF('p', 'mm', 'a4');
-                        const pdfWidth = pdf.internal.pageSize.getWidth();
-                        const canvasWidth = canvas.width;
-                        const canvasHeight = canvas.height;
-                        const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
-                        pdf.addImage(imgData, 'PNG', 5, 5, pdfWidth - 10, pdfHeight - 5);
-                        pdf.save(`agenda-tributaria-${nitInputEl.value || 'pes'}.pdf`);
-                    });
-            };
-
-            const getEventType = (description) => {
-                const desc = description.toLowerCase();
-                if (desc.includes('renta')) return { label: 'RENTA', color: 'bg-blue-500' };
-                if (desc.includes('iva')) return { label: 'IVA', color: 'bg-green-500' };
-                if (desc.includes('retefuente')) return { label: 'RETEF.', color: 'bg-red-500' };
-                if (desc.includes('activos')) return { label: 'ACTIVOS', color: 'bg-yellow-400' };
-                if (desc.includes('pes')) return { label: 'PES', color: 'bg-purple-500' };
-                if (desc.includes('consumo')) return { label: 'CONSUMO', color: 'bg-pink-500' };
-                if (desc.includes('carbono')) return { label: 'CARBONO', color: 'bg-gray-600' };
-                if (desc.includes('gasolina')) return { label: 'GAS', color: 'bg-orange-500' };
-                if (desc.includes('bolsas')) return { label: 'BOLSAS', color: 'bg-teal-500' };
-                if (desc.includes('transferencia')) return { label: 'TRANSF', color: 'bg-indigo-500' };
-                if (desc.includes('patrimonio')) return { label: 'PATRIM', color: 'bg-cyan-500' };
-                if (desc.includes('plasticos')) return { label: 'PLAST', color: 'bg-lime-500' };
-                if (desc.includes('bebidas')) return { label: 'BEBIDAS', color: 'bg-rose-500' };
-                if (desc.includes('rub')) return { label: 'RUB', color: 'bg-fuchsia-500' };
-                if (desc.includes('rst')) return { label: 'RST', color: 'bg-sky-500' };
-                return { label: 'OTRO', color: 'bg-gray-400' };
-            };
-
-            const handleCalendarNav = (direction) => {
-                currentDate.setMonth(currentDate.getMonth() + direction);
-                if (currentDate > new Date(2026, 0, 31) || currentDate < new Date(2025, 0, 1)) {
-                    currentDate.setMonth(currentDate.getMonth() - direction);
-                    return;
-                }
-                renderCalendar();
-            };
-
-            const checkProStatus = () => {
-                const params = new URLSearchParams(window.location.search);
-                if (params.get('payment') === 'success') {
-                    localStorage.setItem('isProUser', 'true');
-                    isProUser = true;
-                    showToast('¡Pago exitoso! Funciones Pro activadas.');
-                    window.history.replaceState(null, '', window.location.pathname);
-                } else {
-                    isProUser = localStorage.getItem('isProUser') === 'true';
-                }
-
-                if(isProUser) {
-                    document.getElementById('pro-section').classList.add('hidden');
-                    document.getElementById('pro-activated-section').classList.remove('hidden');
-                }
-            };
-
-            const updateFormUI = () => {
-                const taxpayerType = taxpayerTypeEl.value;
-                const companyQuestionsEl = document.getElementById('company-questions');
-                const foreignAssetsContainerEl = document.getElementById('foreignAssets').parentElement;
-
-                document.getElementById('nit-section').style.display = taxpayerType === 'persona_no_residente' ? 'none' : 'block';
-                document.getElementById('pes-section').style.display = taxpayerType === 'persona_no_residente' ? 'block' : 'none';
-
-                const showCompanyQuestions = taxpayerType === 'persona_juridica' || taxpayerType === 'gran_contribuyente';
-                companyQuestionsEl.style.display = showCompanyQuestions ? 'block' : 'none';
-
-                foreignAssetsContainerEl.style.display = 'flex';
-            };
-
-            // --- EVENT LISTENERS ---
-            form.addEventListener('submit', handleGenerateSchedule);
-            downloadPdfBtn.addEventListener('click', handleDownloadPdf);
-            prevMonthBtn.addEventListener('click', () => handleCalendarNav(-1));
-            nextMonthBtn.addEventListener('click', () => handleCalendarNav(1));
-            taxpayerTypeEl.addEventListener('change', updateFormUI);
-
-            document.getElementById('rst').addEventListener('change', (e) => {
-                document.getElementById('rst-options').style.display = e.target.checked ? 'block' : 'none';
-            });
-
-            resultsEl.addEventListener('click', function(e) {
-                const button = e.target.closest('.google-btn');
-                if (button) {
-                    const eventData = JSON.parse(button.dataset.event);
-                    const taxpayerType = taxpayerTypeEl.value;
-                    const nit = nitInputEl.value;
-
-                    const year = eventData.year;
-                    const month = String(eventData.month).padStart(2, '0');
-                    const day = String(eventData.day).padStart(2, '0');
-                    const startDate = `${year}${month}${day}`;
-                    const endDate = `${year}${month}${day}`;
-
-                    const title = encodeURIComponent(`Vencimiento: ${eventData.description}`);
-                    const detailsText = taxpayerType === 'persona_no_residente'
-                        ? `Recordatorio de obligación tributaria para PES (No Residente).`
-                        : `Recordatorio de obligación tributaria para el NIT terminado en ${nit.slice(-2)}.`;
-
-                    const details = encodeURIComponent(`${detailsText}\n\nObligación: ${eventData.description}.\n\nGenerado por Agenda Tributaria Interactiva.`);
-                    const reminderMinutes = 48 * 60; // 2-day reminder
-
-                    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&crm=REMIND&reminders.minutes=${reminderMinutes}`;
-
-                    window.open(url, '_blank');
-                }
-            });
-
-            // --- INITIALIZATION ---
-            checkProStatus();
-            updateFormUI();
-            renderCalendar();
-            document.getElementById('rst-options').style.display = document.getElementById('rst').checked ? 'block' : 'none';
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            const selectedTile = document.querySelector('.template-tile.selected');
+            const currentCvText = cvPaste.value;
+            if (!selectedTile) { alert('Por favor seleccione una plantilla.'); return; }
+            if (!currentCvText.trim()) { alert('Por favor suba un archivo de CV o pegue el texto en el área designada.'); return; }
+            const tid = selectedTile.dataset.tid;
+            let foundTemplate;
+            for (const key in PLANTILLAS) { foundTemplate = (PLANTILLAS[key] || []).find(p => p.id === tid); if (foundTemplate) break; }
+            if (foundTemplate) {
+                const userName = extractName(currentCvText);
+                const formattedDate = generateFormattedDate();
+                const header = `[A quien va dirigida]\n[coloca por favor la direccion]\n[Coloca el cargo si lo sabes]\n\n`;
+                const dateLine = `${formattedDate}\n\n`;
+                const body = foundTemplate.body;
+                const closing = `\n\nAtentamente,\n\n${userName}`;
+                const fullLetter = header + dateLine + body + closing;
+                const separator = `\n\n========================================\nCOPIA DE TU CV PARA REFERENCIA:\n========================================\n\n`;
+                previewArea.innerText = fullLetter + separator + currentCvText;
+            } else {
+                alert('Error: No se pudo encontrar la plantilla seleccionada.');
+            }
         });
-    </script>
+
+        document.getElementById('downloadDocx').addEventListener('click', () => {
+            const textToExport = previewArea.innerText;
+            if (!textToExport) { alert("No hay contenido para exportar. Por favor, genera una carta primero."); return; }
+
+            // Usar TextRun explícitamente para cada línea para mayor robustez.
+            const paragraphs = textToExport.split('\n').map(line =>
+                new docx.Paragraph({
+                    children: [new docx.TextRun(line)]
+                })
+            );
+
+            const doc = new docx.Document({
+                sections: [{
+                    children: paragraphs,
+                }],
+            });
+
+            docx.Packer.toBlob(doc).then(blob => {
+                saveAs(blob, "carta-de-presentacion.docx");
+                console.log("Documento .docx generado y listo para descargar.");
+            }).catch(err => {
+                console.error("Error al generar el .docx:", err);
+                alert("Hubo un error al generar el archivo .docx. Revisa la consola para más detalles.");
+            });
+        });
+
+        document.getElementById('copyHtmlBtn').addEventListener('click', () => {
+            const textToCopy = previewArea.innerText;
+            if (!textToCopy) { alert("No hay contenido para copiar."); return; }
+            const htmlContent = textToCopy.split('\n').map(line => `<p>${line.trim() || '&nbsp;'}</p>`).join('');
+            navigator.clipboard.writeText(htmlContent).then(() => {
+                alert("¡Carta copiada al portapapeles como HTML!");
+            }).catch(err => { console.error('Error al copiar HTML: ', err); alert("Hubo un error al intentar copiar."); });
+        });
+
+        document.getElementById('copyTextBtn').addEventListener('click', () => {
+            const textToCopy = previewArea.innerText;
+            if (!textToCopy) { alert("No hay contenido para copiar."); return; }
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("¡Carta copiada al portapapeles como Texto Plano!");
+            }).catch(err => { console.error('Error al copiar Texto: ', err); alert("Hubo un error al intentar copiar."); });
+        });
+    });
+  </script>
 </body>
 </html>
