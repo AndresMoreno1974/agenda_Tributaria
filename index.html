@@ -120,25 +120,28 @@
             // 2. Búsqueda inteligente en las primeras líneas
             for (let i = 0; i < Math.min(lines.length, 5); i++) {
                 const line = lines[i];
+                if (!line) continue;
                 const lowerLine = line.toLowerCase();
 
-                if (!line) continue; // Ignorar líneas vacías
-                if (commonHeaders.some(header => lowerLine.includes(header))) continue; // Ignorar cabeceras comunes
-                if (line.includes('@') || line.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)) continue; // Ignorar email o teléfono
+                if (commonHeaders.some(header => lowerLine.includes(header))) continue;
+                if (line.includes('@') || line.match(/\d{3,}/)) continue;
 
                 // Asumir que una línea con 2 a 5 palabras es el nombre
                 const words = line.split(' ').filter(w => w);
                 if (words.length >= 2 && words.length <= 5) {
-                    return line;
+                    return line.split(/Asistente|Coordinador|Especialista|\|/)[0].trim();
                 }
             }
 
             // 3. Fallback a la primera línea no vacía si todo lo demás falla
             const firstLine = lines.find(line => line);
-            if (firstLine) return firstLine;
+            if (firstLine) {
+                return firstLine.split(/Asistente|Coordinador|Especialista|\|/)[0].trim();
+            }
 
-            return '[Tu Nombre Completo]'; // Valor por defecto final
+            return '[Tu Nombre Completo]';
         }
+
         function generateFormattedDate() { const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]; const now = new Date(); const day = now.getDate(); const month = months[now.getMonth()]; const year = now.getFullYear(); return `[Coloca tu ciudad], ${day} de ${month} de ${year}`; }
 
         document.getElementById('parseFileBtn').addEventListener('click', () => { const file = document.getElementById('fileInput').files[0]; if (file) { handleFileParse(file); } else { alert("Por favor, seleccione un archivo primero."); } });
@@ -149,18 +152,27 @@
             const currentCvText = cvPaste.value;
             if (!selectedTile) { alert('Por favor seleccione una plantilla.'); return; }
             if (!currentCvText.trim()) { alert('Por favor suba un archivo de CV o pegue el texto en el área designada.'); return; }
+
             const tid = selectedTile.dataset.tid;
             let foundTemplate;
-            for (const key in PLANTILLAS) { foundTemplate = (PLANTILLAS[key] || []).find(p => p.id === tid); if (foundTemplate) break; }
+            for (const key in PLANTILLAS) {
+                foundTemplate = (PLANTILLAS[key] || []).find(p => p.id === tid);
+                if (foundTemplate) break;
+            }
+
             if (foundTemplate) {
                 const userName = extractName(currentCvText);
                 const formattedDate = generateFormattedDate();
-                const header = `[A quien va dirigida]\n[coloca por favor la direccion]\n[Coloca el cargo si lo sabes]\n\n`;
+
+                const header = `[A quien va dirigida]\n[Coloca por favor la dirección]\n[Coloca el cargo si lo sabes]\n\n`;
                 const dateLine = `${formattedDate}\n\n`;
                 const body = foundTemplate.body;
                 const closing = `\n\nAtentamente,\n\n${userName}`;
+
                 const fullLetter = header + dateLine + body + closing;
+
                 const separator = `\n\n========================================\nCOPIA DE TU CV PARA REFERENCIA:\n========================================\n\n`;
+
                 previewArea.innerText = fullLetter + separator + currentCvText;
             } else {
                 alert('Error: No se pudo encontrar la plantilla seleccionada.');
