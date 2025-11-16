@@ -1,0 +1,494 @@
+<!-- WIDGET CHECKLIST CIERRE CONTABLE 2025 – COMPLETO Y OPTIMIZADO PARA ELEMENTOR -->
+
+<style>
+  .cc25-container {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f9fafb;
+    padding: 20px;
+    color: #111827;
+  }
+  .cc25-box {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-top: 20px;
+  }
+  .cc25-item {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 0;
+  }
+  .cc25-item:last-child { border-bottom: none; }
+  .cc25-item input[type="text"] {
+    width: 80%;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+  }
+  .cc25-select,
+  .cc25-input {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    width: 100%;
+    margin-top: 10px;
+  }
+  .cc25-actions button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 8px;
+    margin-top: 10px;
+  }
+  .cc25-actions button:hover { background: #1e40af; }
+  .cc25-delete {
+    background: #ef4444 !important;
+  }
+  .cc25-subtitle { font-weight:600; margin:8px 0 }
+  .cc25-empty { color:#6b7280; font-size:14px }
+</style>
+
+<div class="cc25-container">
+  <h2 style="text-align:center; margin-bottom:15px;">Checklist Cierre Contable 2025</h2>
+
+  <label>Selecciona tipo de checklist:</label>
+  <select id="cc25Fase" class="cc25-select">
+    <option value="previa">CHECKLIST - FASE PREVIA (Noviembre)</option>
+    <option value="conciliaciones">FASE DE CONCILIACIONES</option>
+    <option value="ajustes">FASE DE AJUSTES Y PROVISIONES</option>
+    <option value="estados">FASE DE ESTADOS FINANCIEROS</option>
+    <option value="tributaria">CONCILIACIÓN TRIBUTARIA</option>
+    <option value="legalizacion">LEGALIZACIÓN Y PRESENTACIÓN</option>
+    <option value="ejecucion">CHECKLIST - FASE DE EJECUCIÓN (Diciembre)</option>
+    <option value="post">CHECKLIST - FASE POSTERIOR (Enero)</option>
+    <option value="anexos">ANEXOS Y SOPORTES</option>
+  </select>
+
+  <label>Selecciona subcategoría:</label>
+  <select id="cc25Sub" class="cc25-select"></select>
+
+  <div id="cc25Checklist" class="cc25-box"></div>
+
+  <div class="cc25-actions">
+    <button type="button" onclick="cc25Agregar()">Agregar Ítem</button>
+    <button type="button" onclick="cc25Excel()">Exportar a Excel</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.0.1/docx.min.js">
+// ========================================================================
+// COMPARTIR (WEB SHARE API) Y ENVIAR POR CORREO + ADJUNTAR DOCX SI ES POSIBLE
+// ========================================================================
+async function cc25Compartir(){
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  const items = [...document.querySelectorAll('#cc25Checklist input[type="text"]')].map(i => '• ' + i.value).join("
+");
+
+  const texto = `Checklist ${fase.toUpperCase()} - ${sub}
+
+${items}`;
+
+  // GENERAR DOCX PARA COMPARTIR
+  let file;
+  try{
+    file = await cc25GenerarDocxFile(fase, sub);
+  }catch{}
+
+  if(navigator.share){
+    try{
+      if(file){
+        await navigator.share({
+          title: 'Checklist Cierre Contable 2025',
+          text: texto,
+          files: [file]
+        });
+      } else {
+        await navigator.share({ title: 'Checklist Cierre Contable 2025', text: texto });
+      }
+    }catch{}
+  } else {
+    alert('Tu dispositivo no soporta compartir directamente con archivo adjunto');
+  }
+}
+
+async function cc25EnviarCorreo(){
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  const items = [...document.querySelectorAll('#cc25Checklist input[type="text"]')].map(i => '%0A• ' + encodeURIComponent(i.value)).join('');
+  const subject = encodeURIComponent(`Checklist ${fase} - ${sub}`);
+  const body = `Checklist%20${fase}%20-%20${sub}%0A${items}`;
+
+  // Intento de adjuntar archivo vía Web Share API
+  try{
+    const file = await cc25GenerarDocxFile(fase, sub);
+    if(navigator.share && file){
+      await navigator.share({
+        title: subject,
+        text: decodeURIComponent(body),
+        files: [file]
+      });
+      return;
+    }
+  }catch{}
+
+  // Fallback universal sin adjunto
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}(){
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  const items = [...document.querySelectorAll('#cc25Checklist input[type="text"]')].map(i => '%0A• ' + encodeURIComponent(i.value)).join('');
+  const subject = encodeURIComponent(`Checklist ${fase} - ${sub}`);
+  const body = `Checklist%20${fase}%20-%20${sub}%0A${items}`;
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// =======================================================================================
+// ESTRUCTURA COMPLETA DE FASES (PLANTILLA CON SUBCATEGORÍAS EN PREFIX 'Sub:')
+// =======================================================================================
+const cc25Fases = {
+  previa: [
+    'General: Designar Jefe de Cierre y equipo de soporte',
+    'General: Crear cronograma con fechas y responsables específicos',
+    'General: Distribuir manual de cierre a todo el personal involucrado',
+    'General: Solicitar a departamentos la documentación pendiente de registro',
+    'General: Verificar que el sistema contable está actualizado con transacciones de octubre',
+    'General: Resolver inconsistencias en períodos anteriores',
+    'General: Preparar plantilla de seguimiento en Excel',
+    'General: Establecer reuniones semanales de seguimiento'
+  ],
+
+  conciliaciones: [
+    'Tesorería y Efectivo: Conciliar saldo banco vs. libro mayor diciembre',
+    'Tesorería y Efectivo: Identificar y resolver diferencias (cheques en tránsito, depósitos no registrados)',
+    'Tesorería y Efectivo: Obtener confirmación oficial de bancos (circularización bancaria)',
+    'Tesorería y Efectivo: Revisar movimientos de efectivo en tránsito',
+    'Tesorería y Efectivo: Validar saldos en moneda extranjera',
+    'Tesorería y Efectivo: Documentar todas las diferencias encontradas',
+
+    'Cuentas por Cobrar: Obtener reporte de cuentas por cobrar al 31/12/2025',
+    'Cuentas por Cobrar: Analizar antigüedad de saldos',
+    'Cuentas por Cobrar: Identificar cuentas de dudosa recuperación',
+    'Cuentas por Cobrar: Circularizar clientes principales (mínimo 80% del saldo)',
+    'Cuentas por Cobrar: Documentar respuestas de clientes',
+    'Cuentas por Cobrar: Registrar acuerdos de pago posteriores al cierre',
+    'Cuentas por Cobrar: Calcular deterioro según política contable',
+
+    'Cuentas por Pagar: Obtener reporte de cuentas por pagar',
+    'Cuentas por Pagar: Cruzar con facturación recibida de proveedores',
+    'Cuentas por Pagar: Circularizar proveedores principales',
+    'Cuentas por Pagar: Identificar facturas recibidas posteriores al cierre pero del período',
+    'Cuentas por Pagar: Validar notas crédito de proveedores',
+    'Cuentas por Pagar: Documentar compromisos de compra no facturados',
+
+    'Inventarios: Planificar toma física de inventarios (últimas dos semanas de diciembre)',
+    'Inventarios: Preparar instructivos a almacén',
+    'Inventarios: Tomar inventario físico',
+    'Inventarios: Registrar acta de inventario',
+    'Inventarios: Conciliar con kardex/sistema',
+    'Inventarios: Ajustar diferencias encontradas',
+    'Inventarios: Documentar motivos de diferencias',
+
+    'Activos Fijos: Obtener listado de activos fijos del sistema',
+    'Activos Fijos: Verificar depreciación mensual calculada',
+    'Activos Fijos: Validar que activos están efectivamente en uso',
+    'Activos Fijos: Hacer revisión física de activos críticos',
+    'Activos Fijos: Calcular deterioro si hay indicios',
+    'Activos Fijos: Documentar altas/bajas del período',
+    'Activos Fijos: Actualizar matriz de activos fijos',
+
+    'Inversiones y Valores: Obtener valuación de inversiones al 31/12/2025',
+    'Inversiones y Valores: Calcular valúo razonable si aplica',
+    'Inversiones y Valores: Obtener confirmación de valores en poder de terceros',
+    'Inversiones y Valores: Documentar cambios en composición de cartera'
+  ],
+
+  ajustes: [
+    'Nómina y Pasivos Laborales: Validar últimas nóminas del año registradas correctamente',
+    'Nómina y Pasivos Laborales: Calcular provisión prima de servicios: 8.33% del valor proporcional',
+    'Nómina y Pasivos Laborales: Calcular provisión cesantías: 8.33% acumulado',
+    'Nómina y Pasivos Laborales: Calcular provisión intereses s/cesantías: 12% sobre cesantías',
+    'Nómina y Pasivos Laborales: Calcular provisión vacaciones: 4.17% del valor proporcional',
+    'Nómina y Pasivos Laborales: Validar que todos los empleados estén incluidos',
+    'Nómina y Pasivos Laborales: Documentar cálculos en archivo soporte',
+
+    'Impuestos: Validar retenciones en la fuente practicadas mes a mes',
+    'Impuestos: Conciliar retenciones pagadas con declaraciones bimestrales/mensuales',
+    'Impuestos: Obtener valor de UVT 2025 para cálculos ($49,799)',
+    'Impuestos: Calcular valor de ICA pagado en el año',
+    'Impuestos: Documentar beneficios tributarios aplicables',
+    'Impuestos: Proyectar base gravable renta (ingresos menos costos y gastos deducibles)',
+    'Impuestos: Calcular impuesto sobre la renta: (Base gravable × 35%) - Anticipo pagado',
+    'Impuestos: Registrar pasivo tributario al 31/12/2025',
+
+    'Diferencia en Cambio: Obtener TRM oficial BANREP al 31/12/2025',
+    'Diferencia en Cambio: Revalúo todas las cuentas en USD',
+    'Diferencia en Cambio: Identificar diferencias favorable/desfavorable',
+    'Diferencia en Cambio: Contabilizar ganancia o pérdida por diferencia en cambio',
+    'Diferencia en Cambio: Documentar TRM utilizada',
+
+    'Otras Provisiones: Revisar garantías existentes que requieran provisión',
+    'Otras Provisiones: Evaluar contingencias legales',
+    'Otras Provisiones: Revisar contratos con obligaciones futuras',
+    'Otras Provisiones: Documentar criterio de reconocimiento según NIC 37/Sección 21',
+
+    'Documentos Soporte Pendientes: Solicitar facturas pendientes de proveedores',
+    'Documentos Soporte Pendientes: Registrar gastos devengados del período',
+    'Documentos Soporte Pendientes: Validar que todos los gastos tengan soporte',
+    'Documentos Soporte Pendientes: Documentar excepciones y justificaciones'
+  ],
+
+  estados: [
+    'Elaboración de Estados: Estado de Situación Financiera al 31/12/2025',
+    'Elaboración de Estados: Estado del Resultado Integral',
+    'Elaboración de Estados: Estado de Cambios en el Patrimonio',
+    'Elaboración de Estados: Estado de Flujos de Efectivo (método directo o indirecto)',
+    'Elaboración de Estados: Notas a los Estados Financieros',
+
+    'Validaciones de Estados Financieros: Verificar ecuación contable: Activos = Pasivos + Patrimonio',
+    'Validaciones de Estados Financieros: Validar que todos los saldos coinciden con libro mayor',
+    'Validaciones de Estados Financieros: Revisar comparabilidad con período anterior',
+    'Validaciones de Estados Financieros: Análisis vertical: % de cada línea vs. total',
+    'Validaciones de Estados Financieros: Análisis horizontal: variación año a año',
+    'Validaciones de Estados Financieros: Ratios financieros: liquidez, endeudamiento, rentabilidad',
+
+    'Notas a Estados Financieros: Nota 1: Políticas contables significativas',
+    'Notas a Estados Financieros: Nota 2: Juicios y estimaciones críticas',
+    'Notas a Estados Financieros: Nota 3: Desglose de activos fijos y depreciación',
+    'Notas a Estados Financieros: Nota 4: Análisis de cuentas por cobrar y deterioro',
+    'Notas a Estados Financieros: Nota 5: Composición de pasivos',
+    'Notas a Estados Financieros: Nota 6: Pasivos laborales y provisiones',
+    'Notas a Estados Financieros: Nota 7: Impuestos diferidos (si aplica)',
+    'Notas a Estados Financieros: Nota 8: Compromisos y contingencias',
+    'Notas a Estados Financieros: Nota 9: Eventos posteriores al cierre',
+    'Notas a Estados Financieros: Nota 10: Relacionadas (si aplica)'
+  ],
+
+  tributaria: [
+    'General: Obtener reporte de IVA descontable mes a mes',
+    'General: Conciliar con declaraciones de IVA presentadas',
+    'General: Validar IVA generado en facturación',
+    'General: Calcular IVA neto a pagar/recuperar en declaración anual',
+    'General: Obtener certificados de retención en la fuente soportados',
+    'General: Cruzar retenciones practicadas con certificados',
+    'General: Validar todas las bases gravables para impuesto de renta',
+    'General: Identificar diferencias permanentes (no deducibles, exentos)',
+    'General: Identificar diferencias temporarias (aceleradas, diferidas)',
+    'General: Preparar cuadro de conciliación fiscal (formato 2516)',
+    'General: Documentar cada diferencia con NIT o referencia legal'
+  ],
+
+  legalizacion: [
+    'General: Imprimir y encuadernar Libro Diario',
+    'General: Imprimir y encuadernar Libro Inventarios y Cuentas Anuales',
+    'General: Obtener firmas del Representante Legal',
+    'General: Obtener firmas del Contador Público',
+    'General: Obtener firmas del Revisor Fiscal (si existe)',
+    'General: Llevar libros a Registro Mercantil para legalización',
+    'General: Conservar copia de comprobante de legalización',
+    'General: Preparar declaración de renta (Formulario 110)',
+    'General: Preparar formato 2516 (conciliación fiscal)',
+    'General: Preparar información exógena según formato DIAN',
+    'General: Hacer backup de toda la información',
+    'General: Archivar documentación de cierre'
+  ],
+
+  ejecucion: [ 'General: Causación completa diciembre', 'General: Cruce de saldos interáreas', 'General: Validación de facturación pendiente' ],
+
+  post: [ 'General: Revisión final enero', 'General: Ajustes finales', 'General: Preparación entrega a auditoría' ],
+
+  anexos: [ 'General: Soportes contables', 'General: Reportes auxiliares', 'General: Certificaciones internas', 'General: Documentos de control interno' ]
+};
+
+let cc25Actual = [];
+
+// =======================================================================================
+// SUBCATEGORÍAS AUTOMÁTICAS Y LÓGICA
+// =======================================================================================
+function cc25GetSubcategorias(fase) {
+  const items = cc25Fases[fase] || [];
+  const subs = new Set();
+  items.forEach(i => {
+    if(i.includes(':')) subs.add(i.split(':')[0].trim());
+    else subs.add('General');
+  });
+  return Array.from(subs);
+}
+
+function cc25ActualizarSubSelect(){
+  const fase = document.getElementById('cc25Fase').value;
+  const subSelect = document.getElementById('cc25Sub');
+  const subs = cc25GetSubcategorias(fase);
+  subSelect.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function cc25ActualizarItems(){
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  const items = cc25Fases[fase] || [];
+
+  cc25Actual = items.filter(i => {
+    if(sub === 'General') return i.startsWith('General:') || !i.includes(':');
+    return i.startsWith(sub + ':');
+  }).map(i => {
+    // remover prefijo 'Sub: ' si existe
+    return i.includes(':') ? i.split(':').slice(1).join(':').trim() : i;
+  });
+
+  cc25Render();
+}
+
+// ========================================================================
+// RENDERIZAR
+// ========================================================================
+function cc25Render() {
+  const box = document.getElementById('cc25Checklist');
+  box.innerHTML = '';
+
+  if(cc25Actual.length === 0){
+    box.innerHTML = '<div class="cc25-empty">No hay ítems en esta subcategoría.</div>';
+    return;
+  }
+
+  cc25Actual.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'cc25-item';
+    const safe = String(item).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    div.innerHTML = `
+      <div style="flex:1; display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="cc25chk${i}">
+        <input type="text" value="${safe}" data-idx="${i}">
+      </div>
+      <button class="cc25-delete" type="button" data-idx="${i}">🗑</button>
+    `;
+
+    box.appendChild(div);
+  });
+
+  // attach delete listeners
+  box.querySelectorAll('.cc25-delete').forEach(btn => btn.addEventListener('click', ev => {
+    const idx = Number(ev.currentTarget.dataset.idx);
+    cc25Eliminar(idx);
+  }));
+}
+
+// ========================================================================
+// FUNCIONES CRUD
+// ========================================================================
+function cc25Agregar() {
+  cc25Actual.push('Nuevo ítem...');
+  cc25Render();
+}
+
+function cc25Eliminar(i) {
+  cc25Actual.splice(i, 1);
+  cc25Render();
+}
+
+// ========================================================================
+// GUARDAR / CARGAR (LOCALSTORAGE)
+// ========================================================================
+function cc25Guardar() {
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  // reconstruir la estructura completa: reemplazar la parte correspondiente en cc25Fases[fase]
+  const itemsText = [...document.querySelectorAll('#cc25Checklist input[type="text"]')].map(i => i.value);
+
+  // crear prefijos
+  const prefixed = itemsText.map(t => `${sub}: ${t}`);
+
+  // eliminar antiguos de la misma sub y reemplazar
+  const original = cc25Fases[fase] || [];
+  const filtered = original.filter(i => {
+    if(i.includes(':')) return !i.startsWith(sub + ':');
+    return sub !== 'General';
+  });
+  cc25Fases[fase] = [...filtered, ...prefixed];
+
+  // guardar todo el array del fase en localStorage
+  localStorage.setItem('cc25_' + fase, JSON.stringify(cc25Fases[fase]));
+  alert('Checklist guardado para fase: ' + fase + ' / sub: ' + sub);
+}
+
+function cc25Cargar() {
+  const fase = document.getElementById('cc25Fase').value;
+  const loaded = localStorage.getItem('cc25_' + fase);
+  if(!loaded) return alert('No hay checklist guardado para esta fase');
+  try{
+    cc25Fases[fase] = JSON.parse(loaded);
+    cc25ActualizarSubSelect();
+    cc25ActualizarItems();
+  } catch(e){
+    alert('Error cargando datos guardados');
+  }
+}
+
+// ========================================================================
+// EXPORTAR WORD
+// ========================================================================
+async function cc25Word() {
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  const items = [...document.querySelectorAll('#cc25Checklist input[type="text"]')].map(i => i.value);
+
+  if(!window.docx){ alert('La librería docx no está cargada'); return; }
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+
+  const doc = new Document({
+    sections: [{
+      children: [
+        new Paragraph({ children: [ new TextRun({ text: `Checklist ${fase.toUpperCase()} - ${sub}`, bold: true, size: 28 }) ], heading: HeadingLevel.HEADING_1 }),
+        ...items.map(t => new Paragraph({ children: [ new TextRun(`☐ ${t}`) ] }))
+      ]
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `Checklist_${fase}_${sub}.docx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+// ========================================================================
+// EXPORTAR EXCEL
+// ========================================================================
+function cc25Excel() {
+  const fase = document.getElementById('cc25Fase').value;
+  const sub = document.getElementById('cc25Sub').value;
+  const rows = [...document.querySelectorAll('#cc25Checklist input[type="text"]')].map((e, idx) => ({
+    'Ítem': e.value,
+    'Marcado': document.getElementById('cc25chk' + idx)?.checked ? 'Sí' : 'No'
+  }));
+
+  if(!window.XLSX){ alert('La librería XLSX no está cargada'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Checklist');
+  XLSX.writeFile(wb, `Checklist_${fase}_${sub}.xlsx`);
+}
+
+// Iniciar estado inicial
+cc25ActualizarSubSelect();
+// seleccionar primer sub y renderizar items
+if(document.getElementById('cc25Sub').options.length > 0){
+  document.getElementById('cc25Sub').selectedIndex = 0;
+}
+cc25ActualizarItems();
+
+// listeners
+document.getElementById('cc25Fase').addEventListener('change', () => { cc25ActualizarSubSelect(); cc25ActualizarItems(); });
+document.getElementById('cc25Sub').addEventListener('change', cc25ActualizarItems);
+</script>
