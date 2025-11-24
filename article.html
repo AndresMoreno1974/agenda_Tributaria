@@ -1,0 +1,722 @@
+<style>
+    /* ------------------------------------------- */
+    /* CSS: AJUSTES FINALES Y EMPAQUETADO */
+    /* ------------------------------------------- */
+
+    /* Estrategia de encapsulamiento: Solución a conflictos de temas WP */
+    .transfer-pricing-article-wrapper-final {
+        max-width: 1300px;
+        margin: 0 auto !important;
+        position: relative;
+        padding: 0;
+        overflow: visible;
+        background-color: #ffffff !important;
+    }
+
+    .transfer-pricing-article {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #212529;
+        line-height: 1.6;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Variables del tema */
+    .transfer-pricing-article {
+        --primary-color: #004d40;
+        --secondary-color: #ffc107;
+        --text-color: #212529;
+        --font-size-body: 0.9rem;
+        --menu-width: 200px;
+        --menu-gap: 20px;
+        --menu-reserved-space: calc(var(--menu-width) + var(--menu-gap)); /* 220px */
+    }
+
+    /* Reseteo y Estilos Generales */
+    .transfer-pricing-article *,
+    .transfer-pricing-article *:before,
+    .transfer-pricing-article *:after {
+        box-sizing: border-box;
+    }
+
+    .transfer-pricing-article .container {
+        max-width: 100% !important;
+        padding: 1rem !important;
+    }
+
+    .transfer-pricing-article .content-section p,
+    .transfer-pricing-article .content-section ul,
+    .transfer-pricing-article .content-section ol,
+    .transfer-pricing-article .content-section .answer,
+    .transfer-pricing-article table {
+        font-size: var(--font-size-body) !important;
+        line-height: 1.5 !important;
+    }
+
+    /* --- Ocultamiento de Etiquetas de Citación --- */
+    .transfer-pricing-article cite_start,
+    .transfer-pricing-article cite_end,
+    .transfer-pricing-article [data-cite],
+    .transfer-pricing-article [data-source] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* --- Títulos (Jerarquía Visual Final) --- */
+    .transfer-pricing-article h1 {
+        font-size: 1.03rem !important;
+        font-weight: 600 !important;
+        padding-bottom: 0.2rem !important;
+        border-bottom: 2px solid var(--secondary-color) !important;
+        margin-bottom: 0.65rem !important;
+        margin-top: 0.6rem !important;
+        line-height: 1.2 !important;
+        color: var(--primary-color) !important;
+    }
+
+    .transfer-pricing-article h2 {
+        font-size: 0.88rem !important;
+        font-weight: 600 !important;
+        margin-top: 0.6rem !important;
+        margin-bottom: 0.45rem !important;
+        line-height: 1.2 !important;
+        color: var(--primary-color) !important;
+    }
+
+    .transfer-pricing-article h3 {
+        font-size: 0.77rem !important;
+        color: var(--text-color) !important;
+        border-left: 4px solid var(--secondary-color) !important;
+        padding-left: 8px !important;
+        font-weight: 600 !important;
+        margin-top: 0.52rem !important;
+        margin-bottom: 0.32rem !important;
+    }
+
+    /* --- Tablas y Botón Modal --- */
+    .table-responsive {
+        overflow-x: auto !important;
+        margin: 1rem 0 !important;
+    }
+
+    .transfer-pricing-article table {
+        font-size: 0.8rem !important;
+        min-width: 600px !important;
+        border-collapse: collapse !important;
+    }
+
+    .transfer-pricing-article th {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+    }
+
+    .transfer-pricing-article .view-full-table {
+        display: none; /* Ocultar por defecto, se mostrará en móvil */
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+        background-color: #f1f1f1;
+        border: 1px solid #ccc;
+        padding: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+
+    /* --- Lista de Anclas Lateral (Desktop: Posicionamiento Final) --- */
+    .transfer-pricing-article .anchor-menu-desktop {
+        position: absolute !important;
+        right: -10px !important;
+        width: calc(var(--menu-width) + 30px) !important;
+        top: 250px !important;
+        padding: 0.7rem !important;
+        display: none !important;
+        max-height: calc(100vh - 280px) !important;
+        overflow-y: auto !important;
+        box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1) !important;
+        background-color: #ffffff !important;
+        z-index: 999 !important;
+        border-radius: 6px !important;
+    }
+
+    .transfer-pricing-article .anchor-menu-desktop h2 {
+        font-size: 0.95rem !important;
+        margin: 0 0 0.5rem 0 !important;
+    }
+
+    /* **JUSTIFICACIÓN DE VIÑETAS DEL MENÚ RÁPIDO (DESKTOP)** */
+    .transfer-pricing-article .anchor-menu-desktop ul {
+        list-style-type: none !important;
+        padding-left: 0 !important;
+    }
+
+    .transfer-pricing-article .anchor-menu-desktop li {
+        margin-bottom: 2px !important;
+        position: relative !important;
+        padding-left: 10px !important;
+    }
+
+    .transfer-pricing-article .anchor-menu-desktop li::before {
+        content: "•" !important;
+        color: var(--primary-color) !important;
+        font-weight: bold !important;
+        display: inline-block !important;
+        width: 8px !important;
+        margin-left: -10px !important;
+    }
+
+    .transfer-pricing-article .anchor-menu-desktop a {
+        font-size: 0.8rem !important;
+        padding: 0 !important;
+        display: inline !important;
+        line-height: 1.3;
+        word-break: break-word;
+        text-align: left;
+        width: calc(100% - 10px);
+    }
+
+    /* --- Responsive Desktop (Alineación Forzada para Eliminar Hueco) --- */
+    @media (min-width: 1024px) {
+        .transfer-pricing-article .content-area {
+            width: calc(100% - var(--menu-reserved-space)) !important;
+            margin-right: var(--menu-reserved-space) !important;
+            margin-left: 50px !important;
+            padding-left: 0 !important;
+            max-width: none !important;
+            height: auto !important;
+        }
+
+        .transfer-pricing-article .anchor-menu-desktop {
+            display: block !important;
+            right: calc((100% - 1300px) / 2 - 30px) !important;
+        }
+
+        .mobile-toc {
+            display: none !important;
+        }
+
+        .transfer-pricing-article .view-full-table {
+            display: none !important;
+        }
+    }
+
+    /* --- Responsive Mobile (Activar Modal Button) --- */
+    @media (max-width: 1023px) {
+        .transfer-pricing-article .anchor-menu-desktop {
+            display: none !important;
+        }
+        .transfer-pricing-article .content-area {
+            margin-left: 0 !important;
+            max-width: 100% !important;
+            padding: 0 10px !important;
+        }
+
+        .transfer-pricing-article .view-full-table {
+            display: block !important;
+        }
+    }
+</style>
+
+<div class="transfer-pricing-article-wrapper-final">
+    <div class="transfer-pricing-article">
+        <div id="top"></div>
+        <div class="container">
+            <aside class="anchor-menu-desktop">
+                <h2>Contenido Rápido</h2>
+                <ul>
+                    <li><a href="#proposito" onclick="smoothScroll(event, '#proposito')">1. Contexto Estratégico</a></li>
+                    <li><a href="#principio" onclick="smoothScroll(event, '#principio')">2. Principio de Plena Competencia</a></li>
+                    <li><a href="#pilares" onclick="smoothScroll(event, '#pilares')">3. Pilares del Análisis</a></li>
+                    <li><a href="#riesgos" onclick="smoothScroll(event, '#riesgos')">4. Riesgos Críticos</a></li>
+                    <li><a href="#errores" onclick="smoothScroll(event, '#errores')">5. Errores Comunes</a></li>
+                    <li><a href="#plan" onclick="smoothScroll(event, '#plan')">6. Plan de Acción Estratégico</a></li>
+                    <li><a href="#metodos" onclick="smoothScroll(event, '#metodos')">7. Metodologías Aprobadas</a></li>
+                    <li><a href="#poe" onclick="smoothScroll(event, '#poe')">8. Procedimiento Operativo Estándar</a></li>
+                    <li><a href="#obligaciones" onclick="smoothScroll(event, '#obligaciones')">9. Obligaciones Formales en Colombia</a></li>
+                    <li><a href="#roles" onclick="smoothScroll(event, '#roles')">10. Roles y Responsabilidades</a></li>
+                    <li><a href="#analogiaglobal" onclick="smoothScroll(event, '#analogiaglobal')">11. La Analogía del Auto 🚗</a></li>
+                </ul>
+            </aside>
+
+            <div class="content-area">
+                <h1>✅ Guía Estratégica y Pedagógica de Precios de Transferencia en Colombia (DIAN - OCDE)</h1>
+                <p>Este artículo integra el análisis de riesgo, la política interna y el conocimiento fundamental del régimen de Precios de Transferencia en Colombia, esencial para la alta gerencia y equipos financieros.</p>
+
+                <div class="mobile-toc">
+                    <label for="toc-select">Ir a la Sección:</label>
+                    <select id="toc-select" onchange="jumpToSection(this.value)">
+                        <option value="">-- Seleccione un tema --</option>
+                        <option value="#proposito">1. Contexto Estratégico</option>
+                        <option value="#principio">2. Principio de Plena Competencia</option>
+                        <option value="#pilares">3. Pilares del Análisis</option>
+                        <option value="#riesgos">4. Riesgos Críticos</option>
+                        <option value="#errores">5. Errores Comunes</option>
+                        <option value="#plan">6. Plan de Acción Estratégico</option>
+                        <option value="#metodos">7. Metodologías Aprobadas</option>
+                        <option value="#poe">8. Procedimiento Operativo Estándar</option>
+                        <option value="#obligaciones">9. Obligaciones Formales en Colombia</option>
+                        <option value="#roles">10. Roles y Responsabilidades</option>
+                        <option value="#analogiaglobal">11. La Analogía del Auto 🚗</option>
+                    </select>
+                </div>
+
+                <div id="proposito" class="content-section">
+                    <h2>1. Contexto Estratégico y Definición Fundacional</h2>
+                    <hr>
+                    <h3>¿Qué son exactamente los precios de transferencia y cuál es su riesgo inherente para una compañía multinacional?</h3>
+                    <div class="answer">
+                        Los **precios de transferencia** son los precios pactados entre empresas vinculadas (compañías relacionadas por propiedad, control o dirección común) para transacciones de bienes, servicios o derechos. El riesgo inherente es que las empresas manipulen estos precios internos para trasladar utilidades artificialmente desde una jurisdicción con impuestos altos (como Colombia) hacia países con impuestos más bajos, **erosionando así la base gravable nacional** y atrayendo el escrutinio de la DIAN.
+                    </div>
+
+                    <div class="analogy-box">
+                        **💡 Ejemplo (La Aventura de las Camisetas)**: Imagine que la compañía opera dos entidades: una fábrica de camisetas en **Colombia** y una tienda de distribución en **España**. El precio al que la fábrica le vende las camisetas a la tienda es un precio de transferencia.
+                    </div>
+
+                </div>
+
+                <div id="principio" class="content-section">
+                    <h2>2. El Principio de Plena Competencia (Arm's Length Principle)</h2>
+                    <hr>
+                    <h3>¿Cuál es el pilar fundamental que rige el cumplimiento de precios de transferencia a nivel global?</h3>
+                    <div class="answer">
+                        El pilar fundamental es el **Principio de Plena Competencia** (o *Arm's Length Principle*), un estándar global estandarizado por la OCDE y adoptado por la DIAN, que exige que las transacciones con partes relacionadas sean fiscalmente justas y transparentes. Este principio se resume en la idea de que el precio pactado entre entidades vinculadas debe ser **equivalente al que se habría acordado con un tercero independiente** en el mercado abierto y bajo circunstancias comparables.
+                    </div>
+
+                    <div id="analogiaglobal" class="analogy-box">
+                        **🚗 Analogía de la Venta del Auto** : Si vendes tu auto que vale $8 millones a tu **hermano**, podrías darle un "precio de amigo" de 5 millones. Sin embargo, el Principio de Plena Competencia exige que, para fines fiscales, la transacción se declare a su **valor de mercado justo** ($8 millones), garantizando que las condiciones sean justas e imparciales.
+                    </div>
+                </div>
+
+                <div id="pilares" class="content-section">
+                    <h2>3. Pilares del Análisis de Plena Competencia</h2>
+                    <hr>
+                    <h3>¿Qué cuatro pilares fundamentales deben ser analizados para determinar si una transacción cumple con el Principio de Plena Competencia?</h3>
+                    <div class="answer">
+                        Para determinar si un precio es de plena competencia, el análisis se centra en cuatro pilares fundamentales de la transacción:
+                        <ul>
+                            <li>**Precio pactado:** El valor monetario acordado en la operación.</li>
+                            <li>**Márgenes de utilidad:** La rentabilidad o ganancia que cada entidad obtiene en la operación.</li>
+                            <li>**Activos utilizados y riesgos asumidos (Análisis Funcional o FAR):** Se debe documentar quién aporta el capital, la tecnología o la propiedad intelectual, y quién asume los riesgos clave del negocio (mercado, crédito, inventario, etc.).</li>
+                            <li>**Condiciones de la transacción:** Aspectos contractuales, incluyendo plazos de pago, garantías, volumen de la operación y exclusividad.</li>
+                        </ul>
+                        <div class="warning-box">
+                            **🚨 Nota Importante**: El **Análisis Funcional (FAR)** es la piedra angular, pues asignar márgenes de utilidad elevados a una entidad que es simplemente una distribuidora de bajo riesgo no refleja la realidad económica y es fácil de cuestionar por la autoridad fiscal.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="riesgos" class="content-section">
+                    <h2>4. Evaluación de Riesgos Críticos por Incumplimiento Normativo</h2>
+                    <hr>
+                    <h3>¿Cuáles son las consecuencias tangibles y cuantificables del incumplimiento de la normativa de precios de transferencia en Colombia?</h3>
+                    <div class="answer">
+                        El incumplimiento no es un riesgo abstracto; se traduce en consecuencias tangibles y cuantificables que afectan seriamente la estabilidad financiera y la reputación de la organización. Estos riesgos se clasifican en categorías como Financiero, Sancionatorio y de Doble Tributación.
+                    </div>
+
+                    <div class="table-responsive" id="table-riesgos">
+                    <table class="risk-table">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Riesgo</th>
+                                <th>Descripción del Riesgo</th>
+                                <th>Impacto Potencial en la Compañía</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Tipo de Riesgo">Riesgo Financiero</td>
+                                <td data-label="Descripción del Riesgo">La DIAN puede determinar que los precios pactados no son de mercado y proceder a un **ajuste unilateral**.</td>
+                                <td data-label="Impacto Potencial">
+                                    <ul>
+                                        <li>Incremento de la base gravable y pago de **impuesto adicional**.</li>
+                                        <li>Liquidación de **intereses moratorios** sobre el impuesto omitido.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Tipo de Riesgo">Riesgo Sancionatorio</td>
+                                <td data-label="Descripción del Riesgo">La normativa contempla multas específicas y severas por incumplimientos formales y sustanciales.</td>
+                                <td data-label="Impacto Potencial">
+                                    <ul>
+                                        <li>Multa de **$2 a $10 millones de pesos colombianos** por no presentar la documentación comprobatoria (Informe Local o Maestro).</li>
+                                        <li>Sanción general sobre la base del ajuste, que puede oscilar entre el **5% y el 37.5%**, dependiendo de la gravedad y la reincidencia.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Tipo de Riesgo">Riesgo de Doble Tributación</td>
+                                <td data-label="Descripción del Riesgo">Un ajuste realizado por la DIAN en Colombia no es automáticamente aceptado por la administración tributaria del país de la contraparte, lo que puede llevar a que **la misma utilidad sea gravada dos veces**.</td>
+                                <td data-label="Impacto Potencial">
+                                    <ul>
+                                        <li>La compañía pagaría impuestos sobre una utilidad en Colombia que la contraparte vinculada no puede deducir como costo en su país.</li>
+                                        <li>Aunque existen acuerdos bilaterales, son procesos largos, complejos y costosos para mitigar el riesgo.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                    <button class="view-full-table" onclick="openNewTabTable('table-riesgos')">👁️ Ver Tabla Completa</button>
+                </div>
+
+                <div id="errores" class="content-section">
+                    <h2>5. Errores Comunes en la Gestión de Precios de Transferencia</h2>
+                    <hr>
+                    <h3>¿Cuáles son los descuidos operativos más frecuentes que conducen a contingencias fiscales en esta materia?</h3>
+                    <div class="answer">
+                        La mayoría de las contingencias fiscales no se originan en una intención maliciosa, sino en **descuidos operativos, falta de planificación o desconocimiento**. Identificar y corregir estas vulnerabilidades es fundamental para una mitigación efectiva del riesgo.
+                    </div>
+
+                    <div class="risk-box">
+                        **🔴 Las 5 Vulnerabilidades Críticas a Evitar:**
+                        <ul>
+                            <li>**Documentación Inadecuada o Inexistente:** La ausencia de un **Informe Local** y **Maestro** debidamente sustentados es la vulnerabilidad más crítica, otorgando a la DIAN la potestad de imponer ajustes basados en sus propias estimaciones.</li>
+                            <li>**Uso de Métodos Inapropiados:** Utilizar métodos basados en márgenes (como el **TNMM**) cuando existen datos directos para aplicar métodos más precisos y preferidos por la autoridad (como el **CUP** o Precio Comparable No Controlado) es un error frecuente.</li>
+                            <li>**Selección de Comparables Deficientes:** Usar datos de mercado desactualizados, de geografías irrelevantes o de compañías que **no son funcionalmente similares** invalida todo el estudio y expone a un rechazo.</li>
+                            <li>**Análisis Funcional Incompleto (FAR):** No documentar adecuadamente qué entidad realiza las funciones clave, aporta los activos valiosos y asume los riesgos significativos.</li>
+                            <li>**Ignorar Cambios Regulatorios:** Operar con políticas de precios de transferencia diseñadas hace años, sin considerar las actualizaciones de la DIAN o las nuevas directrices de la **OCDE**, es un riesgo latente.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="plan" class="content-section">
+                    <h2>6. Plan de Acción Estratégico para la Mitigación de Riesgos</h2>
+                    <hr>
+                    <h3>¿Qué hoja de ruta debe adoptar la gerencia para fortalecer el cumplimiento y transformar esta obligación en un valor estratégico?</h3>
+                    <div class="answer">
+                        La gerencia debe adoptar una hoja de ruta estructurada para fortalecer el cumplimiento normativo, minimizar la exposición a sanciones y transformar la gestión de precios de transferencia en un proceso que añade valor y seguridad a la organización.
+                    </div>
+
+                    <div class="analogy-box">
+                        **🗺️ Pasos Clave del Plan de Acción:**
+                        <ul>
+                            <li>**Institucionalizar la Documentación Anual:** Establecer como política interna la preparación obligatoria y oportuna del **Informe Local**, el **Informe Maestro** (si aplica) y la **Declaración Informativa (Formulario 120)**.</li>
+                            <li>**Realizar un Diagnóstico de Riesgo Anual:** Implementar una revisión anual de todas las transacciones con vinculados para identificar operaciones de alto riesgo, verificar los métodos y actualizar el análisis de comparabilidad con datos del año gravable correspondiente.</li>
+                            <li>**Establecer una Política Corporativa de PT:** Desarrollar, aprobar y documentar una política corporativa que defina las metodologías a utilizar para cada tipo de transacción recurrente y asigne responsabilidades claras.</li>
+                            <li>**Centralización y Verificación del RUT:** Asegurar que el Registro Único Tributario (**RUT**) de la compañía esté debidamente actualizado con la responsabilidad correspondiente de precios de transferencia.</li>
+                            <li>**Capacitación Continua:** Asignar recursos para la formación y actualización periódica del personal responsable sobre los cambios en la normativa de la DIAN y las directrices de la OCDE.</li>
+                        </ul>
+                    </div>
+
+                    <div class="warning-box">
+                        **✨ Valor Estratégico Adicional**: Una gestión robusta de precios de transferencia trasciende la obligación fiscal; se convierte en una herramienta fundamental para la **gobernanza corporativa**, permitiendo una **evaluación del desempeño real** de cada unidad de negocio y facilitando una **planificación fiscal responsable**.
+                    </div>
+                </div>
+
+                <div id="metodos" class="content-section">
+                    <h2>7. Metodologías Aprobadas para la Determinación de Precios</h2>
+                    <hr>
+                    <h3>¿Cuáles son los métodos de valoración aceptados por la DIAN y la OCDE, y cómo se establece la jerarquía de aplicación?</h3>
+                    <div class="answer">
+                        La OCDE y la legislación colombiana reconocen **cinco métodos principales** para establecer si un precio cumple con el Principio de Plena Competencia. La selección del método debe estar rigurosamente justificada en función de la naturaleza de la transacción y la disponibilidad de información comparable.
+                    </div>
+
+                    <div class="table-responsive" id="table-metodos">
+                    <table class="methods-table">
+                        <thead>
+                            <tr>
+                                <th>Método Aprobado</th>
+                                <th>Descripción del Concepto</th>
+                                <th>Aplicación Principal y Jerarquía</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Método">**Precio Comparable No Controlado (CUP)**</td>
+                                <td data-label="Descripción">Compara el precio de una transacción entre vinculadas con el precio de transacciones comparables entre partes independientes.</td>
+                                <td data-label="Aplicación">Es **siempre el preferente** (máxima jerarquía) y debe utilizarse si existen comparables directos y fiables en el mercado.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Método">**Precio de Reventa (RPM)**</td>
+                                <td data-label="Descripción">Se parte del precio al que un producto se revende a un tercero, y se le resta un margen bruto de reventa apropiado.</td>
+                                <td data-label="Aplicación">Aplicable a **distribuidores o revendedores** que no añaden un valor sustancial al producto. *Se evalúa si CUP no es aplicable*.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Método">**Costo Adicionado (CPA)**</td>
+                                <td data-label="Descripción">Se determina el precio sumando un margen de utilidad de plena competencia a los costos de producción o de prestación del servicio incurridos por el proveedor vinculado.</td>
+                                <td data-label="Aplicación">Utilizado comúnmente por **fabricantes de bienes** o **proveedores de servicios internos**. *Se evalúa si CUP no es aplicable*.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Método">**Margen Neto de Transacción (TNMM)**</td>
+                                <td data-label="Descripción">Compara el margen de utilidad neta de la empresa examinada y se compara con márgenes de empresas independientes similares.</td>
+                                <td data-label="Aplicación">Es un método residual, utilizado **solo cuando no es posible aplicar los métodos tradicionales**, especialmente en la prestación de servicios o fabricación con características únicas.</td>
+                            </tr>
+                            <tr>
+                                <td data-label="Método">**Reparto de Utilidades (PSM)**</td>
+                                <td data-label="Descripción">Reparte las utilidades conjuntas de una operación altamente integrada y compleja entre las partes vinculadas, basándose en su contribución económica relativa.</td>
+                                <td data-label="Aplicación">Aplicable a operaciones **complejas y altamente integradas** (ej. I+D conjunto o uso de intangibles únicos) donde el análisis individual no es posible. *Es un método residual*.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                    <button class="view-full-table" onclick="openNewTabTable('table-metodos')">👁️ Ver Tabla Completa</button>
+                    <p>La jerarquía de aplicación establece que el **CUP** es el preferente. Si este no es aplicable, se deben documentar las razones por escrito, y se evaluará la aplicabilidad de **RPM** o **CPA**. Solo si estos tampoco son aplicables, se considerará el uso de metodologías basadas en márgenes, como **TNMM** o **PSM**.</p>
+                </div>
+
+                <div id="poe" class="content-section">
+                    <h2>8. Procedimiento Operativo Estándar (POE) para el Análisis de Transacciones</h2>
+                    <hr>
+                    <h3>¿Cuáles son los cinco pasos obligatorios que deben seguir los equipos internos para analizar, determinar y documentar cada transacción vinculada?</h3>
+                    <div class="answer">
+                        El seguimiento riguroso de este Procedimiento Operativo Estándar (**POE**) es crucial para construir una posición sólida y defendible de la compañía ante cualquier requerimiento de la DIAN. El análisis de cada transacción relevante deberá seguir los siguientes cinco pasos secuenciales.
+                    </div>
+
+                    <div class="analogy-box">
+                        **⚙️ Los 5 Pasos del Análisis PT (POE)**
+
+[Image of a step-by-step flowchart for a Transfer Pricing analysis]
+:
+                        <ol>
+                            <li>**Identificación y Caracterización de la Transacción:** Detallar la naturaleza exacta de la operación, identificar las partes vinculadas y documentar el volumen, la frecuencia y las condiciones contractuales clave.</li>
+                            <li>**Análisis Funcional (FAR):** Documentar rigurosamente las **F**unciones desempeñadas, los **A**ctivos utilizados y los **R**iesgos asumidos por cada entidad vinculada. Este análisis es la piedra angular para justificar la distribución de utilidades.</li>
+                            <li>**Selección y Justificación del Método:** Elegir el método más apropiado y documentar la elección, explicando por qué el método seleccionado es el más fiable y, si aplica, por qué los métodos de mayor jerarquía (ej. CUP) fueron descartados.</li>
+                            <li>**Búsqueda y Análisis de Comparables:** Realizar una búsqueda sistemática y documentada de transacciones o empresas comparables independientes, utilizando bases de datos fiables y actuales, y documentar los criterios de selección y descarte.</li>
+                            <li>**Determinación del Rango y Documentación Final:** Establecer el rango de precios o márgenes de mercado (**rango de plena competencia**), verificar que el precio de la transacción se encuentre dentro del rango, y consolidar todo el análisis en el **"Informe Local"** anual.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div id="obligaciones" class="content-section">
+                    <h2>9. Obligaciones de Documentación y Cumplimiento en Colombia (DIAN)</h2>
+                    <hr>
+                    <h3>¿Qué documentación comprobatoria es obligatoria y cuáles son los plazos clave ante la DIAN para las empresas obligadas?</h3>
+                    <div class="answer">
+                        Las empresas obligadas deben cumplir con tres requisitos formales principales ante la DIAN: Inscripción y Actualización del RUT, Presentación de la Declaración Informativa, y Preparación de la Documentación Comprobatoria. La presentación oportuna y precisa de la documentación es de máxima prioridad para evitar sanciones.
+                    </div>
+
+                    <div class="warning-box">
+                        **📝 Deberes Formales Irrenunciables:**
+                        <ul>
+                            <li>**1. Inscripción y Actualización del RUT:** Es mandatorio registrar la responsabilidad **"obligado al régimen de precios de transferencia"** en el Registro Único Tributario (RUT).</li>
+                            <li>**2. Presentación de la Declaración Informativa:** Se debe presentar anualmente la **Declaración Informativa de Precios de Transferencia (Formulario 120)**, acompañada del **Formato 1125**.</li>
+                            <li>**3. Preparación de la Documentación Comprobatoria:** Incluye el **Informe Local** (análisis detallado de transacciones locales) y el **Informe Maestro** (visión global del grupo multinacional).</li>
+                        </ul>
+                    </div>
+
+                    <p>Los plazos de vencimiento para la presentación de la declaración (Formulario 120) y la documentación comprobatoria ocurren generalmente entre **septiembre y octubre** del año siguiente al período gravable analizado.</p>
+                </div>
+
+                <div id="roles" class="content-section">
+                    <h2>10. Roles y Responsabilidades en la Gestión de Precios de Transferencia</h2>
+                    <hr>
+                    <h3>¿Qué departamentos y roles son responsables de la ejecución y el cumplimiento de la política de precios de transferencia?</h3>
+                    <div class="answer">
+                        El éxito de la política y la mitigación de riesgos dependen de una asignación clara y una ejecución diligente de las responsabilidades, que involucra a varios departamentos clave de la organización.
+                    </div>
+
+                    <div class="table-responsive" id="table-roles">
+                    <table class="roles-table">
+                        <thead>
+                            <tr>
+                                <th>Rol / Departamento</th>
+                                <th>Responsabilidades Principales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-label="Rol">Gerentes de Unidad de Negocio</td>
+                                <td data-label="Responsabilidades">
+                                    <ul>
+                                        <li>Identificar y reportar todas las transacciones nuevas o existentes con partes vinculadas al Departamento Financiero.</li>
+                                        <li>Proveer información detallada y precisa para el análisis funcional (funciones, activos y riesgos) de sus operaciones.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Rol">Departamento Financiero/Contable</td>
+                                <td data-label="Responsabilidades">
+                                    <ul>
+                                        <li>Registrar contablemente todas las transacciones intercompañía de manera precisa y oportuna.</li>
+                                        <li>Preparar y consolidar la información financiera y contable base para el análisis de precios de transferencia.</li>
+                                        <li>Asegurar la firma del contador o revisor fiscal en la documentación final.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td data-label="Rol">Departamento de Cumplimiento Fiscal</td>
+                                <td data-label="Responsabilidades">
+                                    <ul>
+                                        <li>**Liderar y ejecutar el Procedimiento Operativo Estándar (POE)** para todas las transacciones intercompañía.</li>
+                                        <li>Preparar y presentar el **Formulario 120, el Formato 1125** y la documentación comprobatoria ante la DIAN.</li>
+                                        <li>Monitorear activamente los cambios en la regulación de la DIAN y las directrices de la OCDE e informar a las partes interesadas.</li>
+                                    </ul>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                    <button class="view-full-table" onclick="openNewTabTable('table-roles')">👁️ Ver Tabla Completa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // --- FUNCIÓN CENTRAL DE APERTURA EN NUEVA PESTAÑA (Estrategia más segura y centrada) ---
+        function openNewTabTable(tableId) {
+            const originalTableContainer = document.getElementById(tableId);
+
+            if (originalTableContainer) {
+                // Clonamos el contenido del contenedor de la tabla
+                const tableContent = originalTableContainer.outerHTML;
+
+                // Estilos para la nueva pestaña (SOLUCIÓN DEFINITIVA DE CENTRADO MÓVIL)
+                const newWindowStyle = `
+                    <style>
+                        /* Estilos de Centrado y Contenido */
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: #f8f9fa;
+                            min-height: 100vh;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center; /* Centrado Vertical */
+                            align-items: center;
+                            overflow-x: auto; /* Permite scroll horizontal en el cuerpo */
+                        }
+                        .new-tab-content {
+                            /* QUITAMOS el fondo blanco, el box-shadow y el padding del contenedor principal */
+                            width: 100%;
+                            margin: 0 auto;
+                            text-align: center;
+                            padding: 0;
+                            background-color: transparent; /* Fondo transparente */
+                            border-radius: 0;
+                            box-shadow: none;
+                        }
+                        .new-tab-table-wrapper {
+                            /* **CORRECCIÓN CLAVE:** Centrado automático */
+                            margin: 0 auto;
+                            display: block;
+                            text-align: left;
+                            width: fit-content;
+                            max-width: 100%;
+                            /* Permite el scroll horizontal dentro de este wrapper en móviles */
+                            overflow-x: auto;
+                            -webkit-overflow-scrolling: touch;
+                        }
+                        .new-tab-return-button {
+                            margin: 20px auto;
+                            padding: 10px 20px;
+                            background-color: #004d40;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 16px;
+                            display: block;
+                            text-decoration: none;
+                        }
+                        /* Estilos de la tabla (Scroll y Zoom) */
+                        .new-tab-table-responsive {
+                            overflow-x: auto;
+                            -webkit-overflow-scrolling: touch;
+                            margin: 0 auto; /* Centra el contenido horizontal si el wrapper lo permite */
+                        }
+                        .new-tab-table-responsive table {
+                            width: 100%;
+                            min-width: 1000px; /* Ancho grande forzado */
+                            border-collapse: collapse;
+                            margin: 0;
+                            font-size: 16px;
+                        }
+                        .new-tab-table-responsive th, .new-tab-table-responsive td {
+                            border: 1px solid #ccc;
+                            padding: 10px;
+                            text-align: left;
+                        }
+                        .new-tab-table-responsive th {
+                            background-color: #004d40;
+                            color: white;
+                        }
+
+                        /* Media Query Específica para Móviles (Asegura el uso del ancho completo) */
+                        @media (max-width: 600px) {
+                            .new-tab-content {
+                                width: 100%;
+                                margin: 0;
+                                padding: 0;
+                            }
+                            .new-tab-table-wrapper {
+                                /* **SOLUCIÓN FINAL DE CENTRADO:** Centrado */
+                                margin: 0 auto;
+                                width: auto;
+                                max-width: 100%;
+                            }
+                        }
+                    </style>
+                `;
+
+                // Contenido de la nueva pestaña
+                const content = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Tabla Completa</title>
+                        ${newWindowStyle}
+                    </head>
+                    <body>
+                        <div class="new-tab-content">
+                            <div class="new-tab-table-wrapper">
+                                <button class="new-tab-return-button" onclick="window.close();">← Volver al Artículo</button>
+                                <div class="new-tab-table-responsive">${tableContent}</div>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                // Abrir la nueva pestaña
+                const newWindow = window.open('', '_blank');
+                newWindow.document.write(content);
+                newWindow.document.close();
+            }
+        }
+
+        // --- FUNCIONES DE SCROLL (Mantenidas para Desktop) ---
+        function smoothScroll(event, targetId) {
+            if (event) {
+                event.preventDefault();
+            }
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                const offset = 10;
+                const elementPosition = targetElement.offsetTop;
+                window.scrollTo({
+                    top: elementPosition - offset,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        function jumpToSection(anchor) {
+            if (anchor) {
+                smoothScroll(null, anchor);
+            }
+        }
+
+        // --- MANEJO DEL DOM (Asegurar que los botones llamen a la nueva función) ---
+        document.addEventListener('DOMContentLoaded', function() {
+            // Reemplazamos la función onclick de los botones para que usen la nueva estrategia
+            document.querySelectorAll('.view-full-table').forEach(button => {
+                const tableIdMatch = button.getAttribute('onclick').match(/'([^']+)'/);
+                if (tableIdMatch && tableIdMatch[1]) {
+                    const tableId = tableIdMatch[1];
+                    button.onclick = function() {
+                        openNewTabTable(tableId);
+                    };
+                }
+            });
+        });
+
+    </script>
+</div>
