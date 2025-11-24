@@ -574,18 +574,15 @@
                         body {
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                             margin: 0;
-                            padding: 0;
+                            padding: 20px; /* Usar padding en lugar de flex para evitar recortes */
                             background-color: #f8f9fa;
                             min-height: 100vh;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: center; /* Centrado Vertical */
-                            align-items: center;
-                            overflow-x: auto; /* Permite scroll horizontal en el cuerpo */
+                            overflow-x: hidden;
                         }
                         .new-tab-content {
                             /* QUITAMOS el fondo blanco, el box-shadow y el padding del contenedor principal */
                             width: 100%;
+                            max-width: 100%;
                             margin: 0 auto;
                             text-align: center;
                             padding: 0;
@@ -598,7 +595,7 @@
                             margin: 0 auto;
                             display: block;
                             text-align: left;
-                            width: 95%;
+                            width: fit-content;
                             max-width: 100%;
                             /* Permite el scroll horizontal dentro de este wrapper en móviles */
                             overflow-x: auto;
@@ -641,6 +638,9 @@
 
                         /* Media Query Específica para Móviles (Asegura el uso del ancho completo) */
                         @media (max-width: 600px) {
+                            body {
+                                padding: 10px;
+                            }
                             .new-tab-content {
                                 width: 100%;
                                 margin: 0;
@@ -649,7 +649,7 @@
                             .new-tab-table-wrapper {
                                 /* **SOLUCIÓN FINAL DE CENTRADO:** Centrado */
                                 margin: 0 auto;
-                                width: 95%;
+                                width: 100%;
                             }
                         }
                     </style>
