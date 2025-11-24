@@ -574,34 +574,34 @@
                         body {
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                             margin: 0;
-                            padding: 20px;
+                            padding: 20px; /* Padding para que no se pegue a los bordes */
                             background-color: #f8f9fa;
                             min-height: 100vh;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: center;
-                            align-items: center;
+                            box-sizing: border-box;
+                            text-align: center; /* Centra los elementos inline-block */
                         }
                         .new-tab-content {
-                            /* QUITAMOS el fondo blanco, el box-shadow y el padding del contenedor principal */
                             width: 100%;
+                            max-width: 100%;
                             margin: 0 auto;
                             text-align: center;
                             padding: 0;
-                            background-color: transparent; /* Fondo transparente */
+                            background-color: transparent;
                             border-radius: 0;
                             box-shadow: none;
                         }
                         .new-tab-table-wrapper {
-                            /* **CORRECCIÓN CLAVE:** Centrado automático */
+                            /* Centrado Horizontal: margin auto y display inline-block o block con max-width */
                             margin: 0 auto;
-                            display: block;
-                            text-align: left;
-                            width: fit-content;
-                            max-width: 100%;
-                            /* Permite el scroll horizontal dentro de este wrapper en móviles */
+                            display: inline-block; /* Permite centrado con text-align: center del body */
+                            text-align: left; /* Resetea alineación de texto interno */
+                            width: 100%;
+                            max-width: 1200px; /* Limite máximo razonable */
                             overflow-x: auto;
                             -webkit-overflow-scrolling: touch;
+                            background-color: #fff; /* Fondo blanco para resaltar la tabla */
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Sombra sutil */
+                            border-radius: 8px;
                         }
                         .new-tab-return-button {
                             margin: 20px auto;
@@ -614,19 +614,21 @@
                             font-size: 16px;
                             display: block;
                             text-decoration: none;
+                            max-width: 200px;
                         }
-                        /* Estilos de la tabla (Scroll y Zoom) */
+                        /* Estilos de la tabla */
                         .new-tab-table-responsive {
                             overflow-x: auto;
                             -webkit-overflow-scrolling: touch;
-                            margin: 0 auto; /* Centra el contenido horizontal si el wrapper lo permite */
+                            margin: 0;
+                            padding: 10px;
                         }
                         .new-tab-table-responsive table {
                             width: 100%;
-                            min-width: 1000px; /* Ancho grande forzado */
+                            min-width: 800px; /* Ancho mínimo para forzar scroll si es necesario */
                             border-collapse: collapse;
                             margin: 0;
-                            font-size: 16px;
+                            font-size: 14px;
                         }
                         .new-tab-table-responsive th, .new-tab-table-responsive td {
                             border: 1px solid #ccc;
@@ -638,17 +640,19 @@
                             color: white;
                         }
 
-                        /* Media Query Específica para Móviles (Asegura el uso del ancho completo) */
+                        /* Media Query Específica para Móviles */
                         @media (max-width: 600px) {
+                            body {
+                                padding: 10px; /* Menos padding en móviles */
+                                padding-top: 20px;
+                            }
                             .new-tab-content {
                                 width: 100%;
-                                margin: 0;
-                                padding: 0;
                             }
                             .new-tab-table-wrapper {
-                                /* **SOLUCIÓN FINAL DE CENTRADO:** Centrado */
                                 margin: 0 auto;
                                 width: 100%;
+                                display: block; /* Block en movil para llenar ancho */
                             }
                         }
                     </style>
@@ -659,9 +663,8 @@
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <title>Tabla Completa</title>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         ${newWindowStyle}
                     </head>
                     <body>
