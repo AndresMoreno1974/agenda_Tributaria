@@ -1,0 +1,347 @@
+<!-- WIDGET INFORME MAESTRO – VERSIÓN FINAL PARA ELEMENTOR -->
+<!-- Incluye: Identificación completa, Entidades (FAR), Transacciones, Ejercicio, Plantilla modelo (link) -->
+<!-- Pegar entero en widget HTML de Elementor -->
+
+<!-- Opcional: carga docx desde CDN; si no está disponible, el código hace fallback a texto plano -->
+<script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+
+<style>
+  #mf-container { font-family: 'Segoe UI', sans-serif; background:#f9fafb; padding:20px; border-radius:12px; max-width:1100px; margin:auto; box-shadow:0 6px 20px rgba(0,0,0,0.06); }
+  #mf-container h5 { font-size:18px; font-weight:700; margin-bottom:8px; color:#111827; }
+  #mf-container h6 { font-size:15px; font-weight:700; margin-top:18px; margin-bottom:8px; color:#374151; }
+  .mf-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .mf-full { grid-column:1 / -1; }
+  input, textarea, select { width:100%; padding:8px; border:1px solid #d1d5db; border-radius:8px; box-sizing:border-box; font-size:14px; }
+  textarea { min-height:80px; resize:vertical; }
+  .mf-btn { padding:10px 14px; border-radius:8px; border:none; cursor:pointer; color:#fff; background:#16a34a; }
+  .mf-btn.secondary { background:#4f46e5; }
+  .mf-btn.dark { background:#374151; }
+  .mf-row { display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .mf-entity, .mf-transaction { background:#fff; padding:10px; border-radius:8px; border:1px solid #e6e6e6; margin-bottom:10px; }
+  .mf-small { font-size:13px; color:#6b7280; }
+  @media (max-width:800px){ .mf-grid { grid-template-columns:1fr; } }
+</style>
+
+<div id="mf-container">
+  <h5>Aplicativo Generador — Informe Maestro (Precios de Transferencia)</h5>
+  <p class="mf-small">Genera un Informe Maestro compatible con la estructura sugerida por DIAN. Powered by <strong>Señor Contador</strong>.</p>
+
+  <!-- IDENTIFICACIÓN -->
+  <h6>1. Información general y Identificación del Grupo</h6>
+  <div class="mf-grid">
+    <div><label>Nombre del Grupo</label><input id="mf-company" value="Nombre del Grupo"></div>
+    <div><label>Empresa Matriz Reportante</label><input id="mf-parent"></div>
+
+    <div><label>NIT / Identificación</label><input id="mf-nit"></div>
+    <div><label>Domicilio Fiscal</label><input id="mf-domicilio"></div>
+
+    <div><label>País de residencia fiscal</label><input id="mf-pais"></div>
+    <div><label>Sector económico principal</label><input id="mf-sector"></div>
+
+    <div><label>Fecha de constitución del Grupo</label><input id="mf-constitucion" type="date"></div>
+    <div><label>Fecha de preparación del informe</label><input id="mf-fecha-prep" type="date"></div>
+
+    <div class="mf-full"><label>Año gravable / Ejercicio</label><input id="mf-year" value="2025" type="number"></div>
+  </div>
+
+  <!-- ESTRUCTURA, NEGOCIO y CAMBIOS -->
+  <h6>2. Estructura del Grupo y Modelo de Negocio</h6>
+  <div class="mf-grid">
+    <div class="mf-full"><label>Descripción de la estructura organizacional</label><textarea id="mf-estructura" placeholder="Relaciones de control, % participación, jurisdicciones, principales operaciones..."></textarea></div>
+
+    <div class="mf-full"><label>Descripción del negocio y modelo de operación</label><textarea id="mf-modelo" placeholder="Líneas de negocio, mercados, cadena de valor, flujos..."></textarea></div>
+
+    <div class="mf-full"><label>Cambios significativos en el periodo</label><textarea id="mf-cambios" placeholder="Cambios en estructura, operaciones, políticas durante el año..."></textarea></div>
+  </div>
+
+  <!-- ENTIDADES (dinámicas con FAR) -->
+  <h6>3. Entidades del Grupo — (Funciones, Activos y Riesgos)</h6>
+  <div id="mf-entities-container"></div>
+  <div style="margin-bottom:12px;">
+    <button class="mf-btn mf-small" onclick="mf_addEntity()">+ Añadir entidad</button>
+    <span style="margin-left:10px;" class="mf-small">Cada entidad incluye: Nombre, Tipo vinculación, País, Funciones clave, Activos, Riesgos</span>
+  </div>
+
+  <!-- OPERACIONES Y TRANSACCIONES -->
+  <h6>4. Operaciones intragrupo y transacciones controladas</h6>
+  <div class="mf-grid">
+    <div class="mf-full"><label>Descripción general de operaciones intragrupales</label><textarea id="mf-ops-desc" placeholder="Transferencias de bienes, servicios, PI, operaciones financieras..."></textarea></div>
+
+    <div class="mf-full"><label>Matriz de Operaciones Vinculadas (resumen)</label><textarea id="mf-ops-matriz" placeholder="Entidad Transferente | Entidad Receptora | Tipo | Monto | Método aplicado (breve)"></textarea></div>
+  </div>
+
+  <h6>Transacciones Controladas (lista)</h6>
+  <div id="mf-transactions-container"></div>
+  <div style="margin-bottom:12px;">
+    <button class="mf-btn mf-small" onclick="mf_addTransaction()">+ Añadir transacción</button>
+    <span style="margin-left:10px;" class="mf-small">Campos: Tipo, Valor (USD/COP), Parte vinculada</span>
+  </div>
+
+  <!-- ANÁLISIS, MÉTODOS, FINANZAS -->
+  <h6>5. Análisis FAR, Métodos y Resultados</h6>
+  <div class="mf-grid">
+    <div class="mf-full"><label>Análisis FAR (resumen consolidado)</label><textarea id="mf-far"></textarea></div>
+    <div class="mf-full"><label>Métodos de valoración aplicados (resumen)</label><textarea id="mf-metodos"></textarea></div>
+    <div class="mf-full"><label>Análisis económico y financiero del grupo (resumen)</label><textarea id="mf-finanzas"></textarea></div>
+    <div class="mf-full"><label>Benchmarking y fuentes</label><textarea id="mf-benchmark"></textarea></div>
+  </div>
+
+  <!-- CONCLUSIONES, ANEXOS y FIRMA -->
+  <h6>6. Conclusiones, Anexos y Certificación</h6>
+  <div class="mf-grid">
+    <div class="mf-full"><label>Conclusiones y recomendaciones</label><textarea id="mf-conclusiones"></textarea></div>
+    <div class="mf-full"><label>Anexos (lista de documentos a incluir)</label><textarea id="mf-anexos" placeholder="Estados financieros, contratos, análisis comparables, etc."></textarea></div>
+
+    <div><label>Nombre y Cargo (certificación)</label><input id="mf-firma-nombre"></div>
+    <div><label>Cédula / NIT</label><input id="mf-firma-id"></div>
+    <div><label>Fecha firma</label><input id="mf-firma-fecha" type="date"></div>
+  </div>
+
+  <!-- BOTONES -->
+  <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap;">
+    <button class="mf-btn" onclick="mf_generateDOCX()">Generar Informe (Word)</button>
+    <button class="mf-btn secondary" onclick="window.open('https://contador.net.co/wp-content/uploads/2025/12/document-palntilla-ejemplo.docx','_blank')">Descargar plantilla modelo</button>
+    <button class="mf-btn dark" onclick="mf_downloadMD()">Descargar carta (MD)</button>
+  </div>
+
+  <p class="mf-small" style="margin-top:10px;">Los documentos se generan como .docx. Si aparece advertencia de compatibilidad, abra con Microsoft Word o Google Docs.</p>
+</div>
+
+<script>
+/* ----------------------------
+  Estado inicial y render helpers
+---------------------------- */
+let mf_entities = [
+  { name: 'Entidad matriz', role: 'Holding', country: '', funciones:'', activos:'', riesgos:'' }
+];
+let mf_transactions = [
+  { type:'Venta de bienes', amount:'', related:'' }
+];
+
+function mf_renderEntities(){
+  const c = document.getElementById('mf-entities-container');
+  c.innerHTML = '';
+  mf_entities.forEach((e,i)=>{
+    const div = document.createElement('div');
+    div.className = 'mf-entity';
+    div.innerHTML = `
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input placeholder="Nombre entidad" value="${escapeHtml(e.name)}" onchange="mf_updateEntity(${i},'name',this.value)" style="flex:1;">
+        <input placeholder="Tipo vinculación (ej. Holding)" value="${escapeHtml(e.role)}" onchange="mf_updateEntity(${i},'role',this.value)" style="width:190px;">
+        <input placeholder="País" value="${escapeHtml(e.country)}" onchange="mf_updateEntity(${i},'country',this.value)" style="width:150px;">
+        <button onclick="mf_removeEntity(${i})" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;">Eliminar</button>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="mf-small">Funciones clave</label>
+        <textarea onchange="mf_updateEntity(${i},'funciones',this.value)">${escapeHtml(e.funciones)}</textarea>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="mf-small">Activos utilizados</label>
+        <textarea onchange="mf_updateEntity(${i},'activos',this.value)">${escapeHtml(e.activos)}</textarea>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="mf-small">Riesgos asumidos</label>
+        <textarea onchange="mf_updateEntity(${i},'riesgos',this.value)">${escapeHtml(e.riesgos)}</textarea>
+      </div>
+    `;
+    c.appendChild(div);
+  });
+}
+
+function mf_addEntity(){
+  mf_entities.push({ name:'', role:'Holding', country:'', funciones:'', activos:'', riesgos:'' });
+  mf_renderEntities();
+}
+function mf_updateEntity(i,field,val){ if(!mf_entities[i]) return; mf_entities[i][field]=val; }
+function mf_removeEntity(i){ mf_entities.splice(i,1); mf_renderEntities(); }
+
+/* Transactions */
+function mf_renderTransactions(){
+  const c = document.getElementById('mf-transactions-container');
+  c.innerHTML = '';
+  mf_transactions.forEach((t,i)=>{
+    const div = document.createElement('div');
+    div.className = 'mf-transaction';
+    div.innerHTML = `
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <input placeholder="Tipo de transacción" value="${escapeHtml(t.type)}" onchange="mf_updateTransaction(${i},'type',this.value)" style="flex:1;">
+        <input placeholder="Valor (USD/COP)" value="${escapeHtml(t.amount)}" onchange="mf_updateTransaction(${i},'amount',this.value)" style="width:160px;">
+        <input placeholder="Parte vinculada" value="${escapeHtml(t.related)}" onchange="mf_updateTransaction(${i},'related',this.value)" style="width:200px;">
+        <button onclick="mf_removeTransaction(${i})" style="background:#dc2626;color:#fff;border:none;padding:6px 10px;border-radius:6px;">Eliminar</button>
+      </div>
+    `;
+    c.appendChild(div);
+  });
+}
+function mf_addTransaction(){ mf_transactions.push({ type:'', amount:'', related:'' }); mf_renderTransactions(); }
+function mf_updateTransaction(i,field,val){ if(!mf_transactions[i]) return; mf_transactions[i][field]=val; }
+function mf_removeTransaction(i){ mf_transactions.splice(i,1); mf_renderTransactions(); }
+
+/* escape helper */
+function escapeHtml(s=''){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* download markdown (carta) */
+function mf_downloadMD(){
+  const c = document.getElementById('mf-company').value || '[Empresa]';
+  const y = document.getElementById('mf-year').value || '[Año]';
+  const content = `DIAN\nAsunto: Presentación del Informe Maestro ${y}\n\nAdjunto enviamos el Informe Maestro correspondiente al Grupo ${c}.\n\nAtentamente,\n[Nombre]\n`;
+  const blob = new Blob([content],{type:'text/markdown;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='Carta_Presentacion.md'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ------------------------------
+  GENERAR DOCX (docx lib o fallback)
+   - crea párrafos separados para evitar corrupción
+------------------------------ */
+async function mf_generateDOCX(){
+  const company = document.getElementById('mf-company').value || '';
+  const parent = document.getElementById('mf-parent').value || '';
+  const nit = document.getElementById('mf-nit').value || '';
+  const domicilio = document.getElementById('mf-domicilio').value || '';
+  const pais = document.getElementById('mf-pais').value || '';
+  const sector = document.getElementById('mf-sector').value || '';
+  const constitucion = document.getElementById('mf-constitucion').value || '';
+  const fechaPrep = document.getElementById('mf-fecha-prep').value || '';
+  const year = document.getElementById('mf-year').value || '';
+  const estructura = document.getElementById('mf-estructura').value || '';
+  const modelo = document.getElementById('mf-modelo').value || '';
+  const cambios = document.getElementById('mf-cambios').value || '';
+  const opsDesc = document.getElementById('mf-ops-desc').value || '';
+  const opsMatriz = document.getElementById('mf-ops-matriz').value || '';
+  const far = document.getElementById('mf-far').value || '';
+  const metodos = document.getElementById('mf-metodos').value || '';
+  const finanzas = document.getElementById('mf-finanzas').value || '';
+  const benchmark = document.getElementById('mf-benchmark').value || '';
+  const conclusiones = document.getElementById('mf-conclusiones').value || '';
+  const anexos = document.getElementById('mf-anexos').value || '';
+  const firmaNombre = document.getElementById('mf-firma-nombre').value || '';
+  const firmaId = document.getElementById('mf-firma-id').value || '';
+  const firmaFecha = document.getElementById('mf-firma-fecha').value || '';
+
+  // Construir bloques de texto (array de líneas)
+  const lines = [];
+  lines.push(`INFORME MAESTRO – Precios de Transferencia`);
+  lines.push(`Grupo: ${company}`);
+  lines.push(`Empresa Matriz Reportante: ${parent}`);
+  lines.push(`NIT: ${nit}`);
+  lines.push(`Domicilio Fiscal: ${domicilio}`);
+  lines.push(`País de residencia fiscal: ${pais}`);
+  lines.push(`Sector Económico: ${sector}`);
+  lines.push(`Fecha constitución: ${constitucion}`);
+  lines.push(`Fecha preparación: ${fechaPrep}`);
+  lines.push(`Ejercicio / Año Gravable: ${year}`);
+  lines.push('');
+  lines.push('1. INFORMACIÓN GENERAL DEL GRUPO MULTINACIONAL');
+  lines.push('1.1 Identificación del Grupo');
+  lines.push(`Nombre del Grupo: ${company}`);
+  lines.push(`Empresa Matriz Reportante: ${parent}`);
+  lines.push(`NIT: ${nit}`);
+  lines.push(`Domicilio Fiscal: ${domicilio}`);
+  lines.push(`País de residencia fiscal: ${pais}`);
+  lines.push(`Sector económico principal: ${sector}`);
+  lines.push('');
+  lines.push('1.2 ESTRUCTURA DEL GRUPO');
+  lines.push(...(splitLines(estructura)));
+
+  lines.push('');
+  lines.push('2. DESCRIPCIÓN DEL NEGOCIO Y MODELO DE OPERACIÓN');
+  lines.push(...(splitLines(modelo)));
+  lines.push('');
+  lines.push('Cambios significativos en el período:');
+  lines.push(...(splitLines(cambios)));
+
+  // ENTIDADES y FAR
+  lines.push('');
+  lines.push('3. ANÁLISIS DE FUNCIONES, ACTIVOS Y RIESGOS (FAR) POR ENTIDAD');
+  mf_entities.forEach((e, idx) => {
+    lines.push(`${idx+1}. ${e.name || '[Nombre]'} — ${e.role || '[Rol]'} (${e.country || '[País]'})`);
+    lines.push('Funciones clave:'); lines.push(...splitLines(e.funciones));
+    lines.push('Activos utilizados:'); lines.push(...splitLines(e.activos));
+    lines.push('Riesgos asumidos:'); lines.push(...splitLines(e.riesgos));
+    lines.push('');
+  });
+
+  // OPERACIONES Y TRANSACCIONES
+  lines.push('');
+  lines.push('4. IDENTIFICACIÓN Y ANÁLISIS DE OPERACIONES CONTROLADAS');
+  lines.push('Descripción de operaciones intragrupo:'); lines.push(...splitLines(opsDesc));
+  lines.push('Matriz de operaciones (resumen):'); lines.push(...splitLines(opsMatriz));
+  lines.push('');
+  lines.push('Transacciones controladas:');
+  mf_transactions.forEach((t, i) => {
+    lines.push(`${i+1}. ${t.type || '[Tipo]'} — Valor: ${t.amount || '[Valor]'} — Parte vinculada: ${t.related || '[Parte]'}`);
+  });
+
+  // MÉTODOS, FINANZAS, BENCHMARK
+  lines.push('');
+  lines.push('5. DETERMINACIÓN DE PRECIOS DE TRANSFERENCIA - Métodos aplicados');
+  lines.push(...splitLines(metodos));
+  lines.push('');
+  lines.push('6. ANÁLISIS ECONÓMICO Y FINANCIERO DEL GRUPO');
+  lines.push(...splitLines(finanzas));
+  lines.push('');
+  lines.push('7. ESTUDIO DE BENCHMARKING');
+  lines.push(...splitLines(benchmark));
+  lines.push('');
+  lines.push('CONCLUSIONES');
+  lines.push(...splitLines(conclusiones));
+  lines.push('');
+  lines.push('ANEXOS');
+  lines.push(...splitLines(anexos));
+  lines.push('');
+  lines.push('DECLARACIÓN Y CERTIFICACIÓN');
+  lines.push(`Nombre y Cargo: ${firmaNombre}`);
+  lines.push(`Cédula / NIT: ${firmaId}`);
+  lines.push(`Fecha: ${firmaFecha}`);
+
+  // Intentar usar docx lib (más estructurado). Si no existe, fallback a texto plano .docx
+  if (window.docx && window.docx.Document){
+    try {
+      const { Document, Packer, Paragraph, TextRun } = window.docx;
+      // Build paragraphs: avoid very long TextRuns with newlines => create per-line paragraphs
+      const children = [];
+
+      // Header
+      children.push(new Paragraph({ children: [ new TextRun({ text: `Informe Maestro – ${company}`, bold:true }) ] }));
+      children.push(new Paragraph({ children: [ new TextRun({ text: `Ejercicio: ${year}` }) ] }));
+      children.push(new Paragraph({ children: [] }));
+
+      // Add lines as paragraphs
+      lines.forEach(l => {
+        // safe: create a TextRun per line
+        children.push(new Paragraph({ children:[ new TextRun({ text: l }) ] }));
+      });
+
+      const doc = new Document({ sections: [{ children }]});
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `Informe-Maestro-${(company||'Grupo').replace(/\s+/g,'_')}-${year||'Periodo'}.docx`;
+      a.click(); URL.revokeObjectURL(url);
+      return;
+    } catch(err){
+      console.warn('docx generation failed, falling back to text docx:', err);
+      // continue to fallback
+    }
+  }
+
+  // FALLBACK: descargar como .txt (Si falla la librería docx)
+  const text = lines.join('\n');
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `Informe-Maestro-${(company||'Grupo').replace(/\s+/g,'_')}-${year||'Periodo'}.txt`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* helper: split multiline text into lines (trim) */
+function splitLines(s){
+  if(!s) return [];
+  return String(s).split(/\r?\n/).map(line => line.trim()).filter(line => line.length>0);
+}
+
+/* init render */
+mf_renderEntities(); mf_renderTransactions();
+
+</script>
